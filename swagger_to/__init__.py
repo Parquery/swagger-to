@@ -6,7 +6,6 @@ import re
 import string
 from typing import List, MutableMapping
 
-
 # pylint: disable=missing-docstring
 
 

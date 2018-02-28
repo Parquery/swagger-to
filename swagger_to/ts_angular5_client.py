@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Generates code for an TypeScript client with Angular5.
 """
@@ -29,27 +30,21 @@ class Booleandef(Typedef):
     """
     Represents typescript booleans.
     """
-
-    def __init__(self) -> None:
-        super().__init__()
+    pass
 
 
 class Numberdef(Typedef):
     """
     Represents typescript numbers.
     """
-
-    def __init__(self) -> None:
-        super().__init__()
+    pass
 
 
 class Stringdef(Typedef):
     """
     Represents typescript strings.
     """
-
-    def __init__(self) -> None:
-        super().__init__()
+    pass
 
 
 class Arraydef(Typedef):
@@ -118,6 +113,10 @@ class Parameter:
 
 
 class Response:
+    """
+    Represents a response from a request.
+    """
+
     def __init__(self) -> None:
         self.code = ''
         self.typedef = None  # type: Optional[Typedef]
@@ -129,6 +128,7 @@ class Request:
     Represents a request function of the client.
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self) -> None:
         self.operation_id = ''
         self.path = ''
@@ -163,8 +163,8 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
         elif intermediate_typedef.type == 'string':
             typedef = Stringdef()
         else:
-            raise NotImplementedError(
-                "Converting intermediate type to Typescript is not supported: {}".format(intermediate_typedef.type))
+            raise NotImplementedError("Converting intermediate type to Typescript is not supported: {}".format(
+                intermediate_typedef.type))
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
         typedef = Arraydef()
@@ -185,8 +185,8 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
             typedef.properties[prop.name] = prop
     else:
-        raise NotImplementedError(
-            "Converting intermediate typedef to Typescript is not supported: {!r}".format(type(intermediate_typedef)))
+        raise NotImplementedError("Converting intermediate typedef to Typescript is not supported: {!r}".format(
+            type(intermediate_typedef)))
 
     typedef.description = intermediate_typedef.description
     typedef.identifier = intermediate_typedef.identifier
@@ -198,6 +198,12 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
 def to_typedefs(
         intermediate_typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> MutableMapping[str, Typedef]:
+    """
+    Translates the intermediate typedefs to typescript typedefs.
+
+    :param intermediate_typedefs: to be translated
+    :return: translated typedefs
+    """
     typedefs = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
 
     for intermediate_typedef in intermediate_typedefs.values():
@@ -272,9 +278,9 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     :return: request function
     """
     if endpoint.produces != ['application/json']:
-        raise ValueError(
-            "Can not translate an end point to typescript client "
-            "which does not produces strictly application/json: {} {}".format(endpoint.path, endpoint.method))
+        raise ValueError("Can not translate an end point to typescript client "
+                         "which does not produces strictly application/json: {} {}".format(
+                             endpoint.path, endpoint.method))
 
     req = Request()
     req.description = endpoint.description
@@ -296,8 +302,8 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
         elif intermediate_param.in_what == 'path':
             req.path_parameters.append(param)
         else:
-            raise NotImplementedError(
-                "Unsupported parameter 'in' to Typescript translation: {}".format(intermediate_param.in_what))
+            raise NotImplementedError("Unsupported parameter 'in' to Typescript translation: {}".format(
+                intermediate_param.in_what))
 
         req.parameters.append(param)
 
@@ -329,6 +335,12 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
 
 
 def write_header(fid: TextIO) -> None:
+    """
+    Writes the header (same for all the typescript clients).
+
+    :param fid: target
+    :return:
+    """
     fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
 
     fid.write("import { Injectable } from '@angular/core';\n"
@@ -337,6 +349,13 @@ def write_header(fid: TextIO) -> None:
 
 
 def write_footer(fid: TextIO) -> None:
+    """
+    Writes the footer (same for all the typescript clients).
+
+    :param fid: target
+    :return:
+    """
+
     fid.write("\n\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
@@ -357,7 +376,7 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Arraydef):
         return 'Array<' + type_expression(typedef=typedef.items, path=str(path) + '.items') + ">"
     elif isinstance(typedef, Mapdef):
-        return 'Map<' + type_expression(typedef=typedef.values, path=str(path) + '.values') + ">"
+        return 'Map<string, ' + type_expression(typedef=typedef.values, path=str(path) + '.values') + ">"
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
             raise NotImplementedError(
@@ -365,15 +384,29 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
 
         return typedef.identifier
     else:
-        raise NotImplementedError(
-            "Translating the typedef to a type expression is not supported: {!r}: {}".format(type(typedef), path))
+        raise NotImplementedError("Translating the typedef to a type expression is not supported: {!r}: {}".format(
+            type(typedef), path))
 
 
 def write_description(description: str, indent: str, fid: TextIO) -> None:
+    """
+    Writes a description as // comment block.
+    :param description: to be written
+    :param indent: indention as prefix to each line
+    :param fid: target
+    :return:
+    """
     fid.write('\n'.join([indent + '// {}'.format(line) for line in description.strip().splitlines()]))
 
 
 def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
+    """
+    Writes the type definition in the Typescript code.
+
+    :param typedef: to be declared
+    :param fid: target
+    :return:
+    """
     if typedef.identifier == '':
         raise ValueError("Expected a typedef with an identifier, but got a typedef with an empty identifier.")
 
@@ -382,7 +415,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
         fid.write('\n')
 
     if isinstance(typedef, Classdef):
-        fid.write("class {} {{\n".format(typedef.identifier))
+        fid.write("export interface {} {{\n".format(typedef.identifier))
         for i, prop in enumerate(typedef.properties.values()):
             if i > 0:
                 fid.write('\n')
@@ -399,6 +432,13 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
 
 
 def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+    """
+    Writes all type definitions as Typescript code.
+
+    :param typedefs: type definitions to be declared
+    :param fid: target
+    :return:
+    """
     for i, typedef in enumerate(typedefs.values()):
         if i > 0:
             fid.write('\n\n')
@@ -428,6 +468,9 @@ def write_request(request: Request, fid: TextIO) -> None:
     :param fid: target
     :return:
     """
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-branches
     description = 'Sends a request to the endpoint: {} {}'.format(request.path, request.method)
     if request.description:
         description += '\n\n' + request.description
@@ -436,17 +479,19 @@ def write_request(request: Request, fid: TextIO) -> None:
 
     args = []  # type: List[str]
     for param in request.parameters:
-        args.append(
-            '{}{}: {}'.format(param.name, '?' if not param.required else '', type_expression(typedef=param.typedef)))
+        args.append('{}{}: {}'.format(
+            param.name, '?' if not param.required else '', type_expression(typedef=param.typedef)))
 
-    suffix = None  # type: Optional[str]
+    return_type = ''
     if '200' in request.responses:
         resp = request.responses['200']
         if resp.typedef is not None:
-            suffix = '): Observable<{}> {{'.format(type_expression(typedef=resp.typedef))
+            return_type = type_expression(typedef=resp.typedef)
 
-    if suffix is None:
-        suffix = '): Observable<any> {'
+    if not return_type:
+        return_type = 'any'
+
+    suffix = '): Observable<{}> {{'.format(return_type)
 
     line = prefix + ', '.join(args) + suffix
     if len(line) <= 120:
@@ -471,23 +516,26 @@ def write_request(request: Request, fid: TextIO) -> None:
     # path parameters
     token_pth = swagger_to.tokenize_path(path=rel_path)
 
-    if not token_pth.parameter_to_token_indices:
-        fid.write(INDENT * 2 + 'let url = "{}";'.format(rel_path))
+    if not token_pth.parameter_to_token_indices and not request.query_parameters:
+        fid.write(INDENT * 2 + 'const url = "{}";\n'.format(rel_path))
     else:
-        fid.write(INDENT * 2 + 'let url = "";')
-        for i, tkn in enumerate(token_pth.tokens):
-            if i > 0:
-                fid.write("\n")
+        if not token_pth.parameter_to_token_indices:
+            fid.write(INDENT * 2 + 'let url = "{}";'.format(rel_path))
+        else:
+            fid.write(INDENT * 2 + 'let url = "";')
+            for i, tkn in enumerate(token_pth.tokens):
+                if i > 0:
+                    fid.write("\n")
 
-            if i in token_pth.token_index_to_parameter:
-                param_name = token_pth.token_index_to_parameter[i]
-                param = name_to_parameters[param_name]
+                if i in token_pth.token_index_to_parameter:
+                    param_name = token_pth.token_index_to_parameter[i]
+                    param = name_to_parameters[param_name]
 
-                fid.write(
-                    INDENT * 2 + 'url += encodeURIComponent({});'.format(to_string_expression(typedef=param.typedef, variable=param.name)))
-            else:
-                fid.write(INDENT * 2 + 'url += encodeURIComponent("{{}}");'.format(
-                    tkn.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')))
+                    fid.write(INDENT * 2 + 'url += encodeURIComponent({});'.format(
+                        to_string_expression(typedef=param.typedef, variable=param.name)))
+                else:
+                    fid.write(INDENT * 2 + 'url += encodeURIComponent("{}");'.format(
+                        tkn.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')))
 
     if request.path_parameters and request.query_parameters:
         fid.write("\n")
@@ -498,39 +546,49 @@ def write_request(request: Request, fid: TextIO) -> None:
         fid.write(INDENT * 2 + 'url += "?";\n')
 
         for i, param in enumerate(request.query_parameters):
+            amp = ''  # used to concatenate query parameters
             if i > 0:
                 fid.write("\n\n")
+                amp = '&'
 
             if param.required:
-                fid.write(INDENT * 2 + 'url += "{}=" + encodeURIComponent({});'.format(
-                    param.name, to_string_expression(typedef=param.typedef, variable=param.name)))
+                fid.write(INDENT * 2 + 'url += "{}{}=" + encodeURIComponent({});'.format(
+                    amp, param.name, to_string_expression(typedef=param.typedef, variable=param.name)))
             else:
                 fid.write(INDENT * 2 + 'if ({}) {{\n'.format(param.name))
-                fid.write(INDENT * 3 + 'url += "{}=" + encodeURIComponent({});\n'.format(
-                    param.name, to_string_expression(typedef=param.typedef, variable=param.name)))
+                fid.write(INDENT * 3 + 'url += "{}{}=" + encodeURIComponent({});\n'.format(
+                    amp, param.name, to_string_expression(typedef=param.typedef, variable=param.name)))
                 fid.write(INDENT * 2 + '}')
 
         fid.write('\n')
 
     fid.write('\n')
+
     mth = request.method.lower()
     if request.body_parameter is not None:
         if request.body_parameter.required:
-            fid.write(INDENT * 2 + 'return this.http.{}(url, {});\n'.format(mth, request.body_parameter.name))
+            fid.write(INDENT * 2 + 'let observable = this.http.{}(url, JSON.stringify({}));\n'.format(
+                mth, request.body_parameter.name))
         else:
+            fid.write(INDENT * 2 + 'let observable: Observable<any>;\n')
             fid.write(INDENT * 2 + 'if ({}) {{\n'.format(request.body_parameter.name))
-            fid.write(INDENT * 3 + 'return this.http.{}(url, {});\n'.format(mth, request.body_parameter.name))
+            fid.write(INDENT * 3 +
+                      'observable = this.http.{}(url, JSON.stringify({}));\n'.format(mth, request.body_parameter.name))
             fid.write(INDENT * 2 + '} else {\n')
-            fid.write(INDENT * 3 + 'return this.http.{}(url);\n'.format(mth))
+            fid.write(INDENT * 3 + 'observable = this.http.{}(url);\n'.format(mth))
             fid.write(INDENT * 2 + '}\n')
     else:
-        fid.write(INDENT * 2 + 'return this.http.{}(url);\n'.format(mth))
+        fid.write(INDENT * 2 + 'let observable = this.http.{}(url);\n'.format(mth))
+
+    if return_type != 'any':
+        fid.write(INDENT * 2 + 'return observable.map(res => (res.json() as {}));\n'.format(return_type))
+    else:
+        fid.write(INDENT * 2 + 'return observable;\n')
 
     fid.write(INDENT + '}')
 
 
-def write_client(requests: List[Request],
-                 fid: TextIO) -> None:
+def write_client(requests: List[Request], fid: TextIO) -> None:
     """
     Generates the client.
 
@@ -539,7 +597,7 @@ def write_client(requests: List[Request],
     :return:
     """
     fid.write("@Injectable()\n")
-    fid.write("class RemoteCaller {\n\n")
+    fid.write("export class RemoteCaller {\n\n")
     fid.write(INDENT + "constructor(private http: Http) {}\n\n")
 
     for i, request in enumerate(requests):
@@ -551,9 +609,7 @@ def write_client(requests: List[Request],
     fid.write("\n}")
 
 
-def write_client_ts(typedefs: MutableMapping[str, Typedef],
-                    requests: List[Request],
-                    fid: TextIO) -> None:
+def write_client_ts(typedefs: MutableMapping[str, Typedef], requests: List[Request], fid: TextIO) -> None:
     """
     Generates the file with the client code.
 

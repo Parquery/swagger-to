@@ -149,7 +149,8 @@ def main() -> int:
     hasher = Hasher(source_dir=py_dir, hash_dir=hash_dir)
 
     pths = sorted(
-        list(py_dir.glob("*.py")) + list((py_dir / 'tests').glob("*.py")) + list((py_dir / 'bin').glob("*.py")))
+        list(py_dir.glob("*.py")) + list((py_dir / 'swagger_to').glob("*.py")) + list(
+            (py_dir / 'tests').glob("*.py")) + list((py_dir / 'bin').glob("*.py")))
 
     # see which files changed:
     changed_pths = []  # type: List[pathlib.Path]
