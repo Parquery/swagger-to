@@ -9,7 +9,7 @@ For example, references are resolved and do not figure as strings.
 
 import collections
 import json
-from typing import List, MutableMapping, Union, Any  # pylint: disable=unused-import
+from typing import List, MutableMapping, Union, Any, Optional  # pylint: disable=unused-import
 
 import swagger_to.swagger
 
@@ -77,6 +77,13 @@ class Parameter:
         self.json_schema = JsonSchema()
 
 
+class Response:
+    def __init__(self) -> None:
+        self.code = ''
+        self.description = ''
+        self.typedef = None  # type: Optional[Typedef]
+
+
 class Endpoint:
     def __init__(self):
         self.path = ''
@@ -85,6 +92,9 @@ class Endpoint:
         self.parameters = []  # type: List[Parameter]
         self.description = ''
         self.no_go = False
+        self.produces = []  # type: List[str]
+        self.consumes = []  # type: List[str]
+        self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
 
 
 def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
@@ -347,6 +357,7 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
         if original_param.type not in PRIMITIVE_SWAGGER_TYPES:
             raise ValueError("Expected type of a parameter to be one of {!r}, but got: {!r}".format(
                 PRIMITIVE_SWAGGER_TYPES, original_param.type))
+
         original_typedef = swagger_to.swagger.Typedef()
         original_typedef.type = original_param.type
         original_typedef.format = original_param.format
@@ -397,6 +408,35 @@ def anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typ
     return to_parameter(original_param=original_param, typedefs=typedefs)
 
 
+def to_response(swagger_response: swagger_to.swagger.Response, typedefs: MutableMapping[str, Typedef]) -> Response:
+    resp = Response()
+    resp.description = swagger_response.description
+    resp.code = swagger_response.code
+
+    swagger_typedef = None  # type: Optional[swagger_to.swagger.Typedef]
+
+    if swagger_response.type != '':
+        if swagger_response.type not in PRIMITIVE_SWAGGER_TYPES:
+            raise ValueError("Expected type of a parameter to be one of {!r}, but got: {!r}".format(
+                PRIMITIVE_SWAGGER_TYPES, swagger_response.type))
+
+        swagger_typedef = swagger_to.swagger.Typedef()
+        swagger_typedef.type = swagger_response.type
+        swagger_typedef.format = swagger_response.format
+        swagger_typedef.pattern = swagger_response.pattern
+
+    elif swagger_response.schema is not None:
+        swagger_typedef = swagger_response.schema
+    else:
+        # no typedef will be set for this response
+        pass
+
+    if swagger_typedef is not None:
+        resp.typedef = anonymous_or_get_typedef(original_typedef=swagger_typedef, typedefs=typedefs)
+
+    return resp
+
+
 def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str, Typedef],
                 params: MutableMapping[str, Parameter]) -> Endpoint:
     base_path = method.path.swagger.base_path
@@ -411,6 +451,8 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
     endpt.operation_id = method.operation_id
     endpt.no_go = method.x_pqry_no_go
     endpt.description = method.description
+    endpt.consumes = method.consumes
+    endpt.produces = method.produces
 
     for original_param in method.parameters:
         param = anonymous_or_get_parameter(original_param=original_param, typedefs=typedefs, params=params)
@@ -427,6 +469,9 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
                 definitions=method.path.swagger.definitions)
 
         endpt.parameters.append(param)
+
+    for resp_code, swagger_resp in method.responses.items():
+        endpt.responses[resp_code] = to_response(swagger_response=swagger_resp, typedefs=typedefs)
 
     return endpt
 

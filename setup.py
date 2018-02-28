@@ -29,7 +29,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.5',
     ],
-    keywords='swagger code generation go server',
+    keywords='swagger code generation go typescript server client angular',
     python_requires='>=3.5',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=['pyyaml>=3.12'],

@@ -3,3 +3,4 @@ venv3
 .idea
 *.pyc
 .precommit_hashes
+*.egg-info
