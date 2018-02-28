@@ -29,6 +29,7 @@ class Propertydef:
         self.name = ''
         self.typedef = Typedef()
         self.description = ''
+        self.required = False
 
 
 class Objectdef(Typedef):
@@ -161,6 +162,7 @@ def resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: M
             propdef.name = prop_name
             propdef.typedef = anonymous_or_get_typedef(original_typedef=prop_typedef, typedefs=typedefs)
             propdef.description = prop_typedef.description
+            propdef.required = propdef.name in typedef.required
 
             typedef.properties[prop_name] = propdef
     else:
@@ -215,6 +217,8 @@ def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
                 propdef.typedef = anonymous_or_get_typedef(original_typedef=prop_typedef.typedef, typedefs=typedefs)
                 propdef.description = prop_typedef.description
                 propdef.name = prop_name
+                propdef.required = propdef.name in typedef.required
+
                 typedef.properties[prop_name] = propdef
 
     else:

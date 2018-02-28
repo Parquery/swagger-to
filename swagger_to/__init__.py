@@ -124,6 +124,22 @@ def camel_case(identifier: str) -> str:
     return "".join(new_parts)
 
 
+def snake_case(identifier: str) -> str:
+    """
+    Converts an indentifier to a lowercase snake case.
+
+    :param identifier: to be converted
+    :return: lowercase snake_case identifier
+    """
+    if identifier == '':
+        return ''
+
+    parts = camel_case_split(identifier=identifier)
+
+    result = '_'.join(parts)
+    return result.lower()
+
+
 class TokenizedPath:
     def __init__(self):
         self.tokens = []  # type: List[str]
