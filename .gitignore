@@ -1,0 +1,5 @@
+venv3
+.mypy_cache/
+.idea
+*.pyc
+.precommit_hashes
