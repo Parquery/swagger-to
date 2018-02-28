@@ -129,6 +129,7 @@ class TokenizedPath:
     def __init__(self):
         self.tokens = []  # type: List[str]
         self.parameter_to_token_indices = collections.OrderedDict()  # type: MutableMapping[str, List[int]]
+        self.token_index_to_parameter = collections.OrderedDict()  # type: MutableMapping[int, str]
 
 
 PATH_TOKENIZATION_RE = re.compile(r'\{(?P<name>[a-zA-Z0-9_]*)\}|[^{]+|.')
@@ -153,5 +154,6 @@ def tokenize_path(path: str) -> TokenizedPath:
                 token_pth.parameter_to_token_indices[name] = []
 
             token_pth.parameter_to_token_indices[name].append(len(token_pth.tokens) - 1)
+            token_pth.token_index_to_parameter[len(token_pth.tokens) - 1] = name
 
     return token_pth

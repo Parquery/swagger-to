@@ -63,6 +63,8 @@ class Response:
         self.description = ''
         self.schema = None  # type: Optional[Typedef]
         self.type = ''
+        self.format = ''
+        self.pattern = ''
 
         # original specification dictionary, if available; not deep-copied, do not modify
         self.adict = collections.OrderedDict()  # type: MutableMapping[str, Any]
@@ -77,6 +79,8 @@ class Method:
         self.parameters = []  # type: List[Parameter]
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
         self.path = None  # type: Optional[Path]
+        self.produces = []  # type: List[str]
+        self.consumes = []  # type: List[str]
         self.x_pqry_no_go = False
 
         # original specification dictionary, if available; not deep-copied, do not modify
@@ -197,6 +201,8 @@ def parse_response(adict: MutableMapping[str, Any]) -> Tuple[Response, List[str]
 
     resp.description = adict.get('description', '').strip()
     resp.type = adict.get('type', '')
+    resp.format = adict.get('format', '')
+    resp.pattern = adict.get('pattern', '')
 
     if 'schema' in adict:
         schema_dict = adict['schema']
@@ -228,6 +234,9 @@ def parse_method(adict: MutableMapping[str, Any]) -> Tuple[Method, List[str]]:
     mth.description = adict.get('description', '').strip()
     mth.x_pqry_no_go = adict.get('x-pqry-no-go', False)
 
+    mth.produces = adict.get('produces', [])
+    mth.consumes = adict.get('consumes', [])
+
     for i, param_dict in enumerate(adict.get('parameters', [])):
         param, param_errors = parse_parameter(adict=param_dict)
         errors.extend(['in parameter {} (name: {!r}): {}'.format(i, param.name, error) for error in param_errors])
@@ -239,7 +248,7 @@ def parse_method(adict: MutableMapping[str, Any]) -> Tuple[Method, List[str]]:
         errors.extend(['in response {!r}: {}'.format(resp_code, error) for error in resp_errors])
 
         resp.code = resp_code
-        mth.responses[resp_code] = resp
+        mth.responses[str(resp_code)] = resp
 
     mth.adict = adict
 
