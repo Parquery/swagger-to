@@ -64,7 +64,11 @@ def main() -> None:
 
     pth = os.path.join(args.outdir, 'handler.go')
     with open(pth, 'wt') as fid:
-        swagger_to.go_server.write_handlers_go(package=package, routes=go_routes, fid=fid)
+        swagger_to.go_server.write_handler_go(package=package, routes=go_routes, fid=fid)
+
+    pth = os.path.join(args.outdir, 'handler_impl.go.sample')
+    with open(pth, 'wt') as fid:
+        swagger_to.go_server.write_handler_impl_go(package=package, routes=go_routes, fid=fid)
 
     pth = os.path.join(args.outdir, 'jsonschemas.go')
     with open(pth, 'wt') as fid:
