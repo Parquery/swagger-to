@@ -4,7 +4,7 @@ Generates server stubs from Swagger specification in Go.
 """
 
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements, too-many-lines
 
 import collections
 import io
@@ -836,7 +836,58 @@ def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
     fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
-def write_handlers_go(package: str, routes: List[Route], fid: TextIO) -> None:
+def write_handler_impl_go(package: str, routes: List[Route], fid: TextIO) -> None:
+    """
+    Generates the file which implements the handler interface with empty methods.
+
+    :param package: name of the package
+    :param routes: that a handler will handle
+    :param fid: where the output is written to
+    :return:
+    """
+    fid.write("package {}\n\n".format(package))
+
+    fid.write('import (\n')
+    fid.write(INDENT + '"net/http"\n')
+    fid.write(INDENT + '"log"\n')
+    fid.write(')\n\n')
+
+    # yapf: disable
+    fid.write('// HandlerImpl implements the Handler.\n')
+    fid.write('type HandlerImpl struct {\n' +
+              INDENT + 'LogErr *log.Logger\n' +
+              INDENT + 'LogOut *log.Logger}')
+    # yapf: enable
+
+    if routes:
+        fid.write('\n\n')
+
+    for i, route in enumerate(routes):
+        if i > 0:
+            fid.write('\n\n')
+
+        fid.write('// {0} implements Handler.{0}.\n'.format(route.handler.identifier))
+        fid.write("func (h *HandlerImpl) {}(".format(route.handler.identifier))
+        fid.write('w http.ResponseWriter,\n')
+        fid.write(INDENT + 'r *http.Request')
+
+        for argument in route.handler.arguments:
+            fid.write(",\n")
+            fid.write(INDENT)
+
+            fid.write(argument.identifier + ' ')
+            write_type_code_or_identifier(typedef=argument.typedef, fid=fid, indention='')
+
+        fid.write(") {\n")
+        fid.write(INDENT + 'http.Error(w, "Not implemented: {}", http.StatusInternalServerError)\n'.format(
+            route.handler.identifier))
+        fid.write(INDENT + 'h.LogErr.Printf("Not implemented: {}")\n'.format(route.handler.identifier))
+        fid.write("}")
+
+    fid.write('\n')
+
+
+def write_handler_go(package: str, routes: List[Route], fid: TextIO) -> None:
     """
     Generates the file which defines the handler interface.
 
