@@ -517,12 +517,12 @@ def write_request(request: Request, fid: TextIO) -> None:
     token_pth = swagger_to.tokenize_path(path=rel_path)
 
     if not token_pth.parameter_to_token_indices and not request.query_parameters:
-        fid.write(INDENT * 2 + 'const url = "{}";\n'.format(rel_path))
+        fid.write(INDENT * 2 + 'const url = this.url_prefix + "{}";\n'.format(rel_path))
     else:
         if not token_pth.parameter_to_token_indices:
-            fid.write(INDENT * 2 + 'let url = "{}";'.format(rel_path))
+            fid.write(INDENT * 2 + 'let url = this.url_prefix + "{}";'.format(rel_path))
         else:
-            fid.write(INDENT * 2 + 'let url = "";')
+            fid.write(INDENT * 2 + 'let url = this.url_prefix;')
             for i, tkn in enumerate(token_pth.tokens):
                 if i > 0:
                     fid.write("\n")
@@ -581,9 +581,11 @@ def write_request(request: Request, fid: TextIO) -> None:
         fid.write(INDENT * 2 + 'let observable = this.http.{}(url);\n'.format(mth))
 
     if return_type != 'any':
-        fid.write(INDENT * 2 + 'return observable.map(res => (res.json() as {}));\n'.format(return_type))
-    else:
-        fid.write(INDENT * 2 + 'return observable;\n')
+        fid.write(INDENT * 2 + 'observable = observable.map(res => (res.json() as {}));\n'.format(return_type))
+
+    fid.write(INDENT * 2 + 'if (this.on_error) {\n' + INDENT * 3 +
+              'observable = observable.catch(err => this.on_error(err))\n' + INDENT * 2 + '}\n')
+    fid.write(INDENT * 2 + 'return observable;\n')
 
     fid.write(INDENT + '}')
 
@@ -598,7 +600,9 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
     """
     fid.write("@Injectable()\n")
     fid.write("export class RemoteCaller {\n\n")
-    fid.write(INDENT + "constructor(private http: Http) {}\n\n")
+    fid.write(INDENT + "constructor(private http: Http,\n" + INDENT + "            url_prefix?: string,\n" + INDENT +
+              "            on_error?: (HttpErrorResponse) => Observable<HttpErrorResponse>) {\n" + INDENT * 2 +
+              'this.url_prefix = url_prefix ? url_prefix : "";\n' + INDENT + '}\n\n')
 
     for i, request in enumerate(requests):
         if i > 0:
