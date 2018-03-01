@@ -35,4 +35,4 @@ setup(
     install_requires=['pyyaml>=3.12'],
     extras_require={'dev': ['mypy==0.560', 'pylint==1.8.2', 'yapf==0.20.2']},
     py_modules=['swagger_to'],
-    scripts=['bin/swagger_to_go_server.py'])
+    scripts=['bin/swagger_to_go_server.py', 'bin/swagger_to_py_client.py', 'bin/swagger_to_ts_angular5_client.py'])

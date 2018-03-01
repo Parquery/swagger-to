@@ -43,6 +43,19 @@ class TestSwaggerToGo(unittest.TestCase):
             got = swagger_to.camel_case(identifier=an_input)
             self.assertEqual(expected, got)
 
+    def test_snake_case(self):
+        table = [
+            ('CvSizeInt', 'cv_size_int'),
+            ('URLsToFind', 'urls_to_find'),
+            ('IDsToFind', 'ids_to_find'),
+            ('some_ids', 'some_ids'),
+            ('someIDs', 'some_ids'),
+        ]
+
+        for an_input, expected in table:
+            got = swagger_to.snake_case(identifier=an_input)
+            self.assertEqual(expected, got)
+
     def test_path_tokenization(self):
         pth = "/{hello}/from-me/hello/{hello}/{wicked / one}/some more?q=1#a{unclosed&}"
 
