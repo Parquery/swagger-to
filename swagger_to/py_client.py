@@ -354,10 +354,12 @@ def write_header(service_name: str, fid: TextIO) -> None:
     fid.write('#!bin/bash/python3\n')
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n')
     fid.write('"""\nImplements the client for {}.\n"""\n\n'.format(service_name))
+    fid.write("# pylint: skip-file\n\n")
 
     fid.write('import contextlib\n')
     fid.write("from typing import Any, List, Dict, Optional\n\n")
     fid.write("import requests\n")
+    fid.write("import requests.auth\n")
 
 
 def write_footer(fid: TextIO) -> None:
@@ -495,15 +497,15 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
     :param path: to the object from the root object
-    :return: 
+    :return:
     """
     if not expected:
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
-    
+
     exp = expected[0]
     if not isinstance(obj, exp):
         raise ValueError("Expected object of type {} at {!r}, but got {}.".format(exp, path, type(obj)))
-    
+
     if exp in [bool, int, float, str]:
         return obj
 
@@ -511,7 +513,7 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
             lst.append(from_obj(value, expected=expected[1:], path=path + '[{}]'.format(i)))
-    
+
         return lst
 
     if exp == dict:
@@ -519,9 +521,9 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
         for key, value in obj.items():
             if not isinstance(key, str):
                 raise ValueError("Expected a key of type str at path {!r}, got: {}".format(path, type(key)))
-            
+
             adict[key] = from_obj(value, expected=expected[1:], path=path + '["{}"]'.format(key))
-        
+
         return adict'''.replace(' ' * 4, INDENT))
 
     for classdef in classdefs:
@@ -568,11 +570,11 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
     # yapf: disable
     fid.write(INDENT + 'if not isinstance(obj, dict):\n' +
               INDENT * 2 +
-              'raise ValueError("Expected a dict at path {{}}, but got: {{}}".format(path, type(obj)))\n\n')
+              'raise ValueError("Expected a dict at path {}, but got: {}".format(path, type(obj)))\n\n')
     fid.write(INDENT + 'for key in obj:\n' +
               INDENT * 2 + 'if not isinstance(obj[key], str):\n' +
               INDENT * 3 +
-              'raise ValueError("Expected a key of type str at path {{}}, but got: {{}}".format(path, type(key)))\n\n')
+              'raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))\n\n')
     # yapf: enable
 
     if not classdef.attributes:
@@ -641,23 +643,23 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
-    :return: 
+    :return:
     """
     if not expected:
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
-    
+
     exp = expected[0]
     if not isinstance(obj, exp):
         raise ValueError("Expected object of type {}, but got {}.".format(exp, type(obj)))
-    
+
     if exp in [bool, int, float, str]:
         return obj
 
     if exp == list:
         lst = []  # type: List[Any]
-        for i, value in enumerate(obj):
+        for value in obj:
             lst.append(to_jsonable(value, expected=expected[1:]))
-    
+
         return lst
 
     if exp == dict:
@@ -665,9 +667,9 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
         for key, value in obj.items():
             if not isinstance(key, str):
                 raise ValueError("Expected a key of type str, got: {}".format(type(key)))
-            
+
             adict[key] = to_jsonable(value, expected=expected[1:])
-        
+
         return adict'''.replace(' ' * 4, INDENT))
 
     for classdef in classdefs:
@@ -849,7 +851,7 @@ def write_request(request: Request, fid: TextIO) -> None:
     if resp is None:
         fid.write(INDENT * 3 + 'return resp.content')
     else:
-        fid.write(INDENT * 3 + 'return from_obj(obj=resp.json(), expected=[{}], path="")\n'.format(
+        fid.write(INDENT * 3 + 'return from_obj(obj=resp.json(), expected=[{}], path="")'.format(
             expected_type_expression(typedef=resp.typedef)))
 
 
@@ -859,7 +861,7 @@ def write_client(requests: List[Request],
     fid.write(INDENT + '""" executes the remote calls to the server. """\n')
     fid.write('\n')
 
-    fid.write(INDENT + 'def __init__(url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:\n')
+    fid.write(INDENT + 'def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:\n')
     fid.write(INDENT * 2 + "self.url_prefix = url_prefix\n")
     fid.write(INDENT * 2 + "self.auth = auth")
 
@@ -891,7 +893,7 @@ def write_client_py(service_name: str,
         classdefs = [typedef for typedef in typedefs.values() if isinstance(typedef, Classdef)]
 
         if classdefs:
-            fid.write('\n')
+            fid.write('\n\n')
             write_from_obj(classdefs=classdefs, fid=fid)
             fid.write('\n\n\n')
             write_to_jsonable(classdefs=classdefs, fid=fid)
@@ -917,3 +919,4 @@ def write_client_py(service_name: str,
         fid.write('\n\n\n')
 
     write_footer(fid=fid)
+    fid.write('\n')
