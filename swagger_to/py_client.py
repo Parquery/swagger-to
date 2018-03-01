@@ -776,21 +776,23 @@ def write_request(request: Request, fid: TextIO) -> None:
     if not token_pth.parameter_to_token_indices:
         fid.write(INDENT * 2 + 'url = self.url_prefix + "{}"'.format(request.path))
     else:
-        fid.write(INDENT * 2 + 'url = self.url_prefix')
+        fid.write(INDENT * 2 + 'url_parts = [self.url_prefix]')
         for i, tkn in enumerate(token_pth.tokens):
-            if i > 0:
-                fid.write("\n")
+            fid.write("\n")
 
             if i in token_pth.token_index_to_parameter:
                 param_name = token_pth.token_index_to_parameter[i]
                 param = name_to_parameters[param_name]
 
                 fid.write(
-                    INDENT * 2 + 'url += {}'.format(
+                    INDENT * 2 + 'url_parts.append({})'.format(
                         to_string_expression(typedef=param.typedef, expression=param.name)))
             else:
-                fid.write(INDENT * 2 + 'url += "{}";'.format(
+                fid.write(INDENT * 2 + 'url_parts.append("{}")'.format(
                     tkn.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')))
+
+        fid.write('\n')
+        fid.write(INDENT * 2 + 'url = "".join(url_parts)')
 
     if request.query_parameters:
         fid.write('\n\n')
