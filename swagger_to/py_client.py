@@ -639,7 +639,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
 def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     # yapf: disable
-    fid.write('''def to_jsonable(obj: Any, expected: List[type])->Any:
+    fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str)->Any:
     """
     Checks and converts the given object along the expected types to a JSON-able representation.
 
@@ -652,15 +652,15 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
     exp = expected[0]
     if not isinstance(obj, exp):
-        raise ValueError("Expected object of type {}, but got {}.".format(exp, type(obj)))
+        raise ValueError("Expected object of type {} at path {!r}, but got {}.".format(exp, path, type(obj)))
 
     if exp in [bool, int, float, str]:
         return obj
 
     if exp == list:
         lst = []  # type: List[Any]
-        for value in obj:
-            lst.append(to_jsonable(value, expected=expected[1:]))
+        for i, value in enumerate(obj):
+            lst.append(to_jsonable(value, expected=expected[1:], path=''.join([path, '[', str(i), ']'])))
 
         return lst
 
@@ -668,16 +668,16 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
         adict = dict()  # type: Dict[str, Any]
         for key, value in obj.items():
             if not isinstance(key, str):
-                raise ValueError("Expected a key of type str, got: {}".format(type(key)))
+                raise ValueError("Expected a key of type str at path {!r}, got: {}".format(path, type(key)))
 
-            adict[key] = to_jsonable(value, expected=expected[1:])
+            adict[key] = to_jsonable(value, expected=expected[1:], path=''.join([path, '[', key, ']']))
 
         return adict'''.replace(' ' * 4, INDENT))
 
     for classdef in classdefs:
         fid.write('\n\n')
         fid.write(INDENT + 'if exp == {}:\n'.format(classdef.identifier))
-        fid.write(INDENT * 2 + 'return {}_to_jsonable(obj)'.format(
+        fid.write(INDENT * 2 + 'return {}_to_jsonable(obj, path=path)'.format(
             swagger_to.snake_case(classdef.identifier)))
 
     fid.write('\n\n')
@@ -686,7 +686,7 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
 
 def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
-    fid.write('def {0}_to_jsonable({0}: {1}) -> Dict[str, Any]:\n'.format(
+    fid.write('def {0}_to_jsonable({0}: {1}, path: str = "") -> Dict[str, Any]:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
     fid.write(INDENT + '""" generates a dictionary JSON-able object from an instance of {}. """\n'.format(
@@ -709,14 +709,16 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
         else:
             prefix = INDENT * 2 + '"{0}": to_jsonable('.format(attr.name)
             value = '{}.{}'.format(variable, attr.name)
-            expected = '[{}])'.format(expected_type_expression(typedef=attr.typedef))
+            expected = '[{}]'.format(expected_type_expression(typedef=attr.typedef))
+            path = '"{{}}.{}".format(path))'.format(attr.name)
 
-            line = prefix + ', '.join([value, expected])
+            line = prefix + ', '.join([value, expected, path])
             if len(line) <= 80:
                 fid.write(line)
             else:
                 fid.write(prefix + value + ',\n')
-                fid.write(' ' * len(prefix) + expected)
+                fid.write(' ' * len(prefix) + expected + ',\n')
+                fid.write(' ' * len(prefix) + path)
 
     fid.write('\n')
     fid.write(INDENT + '}')
