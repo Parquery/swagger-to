@@ -352,7 +352,7 @@ def attribute_as_argument(attribute: Attribute) -> str:
 
 def write_header(service_name: str, fid: TextIO) -> None:
     fid.write('#!bin/bash/python3\n')
-    fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n')
+    fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n')
     fid.write('"""\nImplements the client for {}.\n"""\n\n'.format(service_name))
     fid.write("# pylint: skip-file\n\n")
 
@@ -499,7 +499,7 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
 
 def write_from_obj(classdefs: List[Classdef], fid: TextIO):
     # yapf: disable
-    fid.write('''def from_obj(obj: Any, expected: List[type], path: str = '')->Any:
+    fid.write('''def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
     """
     Checks and converts the given obj along the expected types.
 
@@ -648,7 +648,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
 def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     # yapf: disable
-    fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str)->Any:
+    fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str) -> Any:
     """
     Checks and converts the given object along the expected types to a JSON-able representation.
 
