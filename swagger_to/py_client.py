@@ -696,18 +696,25 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
         fid.write(INDENT + 'return dict()')
         return
 
-    fid.write(INDENT + 'return {\n')
+    fid.write(INDENT + 'res = dict()  # type: Dict[str, Any]\n')
+    fid.write('\n')
 
     variable = swagger_to.snake_case(identifier=classdef.identifier)
 
     for i, attr in enumerate(classdef.attributes.values()):
         if i > 0:
-            fid.write(',\n')
+            fid.write('\n\n')
+
+        if attr.required:
+            indent = INDENT
+        else:
+            fid.write(INDENT+'if {}.{} is not None:\n'.format(variable, attr.name))
+            indent=INDENT*2
 
         if isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef)):
-            fid.write(INDENT * 2 + '"{0}": {1}.{0}'.format(attr.name, variable))
+            fid.write(indent + 'res["{0}"] = {1}.{0}'.format(attr.name, variable))
         else:
-            prefix = INDENT * 2 + '"{0}": to_jsonable('.format(attr.name)
+            prefix = indent + 'res["{}"] = to_jsonable('.format(attr.name)
             value = '{}.{}'.format(variable, attr.name)
             expected = '[{}]'.format(expected_type_expression(typedef=attr.typedef))
             path = '"{{}}.{}".format(path))'.format(attr.name)
@@ -721,7 +728,7 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
                 fid.write(' ' * len(prefix) + path)
 
     fid.write('\n')
-    fid.write(INDENT + '}')
+    fid.write(INDENT + 'return res')
 
 
 def to_string_expression(typedef: Typedef, expression: str) -> str:
