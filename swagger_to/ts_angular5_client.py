@@ -396,7 +396,16 @@ def write_description(description: str, indent: str, fid: TextIO) -> None:
     :param fid: target
     :return:
     """
-    fid.write('\n'.join([indent + '// {}'.format(line) for line in description.strip().splitlines()]))
+    lines = description.strip().splitlines()
+    for i, line in enumerate(lines):
+        rstripped = line.rstrip()
+        if len(rstripped) > 0:
+            fid.write(indent + '// {}'.format(rstripped))
+        else:
+            fid.write(indent + '//')
+
+        if i < len(lines) - 1:
+            fid.write('\n')
 
 
 def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
