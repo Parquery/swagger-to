@@ -717,8 +717,8 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
         if attr.required:
             indent = INDENT
         else:
-            fid.write(INDENT+'if {}.{} is not None:\n'.format(variable, attr.name))
-            indent=INDENT*2
+            fid.write(INDENT + 'if {}.{} is not None:\n'.format(variable, attr.name))
+            indent = INDENT * 2
 
         if isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef)):
             fid.write(indent + 'res["{0}"] = {1}.{0}'.format(attr.name, variable))
