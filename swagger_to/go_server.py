@@ -540,7 +540,7 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
         fid.write(indention + "{\n")
         fid.write(indention + INDENT + 'parsed, err := strconv.ParseInt({}, 10, 64)\n'.format(string_identifier))
         fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': " + err.Error(), http.StatusBadRequest)\n'.
+        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
                   format(argument.parameter_name))
         fid.write(indention + INDENT * 2 + 'return\n')
         fid.write(indention + INDENT + "}\n")
@@ -559,7 +559,7 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
         fid.write(indention + INDENT + 'parsed, err := strconv.ParseInt({}, 10, 64)\n'.format(string_identifier))
 
         fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': " + err.Error(), http.StatusBadRequest)\n'.
+        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
                   format(argument.parameter_name))
         fid.write(indention + INDENT * 2 + 'return\n')
         fid.write(indention + INDENT + "}\n")
@@ -578,7 +578,7 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
         fid.write(indention + INDENT + 'parsed, err := int32(strconv.ParseInt({}, 10, 32))\n'.format(string_identifier))
 
         fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': " + err.Error(), http.StatusBadRequest)\n'.
+        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
                   format(argument.parameter_name))
         fid.write(indention + INDENT * 2 + 'return\n')
         fid.write(indention + INDENT + "}\n")
@@ -597,7 +597,7 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
         fid.write(indention + INDENT + 'parsed, err := strconv.ParseFloat({}, 32)\n'.format(string_identifier))
 
         fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': " + err.Error(), http.StatusBadRequest)\n'.
+        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
                   format(argument.parameter_name))
         fid.write(indention + INDENT * 2 + 'return\n')
         fid.write(indention + INDENT + "}\n")
@@ -616,7 +616,7 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
         fid.write(indention + INDENT + 'parsed, err = strconv.ParseFloat({}, 64)\n'.format(string_identifier))
 
         fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': " + err.Error(), http.StatusBadRequest)\n'.
+        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
                   format(argument.parameter_name))
         fid.write(indention + INDENT * 2 + 'return\n')
         fid.write(indention + INDENT + "}\n")
@@ -711,9 +711,9 @@ def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
             fid.write('\n\n')
 
         fid.write(INDENT + "r.HandleFunc(`{}`,\n".format(route.path))
-        fid.write(INDENT + "func(w http.ResponseWriter, r *http.Request) {\n")
-        fid.write(2 * INDENT + "{}(h, w, r)\n".format(route.wrapper.identifier))
-        fid.write(INDENT + '}}).Methods("{}")'.format(route.method))
+        fid.write(INDENT * 2 + "func(w http.ResponseWriter, r *http.Request) {\n")
+        fid.write(INDENT * 3 + "{}(h, w, r)\n".format(route.wrapper.identifier))
+        fid.write(INDENT * 2 + '}}).Methods("{}")'.format(route.method))
 
     if len(routes) > 0:
         fid.write('\n')
@@ -725,7 +725,10 @@ def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
         fid.write("\n")
 
     # wrappers
-    for route in routes:
+    for route_i, route in enumerate(routes):
+        if route_i > 0:
+            fid.write('\n')
+
         wrapper = route.wrapper
         if len(wrapper.description):
             write_description(description=wrapper.description, fid=fid, indention='')
@@ -742,13 +745,12 @@ def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
         # query arguments
         if len(route.wrapper.query_arguments) > 0:
             fid.write('\n')
-            fid.write(INDENT + "q := r.URL.Query()\n")
+            fid.write(INDENT + "q := r.URL.Query()\n\n")
 
         for i, argument in enumerate(route.wrapper.query_arguments):
             if i > 0:
                 fid.write("\n")
 
-            fid.write("\n")
             if argument.required:
                 fid.write(INDENT + 'if _, ok := q["{}"]; !ok {{\n'.format(argument.parameter_name))
                 fid.write(INDENT * 2 + 'http.Error(w, "Parameter \'{}\' expected in query", http.StatusBadRequest)\n'.
@@ -837,7 +839,7 @@ def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
 
         fid.write('\n}\n')
 
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+    fid.write("\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
 def write_handler_impl_go(package: str, routes: List[Route], fid: TextIO) -> None:
@@ -932,7 +934,7 @@ def write_handler_go(package: str, routes: List[Route], fid: TextIO) -> None:
 
     fid.write('}\n')
 
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+    fid.write("\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
 def write_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMapping[str, Typedef],
@@ -1025,6 +1027,6 @@ def write_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMa
         fid.write(2 * INDENT + 'msg += valErr.String()\n')
         fid.write(INDENT + '}\n')
         fid.write(INDENT + "return errors.New(msg)\n")
-        fid.write("}\n")
+        fid.write("}")
 
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+    fid.write("\n\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
