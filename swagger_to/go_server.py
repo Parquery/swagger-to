@@ -249,9 +249,13 @@ INDENT = '\t'
 
 
 def write_description(description: str, fid: TextIO, indention: str) -> None:
-    lines = description.strip().split('\n')
+    lines = description.strip().splitlines()
     for i, line in enumerate(lines):
-        fid.write(indention + '// {}'.format(line))
+        rstripped = line.rstrip()
+        if len(rstripped) > 0:
+            fid.write(indention + '// {}'.format(rstripped))
+        else:
+            fid.write(indention + '//')
 
         if i < len(lines) - 1:
             fid.write('\n')

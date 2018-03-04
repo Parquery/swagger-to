@@ -367,7 +367,16 @@ def write_footer(fid: TextIO) -> None:
 
 
 def write_comment(comment: str, indent: str, fid: TextIO) -> None:
-    fid.write('\n'.join([indent + '# {}'.format(line) for line in comment.strip().splitlines()]))
+    lines = comment.strip().splitlines()
+    for i, line in enumerate(lines):
+        rstripped = line.rstrip()
+        if len(rstripped) > 0:
+            fid.write(indent + '# {}'.format(rstripped))
+        else:
+            fid.write(indent + '#')
+
+        if i < len(lines) - 1:
+            fid.write('\n')
 
 
 def write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
