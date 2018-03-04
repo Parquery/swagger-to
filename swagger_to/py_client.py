@@ -503,8 +503,10 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
 
     exp = expected[0]
-    if not isinstance(obj, exp):
-        raise ValueError("Expected object of type {} at {!r}, but got {}.".format(exp, path, type(obj)))
+
+    if exp in [bool, int, float, str, list, dict]:
+        if not isinstance(obj, exp):
+            raise ValueError("Expected object of type {} at {!r}, but got {}.".format(exp, path, type(obj)))
 
     if exp in [bool, int, float, str]:
         return obj
@@ -572,7 +574,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
               INDENT * 2 +
               'raise ValueError("Expected a dict at path {}, but got: {}".format(path, type(obj)))\n\n')
     fid.write(INDENT + 'for key in obj:\n' +
-              INDENT * 2 + 'if not isinstance(obj[key], str):\n' +
+              INDENT * 2 + 'if not isinstance(key, str):\n' +
               INDENT * 3 +
               'raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))\n\n')
     # yapf: enable
