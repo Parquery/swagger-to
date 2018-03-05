@@ -17,12 +17,12 @@ def main() -> None:
     """
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces python client code")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
-    parser.add_argument("--out_path", help="path to the output file", required=True)
+    parser.add_argument("--outpath", help="path to the output file", required=True)
     parser.add_argument("--force", help="overwrite existing files", action="store_true")
     args = parser.parse_args()
 
     swagger_path = str(args.swagger_path)
-    out_path = str(args.out_path)
+    out_path = str(args.outpath)
     force = bool(args.force)
 
     if not os.path.exists(args.swagger_path):
