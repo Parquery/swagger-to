@@ -575,7 +575,7 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
 
     elif tajp == 'int32':
         fid.write(indention + "{\n")
-        fid.write(indention + INDENT + 'parsed, err := int32(strconv.ParseInt({}, 10, 32))\n'.format(string_identifier))
+        fid.write(indention + INDENT + 'parsed, err := strconv.ParseInt({}, 10, 32)\n'.format(string_identifier))
 
         fid.write(indention + INDENT + "if err != nil {\n")
         fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
