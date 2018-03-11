@@ -307,6 +307,10 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 
         req.parameters.append(param)
 
+    # parameters are sorted so that first come the required ones; typescript requires the optional ones to come
+    # at the end.
+    req.parameters.sort(key=lambda param: not param.required)
+
     for code, intermediate_resp in endpoint.responses.items():
         req.responses[code] = to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
 
@@ -345,6 +349,7 @@ def write_header(fid: TextIO) -> None:
 
     fid.write("import { Injectable } from '@angular/core';\n"
               "import { Http } from '@angular/http';\n"
+              "import { HttpErrorResponse } from '@angular/common/http';\n"
               "import { Observable } from 'rxjs/Rx';\n\n")
 
 
@@ -433,7 +438,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
                 write_description(description=prop.description, indent=INDENT, fid=fid)
                 fid.write("\n")
 
-            fid.write(INDENT + '{}: {}\n'.format(
+            fid.write(INDENT + '{}: {};\n'.format(
                 prop.name, type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))))
         fid.write("}")
     else:
@@ -500,7 +505,7 @@ def write_request(request: Request, fid: TextIO) -> None:
     if not return_type:
         return_type = 'any'
 
-    suffix = '): Observable<{}> {{'.format(return_type)
+    suffix = '): Observable<{} | HttpErrorResponse> {{'.format(return_type)
 
     line = prefix + ', '.join(args) + suffix
     if len(line) <= 120:
@@ -510,7 +515,7 @@ def write_request(request: Request, fid: TextIO) -> None:
         fid.write('\n')
 
         for i, arg in enumerate(args):
-            fid.write(2 * INDENT + arg)
+            fid.write(3 * INDENT + arg)
 
             if i < len(args) - 1:
                 fid.write(',\n')
@@ -589,13 +594,16 @@ def write_request(request: Request, fid: TextIO) -> None:
     else:
         fid.write(INDENT * 2 + 'let observable = this.http.{}(url);\n'.format(mth))
 
+    return_var = 'observable'
     if return_type != 'any':
-        fid.write(INDENT * 2 + 'observable = observable.map(res => (res.json() as {}));\n'.format(return_type))
+        fid.write(
+            INDENT * 2 + 'let typed_observable = observable.map(res => (res.json() as {}));\n'.format(return_type))
+        return_var = 'typed_observable'
 
     fid.write(INDENT * 2 + 'if (this.on_error) {\n')
-    fid.write(INDENT * 3 + 'observable = observable.catch(err => this.on_error(err))\n')
+    fid.write(INDENT * 3 + 'return {0}.catch(err => this.on_error(err))\n'.format(return_var))
     fid.write(INDENT * 2 + '}\n')
-    fid.write(INDENT * 2 + 'return observable;\n')
+    fid.write(INDENT * 2 + 'return {};\n'.format(return_var))
 
     fid.write(INDENT + '}')
 
@@ -610,17 +618,23 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
     """
     fid.write("@Injectable()\n")
     fid.write("export class RemoteCaller {\n")
-    fid.write(INDENT + "constructor(\n")
-    fid.write(INDENT * 2 + "private http: Http,\n")
-    fid.write(INDENT * 2 + "public url_prefix?: string,\n")
-    fid.write(INDENT * 2 + "public on_error?: (HttpErrorResponse) => Observable<HttpErrorResponse>) {\n")
-    fid.write(INDENT * 2 + 'this.url_prefix = url_prefix ? url_prefix : "";\n')
+    fid.write(INDENT + "public url_prefix: string;\n")
+    fid.write(INDENT + "public on_error: (error: HttpErrorResponse) => Observable<HttpErrorResponse>;\n")
+    fid.write("\n")
+    fid.write(INDENT + "constructor(private http: Http) {\n")
+    fid.write(INDENT * 2 + 'this.url_prefix = "";\n')
+    fid.write(INDENT * 2 + 'this.on_error = null;\n')
     fid.write(INDENT + '}\n\n')
+    fid.write(INDENT + "public set_url_prefix(url_prefix: string) {\n")
+    fid.write(INDENT * 2 + "this.url_prefix = url_prefix;\n")
+    fid.write(INDENT + '}\n\n')
+    fid.write(INDENT + "public set_on_error("
+              "on_error: (error: HttpErrorResponse) => Observable<HttpErrorResponse>) {\n")
+    fid.write(INDENT * 2 + "this.on_error = on_error;\n")
+    fid.write(INDENT + '}')
 
-    for i, request in enumerate(requests):
-        if i > 0:
-            fid.write('\n\n')
-
+    for request in requests:
+        fid.write('\n\n')
         write_request(request=request, fid=fid)
 
     fid.write("\n}")
