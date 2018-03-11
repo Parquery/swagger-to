@@ -520,10 +520,10 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
     if exp == float:
         if isinstance(obj, int):
             return float(obj)
-        
+
         if isinstance(obj, float):
             return obj
-        
+
         raise ValueError("Expected object of type int or float at {!r}, but got {}.".format(path, type(obj)))
 
     if exp in [bool, int, str, list, dict]:
