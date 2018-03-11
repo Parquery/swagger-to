@@ -619,7 +619,7 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
     fid.write("@Injectable()\n")
     fid.write("export class RemoteCaller {\n")
     fid.write(INDENT + "public url_prefix: string;\n")
-    fid.write(INDENT + "public on_error: (error: HttpErrorResponse) => Observable<HttpErrorResponse>;\n")
+    fid.write(INDENT + "public on_error: (error: HttpErrorResponse) => Observable<HttpErrorResponse> | null;\n")
     fid.write("\n")
     fid.write(INDENT + "constructor(private http: Http) {\n")
     fid.write(INDENT * 2 + 'this.url_prefix = "";\n')
@@ -629,7 +629,7 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
     fid.write(INDENT * 2 + "this.url_prefix = url_prefix;\n")
     fid.write(INDENT + '}\n\n')
     fid.write(INDENT + "public set_on_error("
-              "on_error: (error: HttpErrorResponse) => Observable<HttpErrorResponse>) {\n")
+              "on_error: (error: HttpErrorResponse) => Observable<HttpErrorResponse> | null) {\n")
     fid.write(INDENT * 2 + "this.on_error = on_error;\n")
     fid.write(INDENT + '}')
 
