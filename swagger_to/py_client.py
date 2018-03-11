@@ -270,6 +270,10 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 
         req.parameters.append(param)
 
+    # parameters are sorted so that first come the required ones; python requires the optional parameters to come
+    # at the end.
+    req.parameters.sort(key=lambda param: not param.required)
+
     for code, intermediate_resp in endpoint.responses.items():
         req.responses[code] = to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
 
@@ -779,9 +783,9 @@ def write_request(request: Request, fid: TextIO) -> None:
         param_type = type_expression(typedef=param.typedef, path=request.operation_id + '.' + param.name)
 
         if not param.required:
-            param_type = 'Optional[{}]'.format(param_type)
-
-        args.append('{}: {}'.format(param.name, param_type))
+            args.append('{}: Optional[{}] = None'.format(param.name, param_type))
+        else:
+            args.append('{}: {}'.format(param.name, param_type))
 
     line = prefix + ', '.join(args) + suffix
     if len(line) <= 80:
