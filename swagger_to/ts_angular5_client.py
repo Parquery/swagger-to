@@ -350,7 +350,8 @@ def write_header(fid: TextIO) -> None:
     fid.write("import { Injectable } from '@angular/core';\n"
               "import { Http } from '@angular/http';\n"
               "import { HttpErrorResponse } from '@angular/common/http';\n"
-              "import { Observable } from 'rxjs/Rx';\n\n")
+              "import { Observable } from 'rxjs/Rx';\n"
+              "import { RequestOptions } from '@angular/http';\n\n")
 
 
 def write_footer(fid: TextIO) -> None:
@@ -581,15 +582,18 @@ def write_request(request: Request, fid: TextIO) -> None:
     mth = request.method.lower()
     if request.body_parameter is not None:
         if request.body_parameter.required:
-            fid.write(INDENT * 2 + 'let observable = this.http.{}(url, JSON.stringify({}));\n'.format(
+            fid.write(INDENT * 2 + 'let observable = this.http.request(url, \n')
+            fid.write(INDENT * 3 + 'new RequestOptions({{method: "{0}", body: JSON.stringify({1})}}));\n'.format(
                 mth, request.body_parameter.name))
         else:
             fid.write(INDENT * 2 + 'let observable: Observable<any>;\n')
             fid.write(INDENT * 2 + 'if ({}) {{\n'.format(request.body_parameter.name))
-            fid.write(INDENT * 3 +
-                      'observable = this.http.{}(url, JSON.stringify({}));\n'.format(mth, request.body_parameter.name))
+            fid.write(INDENT * 3 + 'this.http.request(url, \n')
+            fid.write(INDENT * 4 + 'new RequestOptions({{method: "{0}", body: JSON.stringify({1})}}));\n'.format(
+                mth, request.body_parameter.name))
             fid.write(INDENT * 2 + '} else {\n')
-            fid.write(INDENT * 3 + 'observable = this.http.{}(url);\n'.format(mth))
+            fid.write(INDENT * 3 + 'observable = this.http.request(url, '
+                      'new RequestOptions({{method: "{0}"}}));\n'.format(mth))
             fid.write(INDENT * 2 + '}\n')
     else:
         fid.write(INDENT * 2 + 'let observable = this.http.{}(url);\n'.format(mth))
