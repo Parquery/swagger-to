@@ -661,7 +661,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
 def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     # yapf: disable
-    fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str) -> Any:
+    fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
     """
     Checks and converts the given object along the expected types to a JSON-able representation.
 
@@ -876,8 +876,13 @@ def write_request(request: Request, fid: TextIO) -> None:
     if request.query_parameters:
         fid.write(', params=params')
 
-    if request.body_parameter or request.formdata_parameters:
+    if request.body_parameter:
+        fid.write(', json=data')
+    elif request.formdata_parameters:
         fid.write(', data=data')
+    else:
+        # ignore the parameter which we don't know how to handle.
+        pass
 
     fid.write(', auth=self.auth)\n')
     fid.write(INDENT * 2 + 'with contextlib.closing(resp):\n')
