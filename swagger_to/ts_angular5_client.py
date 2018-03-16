@@ -82,6 +82,7 @@ class Property:
         self.name = ''
         self.description = ''
         self.typedef = None  # type: Optional[Typedef]
+        self.required = False
 
     def __str__(self) -> str:
         return '{}: {}'.format(self.name, self.typedef)
@@ -182,6 +183,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
             prop.description = intermediate_prop.description
             prop.name = intermediate_prop.name
             prop.typedef = to_typedef(intermediate_typedef=intermediate_prop.typedef)
+            prop.required = intermediate_prop.required
 
             typedef.properties[prop.name] = prop
     else:
@@ -439,8 +441,13 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
                 write_description(description=prop.description, indent=INDENT, fid=fid)
                 fid.write("\n")
 
-            fid.write(INDENT + '{}: {};\n'.format(
-                prop.name, type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))))
+            type_expr = type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
+
+            if not prop.required:
+                fid.write(INDENT + '{}?: {};\n'.format(prop.name, type_expr))
+            else:
+                fid.write(INDENT + '{}: {};\n'.format(prop.name, type_expr))
+
         fid.write("}")
     else:
         fid.write("type {} = {};".format(typedef.identifier, type_expression(typedef=typedef, path=typedef.identifier)))
