@@ -176,6 +176,9 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
             attr.classdef = typedef
 
             typedef.attributes[attr.name] = attr
+
+        typedef.attributes = collections.OrderedDict(
+            sorted(list(typedef.attributes.items()), key=lambda kv: not kv[1].required))
     else:
         raise NotImplementedError("Converting intermediate typedef to Typescript is not supported: {!r}".format(
             type(intermediate_typedef)))
@@ -349,7 +352,7 @@ def attribute_as_argument(attribute: Attribute) -> str:
     argtype = type_expression(typedef=attribute.typedef, path=attribute.classdef.identifier + "." + attribute.name)
 
     if not attribute.required:
-        return '{}: Optional[{}]'.format(attribute.name, argtype)
+        return '{}: Optional[{}] = None'.format(attribute.name, argtype)
 
     return '{}: {}'.format(attribute.name, argtype)
 
@@ -872,7 +875,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 
     fid.write('\n\n')
 
-    fid.write(INDENT * 2 + 'resp = requests.{}(url=url'.format(request.method))
+    fid.write(INDENT * 2 + 'resp = requests.request(method={!r}, url=url'.format(request.method))
     if request.query_parameters:
         fid.write(', params=params')
 
