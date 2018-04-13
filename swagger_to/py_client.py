@@ -477,8 +477,7 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
     fid.write('def new_{}() -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
-    fid.write(INDENT + '""" generates an instance of {} with the attributes set to the default values. """\n'.format(
-        classdef.identifier))
+    fid.write(INDENT + '""" generates a default instance of {}. """\n'.format(classdef.identifier))
 
     if not classdef.attributes:
         fid.write(INDENT + "return {}()".format(classdef.identifier))
@@ -488,7 +487,8 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
     suffix = ')'
     args = []  # type: List[str]
     for attr in classdef.attributes.values():
-        args.append('{}={}'.format(attr.name, default_attribute_value(typedef=attr.typedef)))
+        if attr.required:
+            args.append('{}={}'.format(attr.name, default_attribute_value(typedef=attr.typedef)))
 
     line = prefix + ', '.join(args) + suffix
     if len(line) <= 80:
