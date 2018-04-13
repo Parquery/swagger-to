@@ -127,6 +127,11 @@ def parse_typedef(adict: MutableMapping[str, Any]) -> Tuple[Typedef, List[str]]:
 
     typedef.required = adict.get('required', [])
 
+    # check that all the required are well-defined
+    for prop_name in typedef.required:
+        if prop_name not in typedef.properties:
+            errors.append("required property not defined: {!r}".format(prop_name))
+
     if 'additionalProperties' in adict:
         add_prop_dict = adict['additionalProperties']
         add_prop_typedef, add_prop_errors = parse_typedef(adict=add_prop_dict)
