@@ -5,6 +5,7 @@ Runs precommit checks on the repository.
 import argparse
 import concurrent.futures
 import hashlib
+import os
 import pathlib
 import subprocess
 import sys
@@ -46,7 +47,7 @@ class Hasher:
     def hash_differs(self, path: pathlib.Path) -> bool:
         """
         :param path: to the source file
-        :return: True if the hash of the content differs to the previous hashing.
+        :return: True if the hash of the content differs to one of the previous hashings.
         """
         hash_dir = self.__hash_dir(path=path)
 
@@ -75,13 +76,13 @@ class Hasher:
         pth.write_text('passed')
 
 
-def check(path: pathlib.Path, py_dir: pathlib.Path, force: bool) -> Union[None, str]:
+def check(path: pathlib.Path, py_dir: pathlib.Path, overwrite: bool) -> Union[None, str]:
     """
     Runs all the checks on the given file.
 
     :param path: to the source file
     :param py_dir: path to the source files
-    :param force: if True, overwrites the source file in place instead of reporting that it was not well-formatted.
+    :param overwrite: if True, overwrites the source file in place instead of reporting that it was not well-formatted.
     :return: None if all checks passed. Otherwise, an error message.
     """
     style_config = py_dir / 'style.yapf'
@@ -89,7 +90,7 @@ def check(path: pathlib.Path, py_dir: pathlib.Path, force: bool) -> Union[None, 
     report = []
 
     # yapf
-    if not force:
+    if not overwrite:
         formatted, _, changed = yapf.yapflib.yapf_api.FormatFile(
             filename=str(path), style_config=str(style_config), print_diff=True)
 
@@ -99,10 +100,14 @@ def check(path: pathlib.Path, py_dir: pathlib.Path, force: bool) -> Union[None, 
         yapf.yapflib.yapf_api.FormatFile(filename=str(path), style_config=str(style_config), in_place=True)
 
     # mypy
+    env = os.environ.copy()
+    env['PYTHONPATH'] = ":".join([py_dir.as_posix(), env.get("PYTHONPATH", "")])
+
     proc = subprocess.Popen(
         ['mypy', str(path), '--ignore-missing-imports'],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=env,
         universal_newlines=True)
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
@@ -132,14 +137,17 @@ def main() -> int:
     # pylint: disable=too-many-locals
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--force",
+        "--overwrite",
         help="Overwrites the unformatted source files with the well-formatted code in place. "
         "If not set, an exception is raised if any of the files do not conform to the style guide.",
         action='store_true')
+
+    parser.add_argument("--all", help="checks all the files even if they didn't change", action='store_true')
+
     args = parser.parse_args()
 
-    force = args.force
-    assert isinstance(force, bool)
+    overwrite = bool(args.overwrite)
+    check_all = bool(args.all)
 
     py_dir = pathlib.Path(__file__).parent
 
@@ -148,28 +156,32 @@ def main() -> int:
 
     hasher = Hasher(source_dir=py_dir, hash_dir=hash_dir)
 
+    # yapf: disable
     pths = sorted(
-        list(py_dir.glob("*.py")) + list((py_dir / 'swagger_to').glob("*.py")) + list(
-            (py_dir / 'tests').glob("*.py")) + list((py_dir / 'bin').glob("*.py")))
+        list(py_dir.glob("*.py")) +
+        list((py_dir / 'swagger_to').glob("*.py")) +
+        list((py_dir / 'tests').glob("*.py")) +
+        list((py_dir / 'bin').glob("*.py")))
+    # yapf: enable
 
     # see which files changed:
-    changed_pths = []  # type: List[pathlib.Path]
-    for pth in pths:
-        if hasher.hash_differs(path=pth):
-            changed_pths.append(pth)
+    pending_pths = []  # type: List[pathlib.Path]
 
-    if len(changed_pths) == 0:
-        print("No file changed since the last pre-commit check.")
-        return 0
+    if check_all:
+        pending_pths = pths
+    else:
+        for pth in pths:
+            if hasher.hash_differs(path=pth):
+                pending_pths.append(pth)
 
-    print("There are {} file(s) that need to be checked...".format(len(changed_pths)))
+    print("There are {} file(s) that need to be individually checked...".format(len(pending_pths)))
 
     success = True
 
     futures_paths = []  # type: List[Tuple[concurrent.futures.Future, pathlib.Path]]
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        for pth in changed_pths:
-            future = executor.submit(fn=check, path=pth, py_dir=py_dir, force=force)
+        for pth in pending_pths:
+            future = executor.submit(fn=check, path=pth, py_dir=py_dir, overwrite=overwrite)
             futures_paths.append((future, pth))
 
         for future, pth in futures_paths:
