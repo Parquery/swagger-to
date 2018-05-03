@@ -3,14 +3,35 @@ Swagger-to
 
 Generates server and client code from Swagger (OpenAPI 2.0) specification; written in Python 3.
 
-The following tools could not satisfy our requirements:
+Supported languages:
 
-* https://github.com/go-swagger/go-swagger produces code which looks a bit too clumsy for us,
-* https://github.com/swagger-api/swagger-codegen is written in Java and hence hard for us to extend and customize.
+====================    ======  ======
+Language                Client  Server
+====================    ======  ======
+Go                              x
+Python                  x
+Typescript + Angular    x
+====================    ======  ======
 
 Due to the lack of time, we can not cover all of the Swagger specification (please see the source code for the details
 or write us a message), but the current generators work well for all of our simple and not-so-simple use cases. We
 believe they can also cover most of the other people's needs as well.
+
+Related Projects
+================
+We list here some of the related projects and comment why they did not satisfy our requirements.
+
+* https://github.com/go-swagger/go-swagger produces code which looked a bit too clumsy for us.
+* https://github.com/swagger-api/swagger-codegen written in Java and hence hard for us to extend and customize.
+* https://grpc.io/ gRPC is great when remote procedure calls are all you need. However, it requires you to use HTTP 2,
+  and we found it hard to integrate with widely-used browsers as clients.
+
+  Additionally, streaming files was not directly supported (see https://github.com/grpc/grpc-go/issues/414).
+* https://github.com/grpc-ecosystem/grpc-gateway provides a JSON gateway to gRPC. We found that it added an additional
+  layer of complexity (especially when the number of client/server pairs grow), and preferred to have a simple solution
+  with a single code generation tool.
+* https://github.com/twitchtv/twirp a (better?) alternative if you only want to generate remote procedure calls based on
+  JSON.
 
 Installation
 ============
