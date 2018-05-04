@@ -1,7 +1,19 @@
 Swagger-to
 ==========
 
-Generates server and client code from Swagger (OpenAPI 2.0) specification; written in Python 3.
+Swagger-to generates server and client code from Swagger (OpenAPI 2.0) specification; written in Python 3.
+
+We wanted a code generator that is 1) easy to write, maintain and extend and that 2) produces readable code.
+
+To achieve this, we wrote the tool in Python which we found to be far superior for code generation compared with other
+languages such as Go and Java. Since the original Swagger specification can become quite complex, we introduce an
+intermediate representation layer after parsing the specification and before generating the code. This layer allowed us
+to substantially simplify the generation code since it reduced the impedance mismatch by operating on abstract
+constructs (such as Maps) instead of directly referring to "raw" Swagger constructs (such as additional properties of
+an object).
+
+The underlying language (Python), readable generated code and the intermediate representation layer are the two main
+differentiators to other similar code generation projects.
 
 Supported languages:
 
@@ -14,7 +26,7 @@ Typescript + Angular    x
 ====================    ======  ======
 
 Due to the lack of time, we can not cover all of the Swagger specification (please see the source code for the details
-or write us a message), but the current generators work well for all of our simple and not-so-simple use cases. We
+or write us a message). The current generators work well for all of our simple and not-so-simple use cases. We
 believe they can also cover most of the other people's needs as well.
 
 Related Projects
@@ -31,7 +43,9 @@ We list here some of the related projects and comment why they did not satisfy o
   layer of complexity (especially when the number of client/server pairs grow), and preferred to have a simple solution
   with a single code generation tool.
 * https://github.com/twitchtv/twirp a (better?) alternative if you only want to generate remote procedure calls based on
-  JSON.
+  JSON using protocol buffers to specify the API. It forces you to stick to its representation, though, and does not
+  allow you to use an arbitrary Swagger specification. This is problematic when the interface is imposed on you from
+  outside (*e.g.*, by customers).
 
 Installation
 ============
