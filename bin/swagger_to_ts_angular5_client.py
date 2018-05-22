@@ -48,7 +48,7 @@ def main() -> None:
     with open(out_path, 'wt') as fid:
         swagger_to.ts_angular5_client.write_client_ts(typedefs=ts_typedefs, requests=ts_requests, fid=fid)
 
-    print("Generated Typescript + Angular5 client code in {}".format(out_path))
+    print("Generated Typescript + Angular5 client code in: {}".format(out_path))
 
 
 if __name__ == "__main__":

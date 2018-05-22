@@ -55,7 +55,7 @@ def main() -> None:
         swagger_to.py_client.write_client_py(
             service_name=swagger.name, typedefs=py_typedefs, requests=py_requests, fid=fid)
 
-    print("Generated python client code in {}".format(out_path))
+    print("Generated python client code in: {}".format(out_path))
 
 
 if __name__ == "__main__":
