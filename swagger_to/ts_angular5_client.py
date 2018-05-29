@@ -496,6 +496,8 @@ def write_request(request: Request, fid: TextIO) -> None:
     description = 'Sends a request to the endpoint: {} {}'.format(request.path, request.method)
     if request.description:
         description += '\n\n' + request.description
+    write_description(description, INDENT, fid)
+    fid.write('\n')
 
     prefix = INDENT + 'public {}('.format(request.operation_id)
 
