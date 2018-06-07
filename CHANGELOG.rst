@@ -1,3 +1,7 @@
+1.1.1
+=====
+* default parameters values explicitly not supported.
+
 1.1.0
 =====
 * swagger-to-go-server does not generate code to extract the parameters from form data.
