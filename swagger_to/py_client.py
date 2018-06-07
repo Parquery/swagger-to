@@ -153,7 +153,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
         elif intermediate_typedef.type == 'string':
             typedef = Strdef()
         else:
-            raise NotImplementedError("Converting intermediate type to Typescript is not supported: {}".format(
+            raise NotImplementedError("Converting intermediate type to Python is not supported: {}".format(
                 intermediate_typedef.type))
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
@@ -180,7 +180,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
         typedef.attributes = collections.OrderedDict(
             sorted(list(typedef.attributes.items()), key=lambda kv: not kv[1].required))
     else:
-        raise NotImplementedError("Converting intermediate typedef to Typescript is not supported: {!r}".format(
+        raise NotImplementedError("Converting intermediate typedef to Python is not supported: {!r}".format(
             type(intermediate_typedef)))
 
     typedef.description = intermediate_typedef.description
@@ -268,7 +268,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
         elif intermediate_param.in_what == 'formdata':
             req.formdata_parameters.append(param)
         else:
-            raise NotImplementedError("Unsupported parameter 'in' to Typescript translation: {}".format(
+            raise NotImplementedError("Unsupported parameter 'in' to Python translation: {}".format(
                 intermediate_param.in_what))
 
         req.parameters.append(param)
