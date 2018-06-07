@@ -13,8 +13,8 @@ from typing import List, MutableMapping, Union, Any, Optional  # pylint: disable
 
 import swagger_to.swagger
 
-# see https://swagger.io/docs/specification/data-models/data-types/ for a list of types
-PRIMITIVE_SWAGGER_TYPES = ['string', 'number', 'integer', 'boolean']
+# see https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md for a list of types
+PRIMITIVE_SWAGGER_TYPES = ['string', 'number', 'integer', 'boolean', 'file']
 
 
 class Typedef:
@@ -377,7 +377,7 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
 
     param = Parameter()
     param.typedef = typedef
-    param.in_what = original_param.in_what.lower()
+    param.in_what = original_param.in_what
     param.name = original_param.name
     param.required = original_param.required
 

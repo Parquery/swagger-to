@@ -105,6 +105,21 @@ The handler interface is given in ``handler.go``. You need to implement the hand
 In face of Swagger (*i.e.* API) changes, our workflow includes regenerating the code and using a diff tool
 like ``meld`` to sync the "old" ``handler_impl.go`` with the new ``handler_impl.sample.go``.
 
+Pecularities
+~~~~~~~~~~~~
+* **parameters**. We decided to generate the code to extract the parameters only from queries, bodies and paths.
+
+  It seemed difficult to automatically generate the code to extract form data arguments which would cover all the edge
+  cases (such as files and duplicate entries). We still generate the handler function, but leave it to the programmer
+  to extract these arguments manually from the request.
+
+  Due to lack of time, we did not implement header and cookie parameters. Contributions for these features are highly
+  welcome!
+
+* **response**. The auto-generated code does not check that the response conforms to the specification. We found such
+  checks to be unnecessarily constraining and almost impossible to implement for all the use cases.
+
+
 Python Client
 -------------
 To generate a Python 3 client from a Swagger specification at ``/some/path/swagger.yaml``, invoke:

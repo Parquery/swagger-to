@@ -457,6 +457,17 @@ def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappin
 
     # parameters to arguments
     for param in endpoint.parameters:
+        if param.in_what == 'formData':
+            # no code is generated for the parameters in the form data since there are so many edge cases
+            # which we possibly can't cover.
+            continue
+        elif param.in_what in ['query', 'body', 'path']:
+            pass
+        else:
+            raise NotImplementedError(
+                "Handling of parameters in {} is not implemented yet: end point {} {}, parameter {}.".format(
+                    param.in_what, endpoint.path, endpoint.method, param.name))
+
         argument = Argument()
         argument.typedef = anonymous_or_get_typedef(intermediate_typedef=param.typedef, typedefs=typedefs)
         argument.required = param.required
@@ -485,6 +496,9 @@ def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappin
 
         elif argument.in_what == 'path':
             route.wrapper.path_arguments.append(argument)
+
+        else:
+            raise AssertionError("Unexpected argument given in: {}".format(argument.in_what))
 
         route.handler.arguments.append(argument)
 
