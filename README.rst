@@ -25,9 +25,17 @@ Python                  x
 Typescript + Angular    x
 ====================    ======  ======
 
-Due to the lack of time, we can not cover all of the Swagger specification (please see the source code for the details
-or write us a message). The current generators work well for all of our simple and not-so-simple use cases. We
-believe they can also cover most of the other people's needs as well.
+Missing Features
+----------------
+Due to the lack of time, we can not cover all of the Swagger specification. The current generators work well for all of
+our simple and not-so-simple use cases. We believe they can also cover most of the other people's needs as well.
+
+Here is a non-comprehensive list.
+
+* **parameters**. Most generators cover only query, body and path parameters. We do not support default values for the
+  parameters due to impedance mismatch between JSON and the target languages.
+
+* **responses**. Responses from the server are not validated due to the complexity and run-time overhead.
 
 Related Projects
 ================

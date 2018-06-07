@@ -166,7 +166,6 @@ def parse_parameter(adict: MutableMapping[str, Any]) -> Tuple[Parameter, List[st
     :param adict: to be parsed
     :return: parameter, list of errors
     """
-
     param = Parameter()
     param.name = adict.get('name', '')
     param.in_what = adict.get('in', '')
@@ -190,6 +189,9 @@ def parse_parameter(adict: MutableMapping[str, Any]) -> Tuple[Parameter, List[st
 
     if param.in_what == 'body' and param.schema is None:
         errors.append('parameter in body, but no schema')
+
+    if 'default' in adict:
+        errors.append('default values for parameters are not supported')
 
     return param, errors
 
