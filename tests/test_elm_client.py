@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+"""
+Tests the Elm client code generation.
+"""
 import io
 import os
 import pathlib
 # pylint: disable=missing-docstring
 import unittest
+import json
 from typing import TextIO, cast
 
 import swagger_to.elm_client
@@ -35,8 +39,49 @@ class TestElmClient(unittest.TestCase):
 
         got = buf.getvalue()
 
-        expected = (script_dir / "expected" / "client.elm").read_text()
+        expected = (script_dir / "expected" / "elm" / "Client.elm").read_text()
         self.assertEqual(expected, got)
+
+
+class TestElmPackage(unittest.TestCase):
+    def test_that_it_works(self):
+        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
+        swagger_path = script_dir / "swagger.yaml"
+
+        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
+        if errs:
+            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+
+        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
+        elm_typedefs = swagger_to.elm_client.to_typedefs(intermediate_typedefs=intermediate_typedefs)
+
+        buf = io.StringIO()
+        buffid = cast(TextIO, buf)
+        elm_package_json = swagger_to.elm_client.elm_package_json(typedefs=elm_typedefs)
+        json.dump(elm_package_json, fp=buffid, indent=2, sort_keys=False)
+
+        got = buf.getvalue()
+
+        expected = (script_dir / "expected" / "elm" / "elm-package.sample.json").read_text()
+        self.assertEqual(expected, got)
+
+
+class TestEscapeElmString(unittest.TestCase):
+    def test_that_it_works(self):
+        expected = "some totally normal string"
+        self.assertEqual(swagger_to.elm_client.escape_string(r"some totally normal string"), expected)
+
+        expected = 'some totally \\t \\t \\"normal\\" string'
+        self.assertEqual(swagger_to.elm_client.escape_string(r'some totally \t \t \"normal\" string'), expected)
+
+        expected = "some totally\\n normal string\\t"
+        self.assertEqual(swagger_to.elm_client.escape_string(r"some totally\n normal string\t"), expected)
+
+        expected = "\\nsome\\r\\r totally normal string"
+        self.assertEqual(swagger_to.elm_client.escape_string(r"\nsome\r\r totally normal string"), expected)
+
+        expected = "\\\\\\\\\\\\some \\'totally normal\\' string"
+        self.assertEqual(swagger_to.elm_client.escape_string(r"\\\\\\some \'totally normal\' string"), expected)
 
 
 if __name__ == '__main__':

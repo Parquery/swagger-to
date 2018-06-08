@@ -546,8 +546,7 @@ def write_request(request: Request, fid: TextIO) -> None:
         else:
             fid.write(INDENT * 2 + 'let url = this.url_prefix;')
             for i, tkn in enumerate(token_pth.tokens):
-                if i > 0:
-                    fid.write("\n")
+                fid.write("\n")
 
                 if i in token_pth.token_index_to_parameter:
                     param_name = token_pth.token_index_to_parameter[i]

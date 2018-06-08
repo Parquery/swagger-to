@@ -20,6 +20,7 @@ Supported languages:
 ====================    ======  ======
 Language                Client  Server
 ====================    ======  ======
+Elm                     x
 Go                              x
 Python                  x
 Typescript + Angular    x
@@ -72,6 +73,34 @@ Usage
 =====
 To generate code, you need to invoke one of the ``swagger_to_*.py`` scripts. If the generated code exists, you need to
 specify ``--force`` command-line argument in order to overwrite the existing files.
+
+Elm Client
+----------
+To generate an Elm client from a Swagger specification at ``/some/path/swagger.yaml``, invoke:
+
+.. code-block:: bash
+
+    swagger_to_elm_client.py \
+        --swagger_path /some/path/swagger.yaml \
+        --outdir /some/elm/path/src/your-client-directory
+
+The generated code will have the following structure in ``/some/elm/path/src/your-client-directory``:
+
+===========================  ========================================================================================
+File                         Description
+===========================  ========================================================================================
+``Client.elm``               Elm Client, containing Models, Encoders, Decoders and Http Requests.
+``elm-package.sample.json``  The Elm JSON Package containing the libraries used in Client.elm.
+===========================  ========================================================================================
+
+Three non-standard libraries are used in the Client:
+
+* "NoRedInk/elm-decode-pipeline" is used to decode JSON objects in a more scalable way than the one supported by the
+  elm-lang libraries;
+* "elm-community/json-extra" is needed to encode Dict variables;
+* "Bogdanp/elm-querystring" is used to deal with queries in URLs;
+* "gilbertkennen/bigint" is used to have int64s in Elm, which by default only has int32s.
+
 
 Go Server
 ---------
