@@ -453,7 +453,7 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
     endpt.path = pth
     endpt.method = method.identifier
     endpt.operation_id = method.operation_id
-    endpt.no_go = method.x_pqry_no_go
+    endpt.no_go = method.x_swagger_to_skip
     endpt.description = method.description
     endpt.consumes = method.consumes
     endpt.produces = method.produces
@@ -485,7 +485,7 @@ def to_endpoints(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[s
     endpoints = []  # type: List[Endpoint]
     for path in swagger.paths.values():
         for method in path.methods:
-            if not method.x_pqry_no_go:
+            if not method.x_swagger_to_skip:
                 endpoint = to_endpoint(method=method, typedefs=typedefs, params=params)
                 endpoints.append(endpoint)
 

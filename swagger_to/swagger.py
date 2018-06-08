@@ -81,7 +81,7 @@ class Method:
         self.path = None  # type: Optional[Path]
         self.produces = []  # type: List[str]
         self.consumes = []  # type: List[str]
-        self.x_pqry_no_go = False
+        self.x_swagger_to_skip = False
 
         # original specification dictionary, if available; not deep-copied, do not modify
         self.adict = collections.OrderedDict()  # type: MutableMapping[str, Any]
@@ -237,7 +237,7 @@ def parse_method(adict: MutableMapping[str, Any]) -> Tuple[Method, List[str]]:
 
     mth.tags = adict.get('tags', [])
     mth.description = adict.get('description', '').strip()
-    mth.x_pqry_no_go = adict.get('x-pqry-no-go', False)
+    mth.x_swagger_to_skip = adict.get('x-swagger-to-skip', False)
 
     mth.produces = adict.get('produces', [])
     mth.consumes = adict.get('consumes', [])
