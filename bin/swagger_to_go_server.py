@@ -74,7 +74,7 @@ def main() -> None:
     with open(pth, 'wt') as fid:
         swagger_to.go_server.write_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs, fid=fid)
 
-    print("Generated go code in {}".format(args.outdir))
+    print("Generated go server code in: {}".format(args.outdir))
 
 
 if __name__ == "__main__":

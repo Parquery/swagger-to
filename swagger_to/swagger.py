@@ -1,9 +1,11 @@
 """
 Swagger representation
 """
+import pathlib
+
 import collections
 import sys
-from typing import List, Optional, MutableMapping, Any, Tuple  # pylint: disable=unused-import
+from typing import List, Optional, MutableMapping, Any, Tuple, Union  # pylint: disable=unused-import
 
 try:
     import yaml
@@ -360,12 +362,12 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     return swagger, errors
 
 
-def parse_yaml_file(path: str) -> Tuple[Swagger, List[str]]:
+def parse_yaml_file(path: Union[str, pathlib.Path]) -> Tuple[Swagger, List[str]]:
     """
     Parses the Swagger specification from the given file.
 
     :param path: to the .yaml file
     :return: Swagger specification, list of errors
     """
-    with open(path, 'rt') as fid:
+    with open(str(path), 'rt') as fid:
         return parse_yaml(stream=fid)
