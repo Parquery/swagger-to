@@ -1,1 +1,317 @@
-TODO: to be implemented
+# this is an example of the Uber API (taken from https://github.com/OAI/OpenAPI-Specification and then customized)
+swagger: '2.0'
+info:
+  title: Uber API
+  description: Move your app forward with the Uber API
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: uber
+paths:
+  /products:
+    get:
+      operationId: products
+      tags:
+        - uber
+      description: |
+        The Products endpoint returns information about the Uber products offered at a given location.
+      parameters:
+        - name: latitude
+          in: query
+          description: Latitude component of location.
+          required: true
+          type: number
+          format: double
+        - name: longitude
+          in: query
+          description: Longitude component of location.
+          required: true
+          type: number
+          format: double
+      produces:
+        - application/json
+      responses:  
+        200:
+          description: An array of products
+          schema:
+            $ref: '#/definitions/ProductMap'
+        default:
+          description: Unexpected error
+  /estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}:
+    get:
+      operationId: estimates_price
+      tags:
+        - uber
+      description: |
+        The Price Estimates endpoint returns an estimated price range for each product offered at a given
+        location. The price estimate is provided as a formatted string with the full price range and the localized
+        currency symbol.
+      parameters:
+        - name: start_latitude
+          in: path
+          description: Latitude component of start location.
+          required: true
+          type: number
+          format: double
+        - name: start_longitude
+          in: path
+          description: Longitude component of start location.
+          required: true
+          type: number
+          format: double
+        - name: end_latitude
+          in: path
+          description: Latitude component of end location.
+          required: true
+          type: number
+          format: double
+        - name: end_longitude
+          in: path
+          description: Longitude component of end location.
+          required: true
+          type: number
+          format: double
+        - name: max_lines
+          in: query
+          description: A maximum number of lines in the produced json.
+          required: false
+          type: number
+          format: int32
+      produces:
+        - application/json
+      responses:
+        200:
+          description: An array of price estimates by product
+          schema:
+            $ref: '#/definitions/PriceEstimateArray'
+        default:
+          description: Unexpected error
+  /estimates/time:
+    get:
+      operationId: estimates_time
+      tags:
+        - uber
+      description: The Time Estimates endpoint returns ETAs for all products.
+      parameters:
+        - name: start_latitude
+          in: query
+          description: Latitude component of start location.
+          required: true
+          type: number
+          format: double
+        - name: start_longitude
+          in: query
+          description: Longitude component of start location.
+          required: true
+          type: number
+          format: double
+        - name: customer_uuid
+          in: query
+          type: string
+          format: uuid
+          description: Unique customer identifier to be used for experience customization.
+        - name: product_id
+          in: query
+          type: string
+          description: Unique identifier representing a specific product for a given latitude & longitude.
+      produces:
+        - application/json
+      responses:
+        200:
+          description: An array of products
+          schema:
+            $ref: '#/definitions/ProductMap'
+        default:
+          description: Unexpected error
+  /me:
+    patch:
+      operationId: update_me
+      tags:
+        - uber
+      description: Update an User Profile.
+      consumes:
+        -  application/json
+      produces:
+        -  application/json
+      parameters:
+        - name: update_user
+          in: body
+          description: profile of a user to update
+          required: true
+          schema:
+            $ref: '#/definitions/Profile'
+      responses:
+        200:
+          description: Previous profile information for a user
+          schema:
+            $ref: '#/definitions/Profile'
+        default:
+          description: Unexpected error
+  /history:
+    get:
+      operationId: history
+      tags:
+        - uber
+      description: |
+        The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
+        include pickup locations and times, dropoff locations and times, the distance of past requests, and
+        information about which products were requested.
+      parameters:
+        - name: offset
+          in: query
+          type: integer
+          format: int32
+          description: Offset the list of returned results by this amount. Default is zero.
+        - name: limit
+          in: query
+          type: integer
+          format: int32 
+          description: Number of items to retrieve. Default is 5, maximum is 100.
+      responses:
+        200:
+          description: History information for the given user
+          schema:
+            $ref: '#/definitions/Activities'
+        default:
+          description: Unexpected error
+
+definitions:
+  Product:
+    type : object
+    properties:
+      product_id:
+        type: string
+        description: |
+          Unique identifier representing a specific product for a given latitude & longitude.
+          For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.
+      desc:
+        type: string
+        description: Description of product.
+      display_name:
+        type: string
+        description: Display name of product.
+      capacity:
+        type: integer
+        format: int32
+        description: Capacity of product. For example, 4 people.
+      image:
+        type: string
+        description: Image URL representing the product.
+    required:
+      - product_id
+      - desc
+      - display_name
+      - capacity
+      - image
+  ProductList:
+    type : object
+    properties:
+      products:
+        description: Contains the list of products
+        type: array
+        items: 
+          $ref: "#/definitions/Product"
+    required:
+      - products
+  ProductMap:
+    type : object
+    additionalProperties:
+      $ref: "#/definitions/Product"
+  PriceEstimate:
+    type : object
+    properties:
+      product_id:
+        type: string
+        description: |
+          Unique identifier representing a specific product for a given latitude & longitude. For example,
+          uberX in San Francisco will have a different product_id than uberX in Los Angeles
+      currency_code:
+        type: string
+        description: "[ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code."
+      display_name:
+        type: string
+        description: Display name of product.
+      estimate: 
+        type: string
+        description: |
+          Formatted string of estimate in local currency of the start location.
+          Estimate could be a range, a single number (flat rate) or "Metered" for TAXI.
+      low_estimate:
+        type: number
+        format: double
+        description: Lower bound of the estimated price.
+      high_estimate:
+        type: number
+        format: double
+        description: Upper bound of the estimated price.
+      surge_multiplier:
+        type: number
+        format: double
+        description: |
+          Expected surge multiplier. Surge is active if surge_multiplier is greater than 1.
+          Price estimate already factors in the surge multiplier.
+    required:
+      - product_id
+      - currency_code
+      - display_name
+      - estimate
+  PriceEstimateArray:
+    type : array
+    items:
+      $ref: "#/definitions/Product"
+  Profile:
+    type : object
+    properties:
+      first_name:
+        type: string
+        description: First name of the Uber user.
+      last_name:
+        type: string
+        description: Last name of the Uber user.
+      email:
+        type: string
+        description: Email address of the Uber user
+      picture:
+        type: string
+        description: Image URL of the Uber user.
+      promo_code:
+        type: string
+        description: Promo code of the Uber user.
+    required:
+      - last_name
+      - email
+      - picture
+  Activity:
+    type : object
+    properties:
+      uuid:
+        type: string
+        description: Unique identifier for the activity
+    required:
+      - uuid
+  Activities:
+    type : object
+    properties:
+      offset:
+        type: integer
+        format: int32
+        description: Position in pagination.
+      limit:
+        type: integer
+        format: int32
+        description: Number of items to retrieve (100 max).
+      count:
+        type: integer
+        format: int64
+        description: Total number of items available.
+      history:
+        type: array
+        items:
+          $ref: '#/definitions/Activity'
+    required:
+      - offset
+      - limit
+      - count
+      - history
