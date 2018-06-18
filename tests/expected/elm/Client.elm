@@ -84,12 +84,12 @@ type alias PriceEstimate =
     -- Estimate could be a range, a single number (flat rate) or "Metered" for TAXI.
     , estimate : String
     -- Lower bound of the estimated price.
-    , lowEstimate : Maybe Float
+    , lowEstimate : Maybe (Float)
     -- Upper bound of the estimated price.
-    , highEstimate : Maybe Float
+    , highEstimate : Maybe (Float)
     -- Expected surge multiplier. Surge is active if surge_multiplier is greater than 1.
     -- Price estimate already factors in the surge multiplier.
-    , surgeMultiplier : Maybe Float
+    , surgeMultiplier : Maybe (Float)
     }
 
 
@@ -99,7 +99,7 @@ type alias PriceEstimateArray =
 
 type alias Profile = 
     -- First name of the Uber user.
-    { firstName : Maybe String
+    { firstName : Maybe (String)
     -- Last name of the Uber user.
     , lastName : String
     -- Email address of the Uber user
@@ -107,7 +107,7 @@ type alias Profile =
     -- Image URL of the Uber user.
     , picture : String
     -- Promo code of the Uber user.
-    , promoCode : Maybe String
+    , promoCode : Maybe (String)
     }
 
 
@@ -161,9 +161,9 @@ encodePriceEstimate aPriceEstimate =
         , ( "currency_code", Json.Encode.string <| aPriceEstimate.currencyCode )
         , ( "display_name", Json.Encode.string <| aPriceEstimate.displayName )
         , ( "estimate", Json.Encode.string <| aPriceEstimate.estimate )
-        , ( "low_estimate", Json.Encode.Extra.maybe Json.Encode.float <| aPriceEstimate.lowEstimate )
-        , ( "high_estimate", Json.Encode.Extra.maybe Json.Encode.float <| aPriceEstimate.highEstimate )
-        , ( "surge_multiplier", Json.Encode.Extra.maybe Json.Encode.float <| aPriceEstimate.surgeMultiplier )
+        , ( "low_estimate", Json.Encode.Extra.maybe (Json.Encode.float) <| aPriceEstimate.lowEstimate )
+        , ( "high_estimate", Json.Encode.Extra.maybe (Json.Encode.float) <| aPriceEstimate.highEstimate )
+        , ( "surge_multiplier", Json.Encode.Extra.maybe (Json.Encode.float) <| aPriceEstimate.surgeMultiplier )
         ]
 
 
@@ -175,11 +175,11 @@ encodePriceEstimateArray aPriceEstimateArray =
 encodeProfile : Profile -> Json.Encode.Value
 encodeProfile aProfile =
     Json.Encode.object
-        [ ( "first_name", Json.Encode.Extra.maybe Json.Encode.string <| aProfile.firstName )
+        [ ( "first_name", Json.Encode.Extra.maybe (Json.Encode.string) <| aProfile.firstName )
         , ( "last_name", Json.Encode.string <| aProfile.lastName )
         , ( "email", Json.Encode.string <| aProfile.email )
         , ( "picture", Json.Encode.string <| aProfile.picture )
-        , ( "promo_code", Json.Encode.Extra.maybe Json.Encode.string <| aProfile.promoCode )
+        , ( "promo_code", Json.Encode.Extra.maybe (Json.Encode.string) <| aProfile.promoCode )
         ]
 
 

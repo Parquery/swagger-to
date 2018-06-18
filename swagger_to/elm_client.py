@@ -479,7 +479,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
             type_expr = type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
             camel_case_name = swagger_to.camel_case(identifier=prop.name)
             if not prop.required:
-                fid.write(INDENT + prefix + '{} : Maybe {}\n'.format(camel_case_name, type_expr))
+                fid.write(INDENT + prefix + '{} : Maybe ({})\n'.format(camel_case_name, type_expr))
             else:
                 fid.write(INDENT + prefix + '{} : {}\n'.format(camel_case_name, type_expr))
             prefix = ', '
@@ -510,10 +510,12 @@ def write_encoder(typedef: Typedef, fid: TextIO) -> None:
         for prop in typedef.properties.values():
             fid.write(prefix + '( "{}", '.format(swagger_to.snake_case(identifier=prop.name)))
 
-            if not prop.required:
-                fid.write('Json.Encode.Extra.maybe ')
             encoder = type_encoder(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
-            fid.write('{} <| {}.{} )\n'.format(encoder, obj_name, swagger_to.camel_case(identifier=prop.name)))
+            if not prop.required:
+                fid.write('Json.Encode.Extra.maybe ({}) '.format(encoder))
+            else:
+                fid.write('{} '.format(encoder))
+            fid.write('<| {}.{} )\n'.format(obj_name, swagger_to.camel_case(identifier=prop.name)))
             prefix = 2 * INDENT + ', '
 
         fid.write(2 * INDENT + "]")
