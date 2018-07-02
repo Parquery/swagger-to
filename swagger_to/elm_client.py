@@ -48,13 +48,6 @@ class Intdef(Typedef):
     pass
 
 
-class BigIntdef(Typedef):
-    """
-    Represents Elm BigInts.
-    """
-    pass
-
-
 class Floatdef(Typedef):
     """
     Represents Elm floating-point numbers.
@@ -173,10 +166,8 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
         if intermediate_typedef.type == 'boolean':
             typedef = Booldef()
         elif intermediate_typedef.type == "integer":
-            if intermediate_typedef.format == "" or intermediate_typedef.format == "int32":
+            if intermediate_typedef.format in ["", "int32", "int64"]:
                 typedef = Intdef()
-            elif intermediate_typedef.format == "int64":
-                typedef = BigIntdef()
             else:
                 raise NotImplementedError("Unhandled format of a swagger intermediate type 'integer': {}".format(
                     intermediate_typedef.format))
@@ -236,45 +227,6 @@ def to_typedefs(
         typedefs[typedef.identifier] = typedef
 
     return typedefs
-
-
-def typedefs_contain_int64(typedefs: MutableMapping[str, Typedef]) -> bool:
-    """
-
-    :param typedefs: the set of translated type definitions
-    :return: True if typedefs contain "BigIntType", False otherwise
-    """
-
-    for typedef in typedefs.values():
-        if typedef_contains_int64(typedef=typedef):
-            return True
-
-    return False
-
-
-def typedef_contains_int64(typedef: Typedef) -> bool:
-    """
-
-    :param typedef: a translated type definition
-    :return: True if the typedef contains "BigIntType", False otherwise
-    """
-
-    if isinstance(typedef, Listdef):
-        return typedef_contains_int64(typedef=typedef.items)
-
-    elif isinstance(typedef, Dictdef):
-        return typedef_contains_int64(typedef=typedef.values)
-
-    elif isinstance(typedef, Recorddef):
-        for prop in typedef.properties.values():
-            if typedef_contains_int64(typedef=prop.typedef):
-                return True
-        return False
-
-    elif isinstance(typedef, BigIntdef):
-        return True
-
-    return False
 
 
 def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
@@ -520,7 +472,7 @@ def write_encoder(typedef: Typedef, fid: TextIO) -> None:
 
         fid.write(2 * INDENT + "]")
 
-    elif isinstance(typedef, (Booldef, Intdef, BigIntdef, Floatdef, Stringdef, Listdef, Dictdef)):
+    elif isinstance(typedef, (Booldef, Intdef, Floatdef, Stringdef, Listdef, Dictdef)):
         bracketed_type_expression = argument_expression(typedef=typedef, path=typedef.identifier)
         var_name = 'a' + typedef.identifier
 
@@ -560,7 +512,7 @@ def write_decoder(typedef: Typedef, fid: TextIO) -> None:
                 fid.write(prefix + 'Json.Decode.Pipeline.optional "{}" (Json.Decode.nullable {}) Nothing\n'.format(
                     snake_case_name, decoder))
 
-    elif isinstance(typedef, (Booldef, Intdef, BigIntdef, Floatdef, Stringdef, Listdef, Dictdef)):
+    elif isinstance(typedef, (Booldef, Intdef, Floatdef, Stringdef, Listdef, Dictdef)):
         bracketed_type_expression = argument_expression(typedef=typedef, path=typedef.identifier)
         fid.write("decode{} : Json.Decode.Decoder {}\n".format(typedef.identifier, bracketed_type_expression))
         fid.write("decode{} =\n".format(typedef.identifier))
@@ -806,13 +758,11 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
     fid.write("\n\n\n")
 
 
-def write_header(fid: TextIO, with_bigint: bool, typedefs: MutableMapping[str, Typedef],
-                 requests: List[Request]) -> None:
+def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: List[Request]) -> None:
     """
     Writes the header.
 
     :param fid: target
-    :param with_bigint: true if the code contains BigInts.
     :param typedefs: translated type definitions
     :param requests: translated request functions
     :return:
@@ -835,8 +785,6 @@ def write_header(fid: TextIO, with_bigint: bool, typedefs: MutableMapping[str, T
     fid.write(INDENT + "exposing\n")
     fid.write(INDENT * 2 + "( {}\n".format(joinstr.join(to_expose)))
     fid.write(INDENT * 2 + ")\n\n")
-    if with_bigint:
-        fid.write("import BigInt exposing (BigInt)\n")
     fid.write("import Dict exposing (Dict)\n"
               "import Http\n"
               "import Json.Decode\n"
@@ -845,39 +793,6 @@ def write_header(fid: TextIO, with_bigint: bool, typedefs: MutableMapping[str, T
               "import Json.Encode.Extra\n"
               "import QueryString\n"
               "import Time\n\n\n")
-
-
-def write_bigint_decoder(fid: TextIO) -> None:
-    """
-    Writes the decoder for BigInt.
-
-    :param fid: target
-    :return:
-    """
-
-    fid.write("bigIntDecoder : Json.Decode.Decoder BigInt\n")
-    fid.write("bigIntDecoder =\n")
-    fid.write(INDENT + "Json.Decode.string\n")
-    fid.write(INDENT * 2 + "|> Json.Decode.map BigInt.fromString\n")
-    fid.write(INDENT * 2 + "|> Json.Decode.map (Maybe.withDefault (BigInt.fromInt 0))\n\n\n")
-
-
-def write_bigint_encoder(fid: TextIO) -> None:
-    """
-    Writes the encoder for BigInt.
-
-    :param fid: target
-    :return:
-    """
-
-    fid.write("bigIntEncoder : BigInt -> Json.Encode.Value\n")
-    fid.write("bigIntEncoder bigInt =\n")
-    fid.write(INDENT + "bigInt\n")
-    fid.write(INDENT * 2 + "|> BigInt.toString\n")
-    fid.write(INDENT * 2 + "|> String.toInt\n")
-    fid.write(INDENT * 2 + "|> Result.toMaybe\n")
-    fid.write(INDENT * 2 + "|> Maybe.withDefault 0\n")
-    fid.write(INDENT * 2 + "|> Json.Encode.int\n\n\n")
 
 
 def write_footer(fid: TextIO) -> None:
@@ -907,8 +822,6 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
         return 'Float'
     elif isinstance(typedef, Intdef):
         return 'Int'
-    elif isinstance(typedef, BigIntdef):
-        return 'BigInt'
     elif isinstance(typedef, Stringdef):
         return 'String'
     elif isinstance(typedef, Listdef):
@@ -942,8 +855,6 @@ def type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
         return 'Json.Encode.float'
     elif isinstance(typedef, Intdef):
         return 'Json.Encode.int'
-    elif isinstance(typedef, BigIntdef):
-        return 'bigIntEncoder'
     elif isinstance(typedef, Stringdef):
         return 'Json.Encode.string'
     elif isinstance(typedef, Listdef):
@@ -977,8 +888,6 @@ def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
         return 'Json.Decode.float'
     elif isinstance(typedef, Intdef):
         return 'Json.Decode.int'
-    elif isinstance(typedef, BigIntdef):
-        return 'bigIntDecoder'
     elif isinstance(typedef, Stringdef):
         return 'Json.Decode.string'
     elif isinstance(typedef, Listdef):
@@ -996,10 +905,9 @@ def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def elm_package_json(typedefs: MutableMapping[str, Typedef]) -> MutableMapping[str, Any]:
+def elm_package_json() -> MutableMapping[str, Any]:
     """
 
-    :param typedefs: translated type definitions
     :return: The JSON Elm package for the project as a Dictionary.
     """
     elm_pkg = collections.OrderedDict()  # type: Dict[str, Any]
@@ -1017,9 +925,6 @@ def elm_package_json(typedefs: MutableMapping[str, Typedef]) -> MutableMapping[s
     packages['Bogdanp/elm-querystring'] = '1.0.0 <= v <= 1.0.0'
     packages['NoRedInk/elm-decode-pipeline'] = '3.0.0 <= v <= 3.0.0'
 
-    if typedefs_contain_int64(typedefs=typedefs):
-        packages['gilbertkennen/bigint'] = '1.1.0 <= v <= 1.1.0'
-
     elm_pkg['dependencies'] = packages
     elm_pkg['elm-version'] = '0.18.0 <= v < 0.19.0'
 
@@ -1035,19 +940,14 @@ def write_client_elm(typedefs: MutableMapping[str, Typedef], requests: List[Requ
     :param fid: target
     :return:
     """
-    bigint_present = typedefs_contain_int64(typedefs=typedefs)
-    write_header(fid=fid, with_bigint=bigint_present, typedefs=typedefs, requests=requests)
+    write_header(fid=fid, typedefs=typedefs, requests=requests)
 
     if typedefs:
         write_type_definitions(typedefs=typedefs, fid=fid)
 
         write_encoders(typedefs=typedefs, fid=fid)
-        if bigint_present:
-            write_bigint_encoder(fid=fid)
 
         write_decoders(typedefs=typedefs, fid=fid)
-        if bigint_present:
-            write_bigint_decoder(fid=fid)
 
     if requests:
         write_client(requests=requests, fid=fid)

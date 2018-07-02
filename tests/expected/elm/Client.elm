@@ -33,7 +33,6 @@ module Client
         , updateMeRequest
         )
 
-import BigInt exposing (BigInt)
 import Dict exposing (Dict)
 import Http
 import Json.Decode
@@ -123,7 +122,7 @@ type alias Activities =
     -- Number of items to retrieve (100 max).
     , limit : Int
     -- Total number of items available.
-    , count : BigInt
+    , count : Int
     , history : List Activity
     }
 
@@ -195,19 +194,9 @@ encodeActivities aActivities =
     Json.Encode.object
         [ ( "offset", Json.Encode.int <| aActivities.offset )
         , ( "limit", Json.Encode.int <| aActivities.limit )
-        , ( "count", bigIntEncoder <| aActivities.count )
+        , ( "count", Json.Encode.int <| aActivities.count )
         , ( "history", Json.Encode.list <| List.map encodeActivity <| aActivities.history )
         ]
-
-
-bigIntEncoder : BigInt -> Json.Encode.Value
-bigIntEncoder bigInt =
-    bigInt
-        |> BigInt.toString
-        |> String.toInt
-        |> Result.toMaybe
-        |> Maybe.withDefault 0
-        |> Json.Encode.int
 
 
 -- Decoders
@@ -277,16 +266,9 @@ decodeActivities =
     Json.Decode.Pipeline.decode Activities
         |> Json.Decode.Pipeline.required "offset" Json.Decode.int
         |> Json.Decode.Pipeline.required "limit" Json.Decode.int
-        |> Json.Decode.Pipeline.required "count" bigIntDecoder
+        |> Json.Decode.Pipeline.required "count" Json.Decode.int
         |> Json.Decode.Pipeline.required "history" (Json.Decode.list <| decodeActivity)
 
-
-
-bigIntDecoder : Json.Decode.Decoder BigInt
-bigIntDecoder =
-    Json.Decode.string
-        |> Json.Decode.map BigInt.fromString
-        |> Json.Decode.map (Maybe.withDefault (BigInt.fromInt 0))
 
 
 -- Remote Calls
