@@ -194,6 +194,10 @@ To generate a Python client from a Swagger specification at ``/some/path/swagger
 The generated client uses Angular ``http`` library. For the same reasons as for Python client, no checks are performed
 neither on the input nor on the output.
 
+We use Typescript's built-in number type to represent both 32 and 64-bit integers. Please be careful: Typescript
+depends on JavaScript which uses solely double-precision floats both for integers and for floating-point numbers,
+which can lead to unexpected truncation.
+
 
 Development
 ===========
