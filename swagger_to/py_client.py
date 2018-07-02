@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Generates server stubs from Swagger specification in Go.
+Generates python client from Swagger specification.
 """
 
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements,too-many-lines
 
 import collections
 from typing import MutableMapping, Union, Set, List, TextIO, Optional  # pylint: disable=unused-import
@@ -44,6 +44,13 @@ class Strdef(Typedef):
 
 
 class Bytesdef(Typedef):
+    pass
+
+
+class Filedef(Typedef):
+    """
+    Represents a file type in form-data parameters.
+    """
     pass
 
 
@@ -114,6 +121,7 @@ class Request:
         self.query_parameters = []  # type: List[Parameter]
         self.path_parameters = []  # type: List[Parameter]
         self.formdata_parameters = []  # type: List[Parameter]
+        self.file_parameters = []  # type: List[Parameter]
 
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
         self.produces = []  # type: List[str]
@@ -152,6 +160,8 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
             typedef = Floatdef()
         elif intermediate_typedef.type == 'string':
             typedef = Strdef()
+        elif intermediate_typedef.type == 'file':
+            typedef = Filedef()
         else:
             raise NotImplementedError("Converting intermediate type to Python is not supported: {}".format(
                 intermediate_typedef.type))
@@ -255,7 +265,9 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     for intermediate_param in endpoint.parameters:
         param = to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
 
-        if intermediate_param.in_what == 'body':
+        if isinstance(param.typedef, Filedef):
+            req.file_parameters.append(param)
+        elif intermediate_param.in_what == 'body':
             if req.body_parameter is not None:
                 raise KeyError("Duplicate body parameters in an endpoint: {} {}".format(
                     req.body_parameter.name, intermediate_param.name))
@@ -265,7 +277,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
             req.query_parameters.append(param)
         elif intermediate_param.in_what == 'path':
             req.path_parameters.append(param)
-        elif intermediate_param.in_what == 'formdata':
+        elif intermediate_param.in_what == 'formData':
             req.formdata_parameters.append(param)
         else:
             raise NotImplementedError("Unsupported parameter 'in' to Python translation: {}".format(
@@ -333,6 +345,8 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
         return 'str'
     elif isinstance(typedef, Bytesdef):
         return 'bytes'
+    elif isinstance(typedef, Filedef):
+        return 'BinaryIO'
     elif isinstance(typedef, Listdef):
         return 'List[' + type_expression(typedef=typedef.items, path=str(path) + '.items') + "]"
     elif isinstance(typedef, Dictdef):
@@ -364,7 +378,7 @@ def write_header(service_name: str, fid: TextIO) -> None:
     fid.write("# pylint: skip-file\n\n")
 
     fid.write('import contextlib\n')
-    fid.write("from typing import Any, List, Dict, Optional\n\n")
+    fid.write("from typing import Any, BinaryIO, List, Dict, Optional\n\n")
     fid.write("import requests\n")
     fid.write("import requests.auth\n")
 
@@ -626,11 +640,16 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
         attr_type_expr = type_expression(typedef=attr.typedef, path=attr.classdef.identifier + "." + attr.name)
 
+        # yapf: disable
         set_attr_stmt_parts = [
-            '{} = from_obj('.format(attr.name), 'obj["{0}"]'.format(attr.name), 'expected=[{}]'.format(
-                expected_type_expression(typedef=attr.typedef)), 'path=path + ".{}")'.format(attr.name),
+            '{} = from_obj('.format(attr.name),
+            'obj["{0}"]'.format(attr.name),
+            'expected=[{}]'.format(
+                expected_type_expression(typedef=attr.typedef)),
+            'path=path + ".{}")'.format(attr.name),
             '  # type: {}'.format(attr_type_expr)
         ]
+        # yapf: enable
 
         if attr.required:
             write_set_attr_stmt(indention=INDENT, set_attr_stmt_parts=set_attr_stmt_parts)
@@ -681,7 +700,7 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
     if exp in [bool, int, float, str]:
         return obj
-
+       
     if exp == list:
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
@@ -771,12 +790,17 @@ def to_string_expression(typedef: Typedef, expression: str) -> str:
 
 
 def write_request(request: Request, fid: TextIO) -> None:
-    resp = None
+    resp = None  # type: Optional[Response]
     return_type = 'bytes'
     if request.produces == ['application/json']:
         if '200' in request.responses:
             resp = request.responses['200']
-            return_type = type_expression(typedef=resp.typedef, path=request.operation_id + '.' + str(resp.code))
+            if resp.typedef is not None:
+                return_type = type_expression(typedef=resp.typedef, path=request.operation_id + '.' + str(resp.code))
+            else:
+                # The schema for the response has not been defined. Hence we can not parse the response.
+                resp = None
+                return_type = 'Any'
 
     prefix = INDENT + 'def {}('.format(request.operation_id)
     suffix = ') -> {}:'.format(return_type)
@@ -865,11 +889,28 @@ def write_request(request: Request, fid: TextIO) -> None:
         for i, param in enumerate(request.formdata_parameters):
             if i > 0:
                 fid.write(',\n')
+
             if isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef)):
                 fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
             else:
                 fid.write(INDENT * 3 + '"{0}": to_jsonable({0}, expected=[{1}])'.format(
                     param.name, expected_type_expression(typedef=param.typedef)))
+
+        fid.write('}')
+
+    if request.file_parameters:
+        fid.write('\n\n')
+        fid.write(INDENT * 2 + 'files = {\n')
+
+        for i, param in enumerate(request.file_parameters):
+            if i > 0:
+                fid.write(',\n')
+
+            assert isinstance(param.typedef, Filedef), \
+                "Expected parameter {} of path {}.{} to be Filedef, but got: {}".format(
+                    param.name, request.path, request.method, type(param.typedef))
+
+            fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
 
         fid.write('}')
 
@@ -887,12 +928,21 @@ def write_request(request: Request, fid: TextIO) -> None:
         # ignore the parameter which we don't know how to handle.
         pass
 
+    if request.file_parameters:
+        fid.write(', files=files')
+
     fid.write(', auth=self.auth)\n')
     fid.write(INDENT * 2 + 'with contextlib.closing(resp):\n')
     fid.write(INDENT * 3 + 'resp.raise_for_status()\n')
 
     if resp is None:
-        fid.write(INDENT * 3 + 'return resp.content')
+        if return_type == 'bytes':
+            fid.write(INDENT * 3 + 'return resp.content')
+        elif return_type == 'Any':
+            fid.write(INDENT * 3 + 'return resp.json()')
+        else:
+            raise NotImplementedError("Unhandled return type of the request {}.{}: {!r}".format(
+                request.path, request.method, return_type))
     else:
         fid.write(INDENT * 3 + 'return from_obj(obj=resp.json(), expected=[{}], path="")'.format(
             expected_type_expression(typedef=resp.typedef)))
