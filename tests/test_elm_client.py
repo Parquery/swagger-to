@@ -46,18 +46,10 @@ class TestElmClient(unittest.TestCase):
 class TestElmPackage(unittest.TestCase):
     def test_that_it_works(self):
         script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-        swagger_path = script_dir / "swagger.yaml"
-
-        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
-        if errs:
-            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
-
-        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
-        elm_typedefs = swagger_to.elm_client.to_typedefs(intermediate_typedefs=intermediate_typedefs)
 
         buf = io.StringIO()
         buffid = cast(TextIO, buf)
-        elm_package_json = swagger_to.elm_client.elm_package_json(typedefs=elm_typedefs)
+        elm_package_json = swagger_to.elm_client.elm_package_json()
         json.dump(elm_package_json, fp=buffid, indent=2, sort_keys=False)
 
         got = buf.getvalue()

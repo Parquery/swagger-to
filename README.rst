@@ -107,8 +107,11 @@ Three non-standard libraries are used in the Client:
   elm-lang libraries;
 * "elm-community/json-extra" is needed to encode Dict variables;
 * "Bogdanp/elm-querystring" is used to deal with queries in URLs;
-* "gilbertkennen/bigint" is used to have int64s in Elm, which by default only has int32s.
 
+
+We use Elm's built-in Int type to represent both 32 and 64-bit integers. Please be careful: Elm depends on JavaScript
+which uses solely double-precision floats both for integers and for floating-point numbers, which can lead to
+unexpected truncation.
 
 Go Server
 ---------
