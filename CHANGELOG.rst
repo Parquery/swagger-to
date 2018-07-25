@@ -1,3 +1,7 @@
+2.0.1
+=====
+* Swagger-to-python-client generates the code conform to PEP 257.
+
 2.0.0
 =====
 * Added swagger-to-elm-client.

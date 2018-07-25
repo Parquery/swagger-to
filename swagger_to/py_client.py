@@ -6,8 +6,9 @@ Generates python client from Swagger specification.
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements,too-many-lines
 
-import collections
 from typing import MutableMapping, Union, Set, List, TextIO, Optional  # pylint: disable=unused-import
+
+import collections
 
 import swagger_to
 import swagger_to.intermediate
@@ -93,6 +94,7 @@ class Parameter:
         self.name = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
+        self.description = None  # type: Optional[str]
 
 
 class Response:
@@ -227,6 +229,7 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
     param.name = intermediate_parameter.name
     param.typedef = anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
     param.required = intermediate_parameter.required
+    param.description = intermediate_parameter.description
     return param
 
 
@@ -374,7 +377,7 @@ def attribute_as_argument(attribute: Attribute) -> str:
 def write_header(service_name: str, fid: TextIO) -> None:
     fid.write('#!bin/bash/python3\n')
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n')
-    fid.write('"""\nImplements the client for {}.\n"""\n\n'.format(service_name))
+    fid.write('"""Implements the client for {}."""\n\n'.format(service_name))
     fid.write("# pylint: skip-file\n\n")
 
     fid.write('import contextlib\n')
@@ -401,17 +404,24 @@ def write_comment(comment: str, indent: str, fid: TextIO) -> None:
 
 
 def write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
-    line = ''.join([indent, '""" ', docstring, ' """'])
-    if len(line) <= 80:
-        fid.write(line)
+    if not docstring:
+        raise ValueError("Unexpected empty docstring")
+
+    docstring = docstring[0].upper() + docstring[1:]
+    docstring_lines = docstring.splitlines()
+
+    if len(docstring_lines) == 1:
+        fid.write(''.join([indent, '"""', docstring, '"""']))
         return
 
     fid.write(indent + '"""\n')
-    for line in docstring.splitlines():
-        fid.write(indent)
-        fid.write(line)
+    for line in docstring_lines:
+        if line.strip():
+            fid.write(indent)
+            fid.write(line)
         fid.write('\n')
 
+    fid.write('\n')
     fid.write(indent + '"""')
 
 
@@ -422,13 +432,11 @@ def write_class(classdef: Classdef, fid: TextIO) -> None:
     fid.write("class {}:\n".format(classdef.identifier))
     if classdef.description:
         write_docstring(docstring=classdef.description, indent=INDENT, fid=fid)
-        fid.write('\n')
+        fid.write('\n\n')
 
     if not classdef.attributes:
         fid.write(INDENT + 'pass')
         return
-
-    fid.write('\n')
 
     prefix = INDENT + 'def __init__(self'
     suffix = ') -> None:'
@@ -462,6 +470,13 @@ def write_class(classdef: Classdef, fid: TextIO) -> None:
 
     fid.write('\n\n')
     fid.write(INDENT + 'def to_jsonable(self) -> Dict[str, Any]:\n')
+    fid.write(INDENT * 2 + '"""\n')
+    fid.write(INDENT * 2 + 'Dispatches the conversion to {}_to_jsonable.\n\n'.format(
+        swagger_to.snake_case(identifier=classdef.identifier)))
+
+    fid.write(INDENT * 2 + ':return: JSON-able representation\n\n')
+    fid.write(INDENT * 2 + '"""\n')
+
     fid.write(INDENT * 2 + 'return {}_to_jsonable(self)'.format(swagger_to.snake_case(identifier=classdef.identifier)))
 
 
@@ -491,7 +506,7 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
     fid.write('def new_{}() -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
-    fid.write(INDENT + '""" generates a default instance of {}. """\n'.format(classdef.identifier))
+    fid.write(INDENT + '"""Generates a default instance of {}."""\n'.format(classdef.identifier))
 
     if not classdef.attributes:
         fid.write(INDENT + "return {}()".format(classdef.identifier))
@@ -527,7 +542,8 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
     :param path: to the object from the root object
-    :return:
+    :return: the converted object
+
     """
     if not expected:
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
@@ -605,7 +621,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
     fid.write('def {}_from_obj(obj: Any, path: str = "") -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
-    fid.write(INDENT + '""" generates an instance of {} from a dictionary object. """\n'.format(
+    fid.write(INDENT + '"""Generates an instance of {} from a dictionary object."""\n'.format(
         classdef.identifier))
 
     # yapf: disable
@@ -689,7 +705,8 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
-    :return:
+    :return: JSON-able representation of the object
+
     """
     if not expected:
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
@@ -700,7 +717,7 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
     if exp in [bool, int, float, str]:
         return obj
-       
+
     if exp == list:
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
@@ -733,7 +750,7 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
     fid.write('def {0}_to_jsonable({0}: {1}, path: str = "") -> Dict[str, Any]:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
-    fid.write(INDENT + '""" generates a dictionary JSON-able object from an instance of {}. """\n'.format(
+    fid.write(INDENT + '"""Generates a dictionary JSON-able object from an instance of {}."""\n'.format(
         classdef.identifier))
 
     if not classdef.attributes:
@@ -789,6 +806,34 @@ def to_string_expression(typedef: Typedef, expression: str) -> str:
     return 'str({})'.format(expression)
 
 
+def request_docstring(request: Request) -> str:
+    """
+    Assembles the docstring of the given request function.
+
+    :param request: function to be documented
+    :return: docstring of the request function
+    """
+    docstring_lines = []  # type: List[str]
+    if request.description:
+        docstring_lines += request.description.splitlines()
+        if request.parameters:
+            docstring_lines += ['']
+
+    for param in request.parameters:
+        if not param.description:
+            docstring_lines += [':param {}:'.format(param.name)]
+        else:
+            description_lines = param.description.splitlines()
+            if len(description_lines) == 1:
+                docstring_lines += [':param {}: {}'.format(param.name, param.description)]
+            else:
+                docstring_lines += [':param {}:'.format(param.name)]
+                for line in description_lines:
+                    docstring_lines += [INDENT * 2 + line]
+
+    return '\n'.join(docstring_lines)
+
+
 def write_request(request: Request, fid: TextIO) -> None:
     resp = None  # type: Optional[Response]
     return_type = 'bytes'
@@ -828,9 +873,14 @@ def write_request(request: Request, fid: TextIO) -> None:
         fid.write(suffix)
     fid.write('\n')
 
-    name_to_parameters = dict([(param.name, param) for param in request.parameters])
+    # assemble the docstring
+    docstring = request_docstring(request=request)
+    write_docstring(docstring=docstring, indent=INDENT * 2, fid=fid)
+    fid.write('\n')
 
     # path parameters
+    name_to_parameters = dict([(param.name, param) for param in request.parameters])
+
     token_pth = swagger_to.tokenize_path(path=request.path)
 
     if not token_pth.parameter_to_token_indices:
@@ -951,7 +1001,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 def write_client(requests: List[Request],
                  fid: TextIO) -> None:
     fid.write("class RemoteCaller:\n")
-    fid.write(INDENT + '""" executes the remote calls to the server. """\n')
+    fid.write(INDENT + '"""Executes the remote calls to the server."""\n')
     fid.write('\n')
 
     fid.write(INDENT + 'def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:\n')
