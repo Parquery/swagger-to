@@ -76,6 +76,7 @@ class Parameter:
         self.typedef = Typedef()
         self.required = False
         self.json_schema = JsonSchema()
+        self.description = None  # type: Optional[str]
 
 
 class Response:
@@ -380,6 +381,7 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
     param.in_what = original_param.in_what
     param.name = original_param.name
     param.required = original_param.required
+    param.description = original_param.description
 
     return param
 
