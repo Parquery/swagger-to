@@ -378,7 +378,8 @@ def write_header(service_name: str, fid: TextIO) -> None:
     fid.write('#!bin/bash/python3\n')
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n')
     fid.write('"""Implements the client for {}."""\n\n'.format(service_name))
-    fid.write("# pylint: skip-file\n\n")
+    fid.write("# pylint: skip-file\n")
+    fid.write("# pydocstyle: add-ignore=D105,D107,D401\n\n")
 
     fid.write('import contextlib\n')
     fid.write("from typing import Any, BinaryIO, List, Dict, Optional\n\n")
