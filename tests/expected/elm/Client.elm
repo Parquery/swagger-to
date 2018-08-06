@@ -275,9 +275,10 @@ decodeActivities =
 
 
 
--- Contains a "get" request to the endpoint: /products, to be sent with Http.send
--- 
--- The Products endpoint returns information about the Uber products offered at a given location.
+{-| Contains a "get" request to the endpoint: /products, to be sent with Http.send
+    
+    The Products endpoint returns information about the Uber products offered at a given location.
+-}
 productsRequest : String -> Maybe Time.Time -> Bool -> Float -> Float -> Http.Request (Dict String Product)
 productsRequest prefix maybeTimeout withCredentials latitude longitude =
     let
@@ -298,11 +299,12 @@ productsRequest prefix maybeTimeout withCredentials latitude longitude =
         }
 
 
--- Contains a "get" request to the endpoint: /estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}, to be sent with Http.send
--- 
--- The Price Estimates endpoint returns an estimated price range for each product offered at a given
--- location. The price estimate is provided as a formatted string with the full price range and the localized
--- currency symbol.
+{-| Contains a "get" request to the endpoint: /estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}, to be sent with Http.send
+    
+    The Price Estimates endpoint returns an estimated price range for each product offered at a given
+    location. The price estimate is provided as a formatted string with the full price range and the localized
+    currency symbol.
+-}
 estimatesPriceRequest :
     String
     -> Maybe Time.Time
@@ -348,9 +350,10 @@ estimatesPriceRequest
             }
 
 
--- Contains a "get" request to the endpoint: /estimates/time, to be sent with Http.send
--- 
--- The Time Estimates endpoint returns ETAs for all products.
+{-| Contains a "get" request to the endpoint: /estimates/time, to be sent with Http.send
+    
+    The Time Estimates endpoint returns ETAs for all products.
+-}
 estimatesTimeRequest :
     String
     -> Maybe Time.Time
@@ -383,9 +386,10 @@ estimatesTimeRequest prefix maybeTimeout withCredentials startLatitude startLong
         }
 
 
--- Contains a "patch" request to the endpoint: /me, to be sent with Http.send
--- 
--- Update an User Profile.
+{-| Contains a "patch" request to the endpoint: /me, to be sent with Http.send
+    
+    Update an User Profile.
+-}
 updateMeRequest : String -> Maybe Time.Time -> Bool -> Profile -> Http.Request Profile
 updateMeRequest prefix maybeTimeout withCredentials updateUser =
     let
