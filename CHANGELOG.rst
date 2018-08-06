@@ -1,3 +1,8 @@
+2.0.2
+=====
+* Moved to github.com
+* Added py.typed to comply with mypy
+
 2.0.1
 =====
 * Swagger-to-python-client generates the code conform to PEP 257.
