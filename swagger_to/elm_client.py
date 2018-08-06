@@ -373,6 +373,24 @@ def write_description(description: str, indent: str, fid: TextIO) -> None:
             fid.write('\n')
 
 
+def write_top_level_description(description: str, fid: TextIO) -> None:
+    """
+    Writes a top level description as {|- -} comment block.
+
+    :param description: to be written
+    :param fid: target
+    :return:
+    """
+    lines = description.strip().splitlines()
+    fid.write('{-| ')
+    for i, line in enumerate(lines):
+        if i > 0:
+            fid.write('    ')
+        fid.write('{}\n'.format(line.rstrip()))
+
+    fid.write('-}')
+
+
 def argument_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translates the typedef to an argument expression for an Elm function signature.
@@ -417,7 +435,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
         raise ValueError("Expected a typedef with an identifier, but got a typedef with an empty identifier.")
 
     if typedef.description:
-        write_description(description=typedef.description, indent='', fid=fid)
+        write_top_level_description(description=typedef.description, fid=fid)
         fid.write('\n')
 
     if isinstance(typedef, Recorddef):
@@ -554,7 +572,7 @@ def write_request(request: Request, fid: TextIO) -> None:
         request.method, request.path)
     if request.description:
         description += '\n\n' + request.description
-    write_description(description, '', fid)
+    write_top_level_description(description=description, fid=fid)
     fid.write('\n')
 
     types = []  # type List[str]
