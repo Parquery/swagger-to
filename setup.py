@@ -20,7 +20,7 @@ setup(
     version='2.0.1',
     description='Generates code from swagger definitions; an alternative to swagger codegen',
     long_description=long_description,
-    url='https://bitbucket.org/parqueryopen/swagger_to',
+    url='https://github.com/Parquery/swagger-to',
     author='Marko Ristin',
     author_email='marko@parquery.com',
     classifiers=[
