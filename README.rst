@@ -33,6 +33,9 @@ our simple and not-so-simple use cases. We believe they can also cover most of t
 
 Here is a non-comprehensive list.
 
+* **definitions**. We don't support anonymous objects in the definitions. Please define all objects as top level
+definitions.
+
 * **parameters**. Most generators cover only query, body and path parameters. We do not support default values for the
   parameters due to impedance mismatch between JSON and the target languages.
 
