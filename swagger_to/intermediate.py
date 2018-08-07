@@ -93,7 +93,6 @@ class Endpoint:
         self.operation_id = ''
         self.parameters = []  # type: List[Parameter]
         self.description = ''
-        self.no_go = False
         self.produces = []  # type: List[str]
         self.consumes = []  # type: List[str]
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
@@ -455,7 +454,6 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
     endpt.path = pth
     endpt.method = method.identifier
     endpt.operation_id = method.operation_id
-    endpt.no_go = method.x_swagger_to_skip
     endpt.description = method.description
     endpt.consumes = method.consumes
     endpt.produces = method.produces
