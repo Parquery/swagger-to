@@ -49,13 +49,38 @@ class TestElmPackage(unittest.TestCase):
 
         buf = io.StringIO()
         buffid = cast(TextIO, buf)
-        elm_package_json = swagger_to.elm_client.elm_package_json()
+        elm_package_json = swagger_to.elm_client.elm_package_json(query_strings=True)
         json.dump(elm_package_json, fp=buffid, indent=2, sort_keys=False)
 
         got = buf.getvalue()
-
-        expected = (script_dir / "expected" / "elm" / "elm-package.sample.json").read_text()
+        expected = (script_dir / "expected" / "elm" / "elm-package-with-querystring.json").read_text()
         self.assertEqual(expected, got)
+
+        buf = io.StringIO()
+        buffid = cast(TextIO, buf)
+        elm_package_json = swagger_to.elm_client.elm_package_json(query_strings=False)
+        json.dump(elm_package_json, fp=buffid, indent=2, sort_keys=False)
+
+        got = buf.getvalue()
+        expected = (script_dir / "expected" / "elm" / "elm-package-without-querystring.json").read_text()
+        self.assertEqual(expected, got)
+
+
+class TestNeedsQueryStrings(unittest.TestCase):
+    def test_that_it_works(self):
+
+        mock_query_param = swagger_to.elm_client.Parameter()
+        mock_query_param.name = "a mock parameter"
+
+        mock_request = swagger_to.elm_client.Request()
+        mock_request.query_parameters = [mock_query_param]
+
+        self.assertEqual(swagger_to.elm_client.needs_query_strings(requests=[mock_request]), True)
+
+        mock_request.path_parameters = mock_request.query_parameters
+        mock_request.query_parameters = []
+
+        self.assertEqual(swagger_to.elm_client.needs_query_strings(requests=[mock_request]), False)
 
 
 class TestEscapeElmString(unittest.TestCase):
