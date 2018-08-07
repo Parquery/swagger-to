@@ -1,0 +1,59 @@
+The endpoint description is invalid: should start with lower case letter: The Price Estimates endpoint returns an estimated price range for each product offered at a given
+location. The price estimate is provided as a formatted string with the full price range and the localized
+currency symbol.
+The endpoint description is invalid: should start with lower case letter: The Products endpoint returns information about the Uber products offered at a given location.
+The endpoint description is invalid: should start with lower case letter: The Time Estimates endpoint returns ETAs for all products.
+The endpoint description is invalid: should start with lower case letter: The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
+include pickup locations and times, dropoff locations and times, the distance of past requests, and
+information about which products were requested.
+The endpoint description is invalid: should start with lower case letter: Update an User Profile.
+The parameter description is invalid: should start with lower case letter: A maximum number of lines in the produced json.
+The parameter description is invalid: should start with lower case letter: Latitude component of end location.
+The parameter description is invalid: should start with lower case letter: Latitude component of location.
+The parameter description is invalid: should start with lower case letter: Latitude component of start location.
+The parameter description is invalid: should start with lower case letter: Latitude component of start location.
+The parameter description is invalid: should start with lower case letter: Longitude component of end location.
+The parameter description is invalid: should start with lower case letter: Longitude component of location.
+The parameter description is invalid: should start with lower case letter: Longitude component of start location.
+The parameter description is invalid: should start with lower case letter: Longitude component of start location.
+The parameter description is invalid: should start with lower case letter: Number of items to retrieve. Default is 5, maximum is 100.
+The parameter description is invalid: should start with lower case letter: Offset the list of returned results by this amount. Default is zero.
+The parameter description is invalid: should start with lower case letter: Unique customer identifier to be used for experience customization.
+The parameter description is invalid: should start with lower case letter: Unique identifier representing a specific product for a given latitude & longitude.
+The parameter description is invalid: should start with verb in present tense: profile of a user to update
+The property description is invalid: should start with alphanumeric letter: [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code.
+The property description is invalid: should start with lower case letter: Capacity of product. For example, 4 people.
+The property description is invalid: should start with lower case letter: Contains the list of products
+The property description is invalid: should start with lower case letter: Description of product.
+The property description is invalid: should start with lower case letter: Display name of product.
+The property description is invalid: should start with lower case letter: Display name of product.
+The property description is invalid: should start with lower case letter: Email address of the Uber user
+The property description is invalid: should start with lower case letter: Expected surge multiplier. Surge is active if surge_multiplier is greater than 1.
+Price estimate already factors in the surge multiplier.
+The property description is invalid: should start with lower case letter: First name of the Uber user.
+The property description is invalid: should start with lower case letter: Formatted string of estimate in local currency of the start location.
+Estimate could be a range, a single number (flat rate) or "Metered" for TAXI.
+The property description is invalid: should start with lower case letter: Image URL of the Uber user.
+The property description is invalid: should start with lower case letter: Image URL representing the product.
+The property description is invalid: should start with lower case letter: Last name of the Uber user.
+The property description is invalid: should start with lower case letter: Lower bound of the estimated price.
+The property description is invalid: should start with lower case letter: Number of items to retrieve (100 max).
+The property description is invalid: should start with lower case letter: Position in pagination.
+The property description is invalid: should start with lower case letter: Promo code of the Uber user.
+The property description is invalid: should start with lower case letter: Total number of items available.
+The property description is invalid: should start with lower case letter: Unique identifier for the activity
+The property description is invalid: should start with lower case letter: Unique identifier representing a specific product for a given latitude & longitude.
+For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.
+The property description is invalid: should start with lower case letter: Unique identifier representing a specific product for a given latitude & longitude. For example,
+uberX in San Francisco will have a different product_id than uberX in Los Angeles
+The property description is invalid: should start with lower case letter: Upper bound of the estimated price.
+The response description is invalid: should start with lower case letter: An array of price estimates by product
+The response description is invalid: should start with lower case letter: An array of products
+The response description is invalid: should start with lower case letter: An array of products
+The response description is invalid: should start with lower case letter: History information for the given user
+The response description is invalid: should start with lower case letter: Previous profile information for a user
+The response description is invalid: should start with lower case letter: Unexpected error
+The response description is invalid: should start with lower case letter: Unexpected error
+The response description is invalid: should start with lower case letter: Unexpected error
+The response description is invalid: should start with lower case letter: Unexpected error
+The response description is invalid: should start with lower case letter: Unexpected error
