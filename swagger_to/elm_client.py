@@ -923,9 +923,25 @@ def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def elm_package_json() -> MutableMapping[str, Any]:
+def needs_query_strings(requests: List[Request]) -> bool:
     """
+    Determines whether the QueryString package is needed by the client.
 
+    :param requests: translated request functions.
+    :return: true if any of the Requests contains nonempty query parameters, false otherwise
+    """
+    for request in requests:
+        if request.query_parameters:
+            return True
+
+    return False
+
+
+def elm_package_json(query_strings: bool) -> MutableMapping[str, Any]:
+    """
+    Returns the elm-package json file.
+
+    :param query_strings: if true, the package Bogdanp/querystring is inserted in the package.
     :return: The JSON Elm package for the project as a Dictionary.
     """
     elm_pkg = collections.OrderedDict()  # type: Dict[str, Any]
@@ -940,7 +956,8 @@ def elm_package_json() -> MutableMapping[str, Any]:
     packages['elm-lang/core'] = '2.0.0 <= v <= 2.0.0'
     packages['elm-lang/http'] = '1.0.0 <= v <= 1.0.0'
     packages['elm-community/json-extra'] = '2.7.0 <= v <= 2.7.0'
-    packages['Bogdanp/elm-querystring'] = '1.0.0 <= v <= 1.0.0'
+    if query_strings:
+        packages['Bogdanp/elm-querystring'] = '1.0.0 <= v <= 1.0.0'
     packages['NoRedInk/elm-decode-pipeline'] = '3.0.0 <= v <= 3.0.0'
 
     elm_pkg['dependencies'] = packages
