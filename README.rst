@@ -202,6 +202,34 @@ depends on JavaScript which uses solely double-precision floats both for integer
 which can lead to unexpected truncation.
 
 
+Style Check
+-----------
+We found it important to have a uniform documentation style across all the Swagger specifications in an organization.
+To that end, swagger_to includes an utility to automatically check the style such as casing of the definition names,
+property names, descriptions and verb moods (present tense instead of imperative).To check the compliance of a Swagger
+specification at ``/some/path/swagger.yaml`` to the Swagger style guides, invoke:
+
+.. code-block:: bash
+
+    swagger_style.py \
+        --swagger_path /some/path/swagger.yaml
+
+
+The following checks are performed:
+
+* The Swagger name is in camel case, its description capitalized, and the base path starts with a slash.
+* Top level type definitions are in capitalized camel case, and properties are in snake case.
+* Endpoint paths, operation_id and parameter names are in camel case.
+* All descriptions:
+    * start with a present tense verb, whose first letter is lower case;
+    * have no leading or trailing whitespaces, tabs or new lines;
+    * contain either one line, or three or more, in which case the second is empty;
+    * end with a period.
+* Endpoint paths start with a slash, and the responses contain "200" and "default".
+
+The script call returns 0 in case of no violations found, 1 in case of failed checks or 2 in case of illegal usage.
+
+
 Development
 ===========
 
