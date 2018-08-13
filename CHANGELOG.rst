@@ -1,7 +1,12 @@
+2.1.0
+=====
+* Added a script to generate Elm client code.
+* Added a script to check Swagger files for style (descriptions, definition names, property names)
+
 2.0.2
 =====
-* Moved to github.com
-* Added py.typed to comply with mypy
+* Moved to github.com.
+* Added py.typed to comply with mypy.
 
 2.0.1
 =====
