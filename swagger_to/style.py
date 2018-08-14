@@ -10,107 +10,149 @@ import swagger_to.swagger
 import swagger_to
 
 
-def check_header(swagger: swagger_to.swagger) -> List[str]:
+class Complaint:
+    """Encapsulates a complaint."""
+
+    def __init__(self, message: str, what: str, where: str):
+        self.message = message
+        self.what = what
+        self.where = where
+
+
+def check_header(swagger: swagger_to.swagger) -> List[Complaint]:
     """
     Checks whether the swagger header conforms to the style guide.
 
     :param swagger: parsed swagger file
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     if swagger.name != swagger_to.snake_case(swagger.name):
-        errs.append("Name of the Swagger specification is not snake case: {}".format(swagger.name))
+        complaints.append(
+            Complaint(
+                message="Name of the Swagger specification is not snake case",
+                what=swagger.name,
+                where="In the Swagger header"))
 
     if not swagger.base_path.startswith("/"):
-        errs.append("Swagger base path doesn't start with a slash: {}".format(swagger.base_path))
+        complaints.append(
+            Complaint(
+                message="Swagger base path doesn't start with a slash",
+                what=swagger.base_path,
+                where="In the Swagger header"))
 
     if swagger.description.capitalize() != swagger.description:
-        errs.append("Swagger description should be capitalized: \"{}\"")
+        complaints.append(
+            Complaint(
+                message="Swagger description should be capitalized",
+                what=swagger.description,
+                where="In the Swagger header"))
 
-    return errs
+    return complaints
 
 
-def check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[str]:
+def check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
     Checks whether the typedefs conform to the casing conventions.
 
     :param typedefs: swagger type definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     seen_typedefs = set()  # type: MutableSet
     for _, typedef in enumerate(typedefs.values()):
-        errs.extend(_check_recursively_cases(typedef=typedef, visited=seen_typedefs))
+        complaints.extend(_check_recursively_cases(typedef=typedef, visited=seen_typedefs))
 
-    return errs
+    return complaints
 
 
-def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[str]:
+def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Checks whether the endpoints conform to the casing conventions.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
         if endpoint.path != swagger_to.snake_case(endpoint.path):
-            errs.append("Path doesn't conform to snake case: {}".format(endpoint.path))
+            complaints.append(
+                Complaint(
+                    message="Path doesn't conform to snake case",
+                    what=endpoint.path,
+                    where="In endpoint {}".format(endpoint.operation_id)))
         if endpoint.operation_id != swagger_to.snake_case(endpoint.operation_id):
-            errs.append("Endpoint operation ID is not a snake case identifier: {}".format(endpoint.operation_id))
+            complaints.append(
+                Complaint(
+                    message="Endpoint operation ID is not a snake case (e.g. snake_case) identifier",
+                    what=endpoint.operation_id,
+                    where="In endpoint {}".format(endpoint.operation_id)))
         for param in endpoint.parameters:
             if param.name != swagger_to.snake_case(param.name):
-                errs.append("Parameter has not a snake case identifier: {}".format(param.name))
+                complaints.append(
+                    Complaint(
+                        message="Parameter has not a snake case (e.g. snake_case) identifier",
+                        what=param.name,
+                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name)))
 
-    return errs
+    return complaints
 
 
-def check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[str]:
+def check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
     Checks whether the typedefs conform to the description conventions.
 
     :param typedefs: swagger type definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     seen_typedefs = set()  # type: MutableSet
     for _, typedef in enumerate(typedefs.values()):
-        errs.extend(_check_recursively_descriptions(typedef=typedef, visited=seen_typedefs))
+        complaints.extend(_check_recursively_descriptions(typedef=typedef, visited=seen_typedefs))
 
-    return errs
+    return complaints
 
 
-def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[str]:
+def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Checks whether the endpoints conform to the description conventions.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
         if check_description(endpoint.description):
-            errs.append("The endpoint description doesn't conform to the style: {}: {}".format(
-                check_description(endpoint.description), endpoint.description))
+            complaints.append(
+                Complaint(
+                    message=check_description(endpoint.description),
+                    what=endpoint.description,
+                    where="In endpoint {}".format(endpoint.operation_id)))
         for param in endpoint.parameters:
             if check_description(param.description):
-                errs.append("The parameter description doesn't conform to the style: {}: {}".format(
-                    check_description(param.description), param.description))
+                complaints.append(
+                    Complaint(
+                        message=check_description(param.description),
+                        what=param.description,
+                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name)))
         for _, resp in enumerate(endpoint.responses.values()):
             if check_description(resp.description):
-                errs.append("The response description doesn't conform to the style: {}: {}".format(
-                    check_description(resp.description), resp.description))
+                complaints.append(
+                    Complaint(
+                        message=check_description(resp.description),
+                        what=resp.description,
+                        where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code)))
 
-    return errs
+    return complaints
 
 
 def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
-                             visited: MutableSet[swagger_to.intermediate.Typedef]) -> List[str]:
+                             visited: MutableSet[swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
     Checks the typedef's adherence to the casing conventions.
 
@@ -118,9 +160,9 @@ def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
     :param visited: already seen typedefs
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
     if typedef in visited:
-        return errs
+        return complaints
 
     visited.add(typedef)
 
@@ -128,26 +170,46 @@ def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
         pass
 
     elif isinstance(typedef, swagger_to.intermediate.Arraydef):
-        errs.extend(_check_recursively_cases(typedef=typedef.items, visited=visited))
+        if typedef.identifier != "" and typedef.identifier != swagger_to.capital_camel_case(typedef.identifier):
+            complaints.append(
+                Complaint(
+                    message="Not a capital camel case (e.g. CamelCase) identifier",
+                    what=typedef.identifier,
+                    where="In array {}".format(typedef.identifier)))
+        complaints.extend(_check_recursively_cases(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
-        errs.extend(_check_recursively_cases(typedef=typedef.values, visited=visited))
+        if typedef.identifier != "" and typedef.identifier != swagger_to.capital_camel_case(typedef.identifier):
+            complaints.append(
+                Complaint(
+                    message="Not a capital camel case (e.g. CamelCase) identifier",
+                    what=typedef.identifier,
+                    where="In map {}".format(typedef.identifier)))
+        complaints.extend(_check_recursively_cases(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
 
         if typedef.identifier != "" and typedef.identifier != swagger_to.capital_camel_case(typedef.identifier):
-            errs.append("Not a capital camel case identifier: {}".format(typedef.identifier))
+            complaints.append(
+                Complaint(
+                    message="Not a capital camel case (e.g. CamelCase) identifier",
+                    what=typedef.identifier,
+                    where="In object {}".format(typedef.identifier)))
 
         for prop in typedef.properties.values():
             if prop.name != swagger_to.snake_case(prop.name):
-                errs.append("Not a capital camel case identifier: {}".format(prop.name))
-            errs.extend(_check_recursively_cases(typedef=prop.typedef, visited=visited))
+                complaints.append(
+                    Complaint(
+                        message="Not a snake case (e.g. snake_case) identifier",
+                        what=prop.name,
+                        where="In object {}, property {}".format(typedef.identifier, prop.name)))
+            complaints.extend(_check_recursively_cases(typedef=prop.typedef, visited=visited))
 
-    return errs
+    return complaints
 
 
 def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
-                                    visited: MutableSet[swagger_to.intermediate.Typedef]) -> List[str]:
+                                    visited: MutableSet[swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
     Checks the typedef's adherence to the description conventions.
 
@@ -155,9 +217,9 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
     :param visited: already seen typedefs
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
     if typedef in visited:
-        return errs
+        return complaints
 
     visited.add(typedef)
 
@@ -165,63 +227,92 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
         pass
 
     elif isinstance(typedef, swagger_to.intermediate.Arraydef):
-        errs.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
+        if check_description(typedef.description):
+            complaints.append(
+                Complaint(
+                    message=check_description(typedef.description),
+                    what=typedef.description,
+                    where="In array {}".format(typedef.identifier)))
+        complaints.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
-        errs.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
+        if check_description(typedef.description):
+            complaints.append(
+                Complaint(
+                    what=typedef.description,
+                    message=check_description(typedef.description),
+                    where="In map {}".format(typedef.identifier)))
+        complaints.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
         if check_description(typedef.description):
-            errs.append("The object description doesn't conform to the style: {}: {}".format(
-                check_description(typedef.description), typedef.description))
+            complaints.append(
+                Complaint(
+                    what=typedef.description,
+                    message=check_description(typedef.description),
+                    where="In object {}".format(typedef.identifier)))
 
         for prop in typedef.properties.values():
             if check_description(prop.description):
-                errs.append("The property description doesn't conform to the style: {}: {}".format(
-                    check_description(prop.description), prop.description))
-                errs.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
+                complaints.append(
+                    Complaint(
+                        what=prop.description,
+                        message=check_description(prop.description),
+                        where="In object {}, property {}".format(typedef.identifier, prop.name)))
+                complaints.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
 
-    return errs
+    return complaints
 
 
-def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[str]:
+def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Checks whether the endpoints conform to the conventions for responses.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
         if "200" not in endpoint.responses.keys():
-            errs.append("Path doesn't include response 200: {}".format(endpoint.path))
+            complaints.append(
+                Complaint(
+                    message="Path doesn't include response 200",
+                    what=endpoint.path,
+                    where="In endpoint {}".format(endpoint.operation_id)))
         if "default" not in endpoint.responses.keys():
-            errs.append("Path doesn't include default response: {}".format(endpoint.path))
+            complaints.append(
+                Complaint(
+                    message="Path doesn't include default response",
+                    what=endpoint.path,
+                    where="In endpoint {}".format(endpoint.operation_id)))
 
-    return errs
+    return complaints
 
 
-def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[str]:
+def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Checks whether the endpoints conform to the conventions for paths.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
         if not endpoint.path.startswith("/"):
-            errs.append("Path doesn't begin with a slash: {}".format(endpoint.path))
+            complaints.append(
+                Complaint(
+                    message="Path doesn't begin with a slash",
+                    what=endpoint.path,
+                    where="In endpoint {}".format(endpoint.operation_id)))
 
-    return errs
+    return complaints
 
 
 def check_description(description: str) -> Optional[str]:
     """
     Checks whether a description is well-styled.
-
     :param description: the description
     :return: the failed check, if any
     """
@@ -232,45 +323,45 @@ def check_description(description: str) -> Optional[str]:
     without_pipe = description.replace("|", "")
 
     if not without_pipe[:1].isalpha():
-        return "should start with alphanumeric character"
+        return "description should start with alphanumeric character"
 
     if without_pipe[:1].isupper():
-        return "should start with lower case character"
+        return "description should start with lower case character"
 
     words = without_pipe.split(' ')
 
     if not words[0].endswith('s'):
-        return "should start with verb in present tense (stem + \"-s\")"
+        return "description should start with verb in present tense (stem + \"-s\")"
 
     lines = without_pipe.splitlines()
 
     if not lines[0].endswith('.'):
-        return "first line should end with a period"
+        return "description's first line should end with a period"
 
     one_empty_line = False
     for i, line in enumerate(lines):
         if line.strip() != line:
-            return "no line should contain leading or trailing white space"
+            return "no line in the description should contain leading or trailing white space"
 
         if i == 1 and line.strip() != "":
-            return "second line should be empty"
+            return "description's second line should be empty"
 
         if line == "":
             if one_empty_line:
-                return "two empty lines are not allowed"
+                return "description should not contain two empty lines"
             else:
                 one_empty_line = True
         else:
             one_empty_line = False
 
     if without_pipe.strip() != without_pipe:
-        return "should not contain leading or trailing whitespaces"
+        return "description should not contain leading or trailing whitespaces"
 
     return None
 
 
 def perform(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[str, swagger_to.intermediate.Typedef],
-            endpoints: List[swagger_to.intermediate.Endpoint]) -> List[str]:
+            endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Checks whether the typedefs and endpoints conform to the swagger style guide.
 
@@ -279,21 +370,21 @@ def perform(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[str, s
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
     """
-    errs = []  # type: List[str]
+    complaints = []  # type: List[Complaint]
 
-    errs.extend(check_header(swagger=swagger))
+    complaints.extend(check_header(swagger=swagger))
 
-    errs.extend(check_casing_typedefs(typedefs=typedefs))
+    complaints.extend(check_casing_typedefs(typedefs=typedefs))
 
-    errs.extend(check_casing_endpoints(endpoints=endpoints))
+    complaints.extend(check_casing_endpoints(endpoints=endpoints))
 
-    errs.extend(check_descriptions_typedefs(typedefs=typedefs))
+    complaints.extend(check_descriptions_typedefs(typedefs=typedefs))
 
-    errs.extend(check_descriptions_endpoints(endpoints=endpoints))
+    complaints.extend(check_descriptions_endpoints(endpoints=endpoints))
 
-    errs.extend(check_endpoint_path(endpoints=endpoints))
+    complaints.extend(check_endpoint_path(endpoints=endpoints))
 
-    errs.extend(check_endpoint_responses(endpoints=endpoints))
+    complaints.extend(check_endpoint_responses(endpoints=endpoints))
 
-    errs.sort()
-    return errs
+    complaints.sort(key=lambda complaint: complaint.where)
+    return complaints

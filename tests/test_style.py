@@ -28,10 +28,13 @@ class TestStyleCheck(unittest.TestCase):
         endpoints = swagger_to.intermediate.to_endpoints(
             swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
 
-        errs = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
+        complaints = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
+        cmpl_strings = []
+        for cmpl in complaints:
+            cmpl_strings.append("{}: {}: \"{}\"".format(cmpl.where, cmpl.message, cmpl.what.replace('\n', ' ')))
 
         expected = (script_dir / "expected" / "style" / "errors.txt").read_text()
-        self.assertEqual(expected, "\n".join(errs))
+        self.assertEqual(expected, "\n".join(cmpl_strings))
 
 
 class TestDescription(unittest.TestCase):

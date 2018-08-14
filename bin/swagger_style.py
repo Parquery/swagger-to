@@ -18,6 +18,7 @@ def main() -> int:
     """
     parser = argparse.ArgumentParser("Reads a correct swagger file and checks that it conforms to the style guide.")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
+    parser.add_argument("--verbose", help="if set, prints as much information as possible.", action="store_true")
     args = parser.parse_args()
 
     assert isinstance(args.swagger_path, str)
@@ -42,7 +43,13 @@ def main() -> int:
     result = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
 
     if result:
-        print("Style checks failed: \n{}".format("\n".join(result)))
+        print("Style checks failed: \n")
+        if args.verbose:
+            for cmpl in result:
+                print("{}: {}: \"{}\"".format(cmpl.where, cmpl.message, cmpl.what.replace('\n', ' ')))
+        else:
+            for cmpl in result:
+                print("{}: {}".format(cmpl.where, cmpl.message))
         return 1
 
     print("Style checks succeeded.")
