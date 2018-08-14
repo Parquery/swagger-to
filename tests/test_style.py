@@ -36,12 +36,18 @@ class TestStyleCheck(unittest.TestCase):
 
 class TestDescription(unittest.TestCase):
     def test_that_it_works(self):
-        # Good: empty string or lower case first letter and ends with period, or description and paragraph
+        # Good: empty string
         self.assertEqual(swagger_to.style.check_description(""), None)
+        # Good: lower case first letter and ends with period
         self.assertEqual(swagger_to.style.check_description("is a well-formatted description."), None)
+        # Good: description and paragraph
         self.assertEqual(
             swagger_to.style.check_description("is a well-formatted description.\n\nit really is a "
-                                               "well-formatted thing."), None)
+                                               "well-formatted thing"), None)
+        # Good: description and paragraphs
+        self.assertEqual(
+            swagger_to.style.check_description("is a well-formatted description.\n\nit really is a "
+                                               "well-formatted thing\n\nit really is"), None)
 
         # Bad: everything else
         self.assertNotEqual(swagger_to.style.check_description("isnt a not-so-well-formatted description"), None)
