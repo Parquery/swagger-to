@@ -95,13 +95,16 @@ def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoin
 
     for endpoint in endpoints:
         if check_description(endpoint.description):
-            errs.append("The endpoint description is invalid: {}".format(check_description(endpoint.description)))
+            errs.append("The endpoint description doesn't conform to the style: {}: {}".format(
+                check_description(endpoint.description), endpoint.description))
         for param in endpoint.parameters:
             if check_description(param.description):
-                errs.append("The parameter description is invalid: {}".format(check_description(param.description)))
+                errs.append("The parameter description doesn't conform to the style: {}: {}".format(
+                    check_description(param.description), param.description))
         for _, resp in enumerate(endpoint.responses.values()):
             if check_description(resp.description):
-                errs.append("The response description is invalid: {}".format(check_description(resp.description)))
+                errs.append("The response description doesn't conform to the style: {}: {}".format(
+                    check_description(resp.description), resp.description))
 
     return errs
 
@@ -169,11 +172,13 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
         if check_description(typedef.description):
-            errs.append("The object description is invalid: {}".format(check_description(typedef.description)))
+            errs.append("The object description doesn't conform to the style: {}: {}".format(
+                check_description(typedef.description), typedef.description))
 
         for prop in typedef.properties.values():
             if check_description(prop.description):
-                errs.append("The property description is invalid: {}".format(check_description(prop.description)))
+                errs.append("The property description doesn't conform to the style: {}: {}".format(
+                    check_description(prop.description), prop.description))
                 errs.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
 
     return errs
@@ -220,38 +225,46 @@ def check_description(description: str) -> Optional[str]:
     :param description: the description
     :return: the failed check, if any
     """
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements, too-many-branches
     if description == "":
         return None
 
-    trimmed = description.replace("|", "")
+    without_pipe = description.replace("|", "")
 
-    if not trimmed[:1].isalpha():
-        return "should start with alphanumeric letter: {}".format(description)
+    if not without_pipe[:1].isalpha():
+        return "should start with alphanumeric character"
 
-    if trimmed[:1].isupper():
-        return "should start with lower case letter: {}".format(description)
+    if without_pipe[:1].isupper():
+        return "should start with lower case character"
 
-    words = trimmed.split(' ')
+    words = without_pipe.split(' ')
 
     if not words[0].endswith('s'):
-        return "should start with verb in present tense: {}".format(description)
+        return "should start with verb in present tense (stem + \"-s\")"
 
-    lines = trimmed.splitlines()
+    lines = without_pipe.splitlines()
 
     if not lines[0].endswith('.'):
-        return "first line should end with a period: {}".format(description)
-    for i, word in enumerate(lines):
-        if i == 1 and word != "":
-            return "second line should be empty: {}".format(description)
-        elif i != 1 and word == "":
-            return "no line apart from the second should be empty: {}".format(description)
+        return "first line should end with a period"
 
-    if not trimmed.endswith("."):
-        return "should end with a period: {}".format(description)
+    one_empty_line = False
+    for i, line in enumerate(lines):
+        if line.strip() != line:
+            return "no line should contain leading or trailing white space"
 
-    if trimmed.strip() != trimmed:
-        return "should not contain leading or trailing whitespaces: {}".format(description)
+        if i == 1 and line.strip() != "":
+            return "second line should be empty"
+
+        if line == "":
+            if one_empty_line:
+                return "two empty lines are not allowed"
+            else:
+                one_empty_line = True
+        else:
+            one_empty_line = False
+
+    if without_pipe.strip() != without_pipe:
+        return "should not contain leading or trailing whitespaces"
 
     return None
 
