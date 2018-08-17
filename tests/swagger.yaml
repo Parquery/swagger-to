@@ -77,7 +77,7 @@ paths:
           in: query
           description: A maximum number of lines in the produced json.
           required: false
-          type: number
+          type: integer
           format: int32
       produces:
         - application/json

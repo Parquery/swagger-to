@@ -1,0 +1,60 @@
+package uber
+
+import (
+	"net/http"
+	"log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+	LogErr *log.Logger
+	LogOut *log.Logger}
+
+// Products implements Handler.Products.
+func (h *HandlerImpl) Products(w http.ResponseWriter,
+	r *http.Request,
+	latitude float64,
+	longitude float64) {
+	http.Error(w, "Not implemented: Products", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: Products")
+}
+
+// EstimatesPrice implements Handler.EstimatesPrice.
+func (h *HandlerImpl) EstimatesPrice(w http.ResponseWriter,
+	r *http.Request,
+	startLatitude float64,
+	startLongitude float64,
+	endLatitude float64,
+	endLongitude float64,
+	maxLines *int32) {
+	http.Error(w, "Not implemented: EstimatesPrice", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: EstimatesPrice")
+}
+
+// EstimatesTime implements Handler.EstimatesTime.
+func (h *HandlerImpl) EstimatesTime(w http.ResponseWriter,
+	r *http.Request,
+	startLatitude float64,
+	startLongitude float64,
+	customerUuid *string,
+	productID *string) {
+	http.Error(w, "Not implemented: EstimatesTime", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: EstimatesTime")
+}
+
+// UpdateMe implements Handler.UpdateMe.
+func (h *HandlerImpl) UpdateMe(w http.ResponseWriter,
+	r *http.Request,
+	updateUser Profile) {
+	http.Error(w, "Not implemented: UpdateMe", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: UpdateMe")
+}
+
+// History implements Handler.History.
+func (h *HandlerImpl) History(w http.ResponseWriter,
+	r *http.Request,
+	offset *int32,
+	limit *int32) {
+	http.Error(w, "Not implemented: History", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: History")
+}

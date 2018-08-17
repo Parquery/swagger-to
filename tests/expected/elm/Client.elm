@@ -313,7 +313,7 @@ estimatesPriceRequest :
     -> Float
     -> Float
     -> Float
-    -> Maybe Float
+    -> Maybe Int
     -> Http.Request (List Product)
 estimatesPriceRequest
     prefix
