@@ -22,6 +22,7 @@ class Typedef:
         self.identifier = ''
         self.description = ''
         self.json_schema = JsonSchema()
+        self.line = 0
 
 
 class Propertydef:
@@ -30,6 +31,7 @@ class Propertydef:
         self.typedef = Typedef()
         self.description = ''
         self.required = False
+        self.line = 0
 
 
 class Objectdef(Typedef):
@@ -77,6 +79,7 @@ class Parameter:
         self.required = False
         self.json_schema = JsonSchema()
         self.description = None  # type: Optional[str]
+        self.line = 0
 
 
 class Response:
@@ -84,6 +87,7 @@ class Response:
         self.code = ''
         self.description = ''
         self.typedef = None  # type: Optional[Typedef]
+        self.line = 0
 
 
 class Endpoint:
@@ -96,6 +100,7 @@ class Endpoint:
         self.produces = []  # type: List[str]
         self.consumes = []  # type: List[str]
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
+        self.line = 0
 
 
 def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
@@ -129,6 +134,7 @@ def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
             definition.identifier, definition.typedef.type))
 
     typedef.identifier = definition.identifier
+    typedef.line = definition.typedef.__lineno__
     typedef.description = definition.typedef.description
     typedefs[typedef.identifier] = typedef
 
@@ -193,12 +199,13 @@ def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
         typedef.type = original_typedef.type
         typedef.format = original_typedef.format
         typedef.pattern = original_typedef.pattern
+        typedef.line = original_typedef.__lineno__
 
     elif original_typedef.type == 'array':
         typedef = Arraydef()
 
         if original_typedef.items is None:
-            raise ValueError("Unexpected None items: {!r}".format(original_typedef.adict))
+            raise ValueError("Unexpected None items: {!r}".format(original_typedef.raw_dict.adict))
 
         typedef.items = anonymous_or_get_typedef(original_typedef=original_typedef.items, typedefs=typedefs)
 
@@ -218,11 +225,12 @@ def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
                 propdef.description = prop_typedef.description
                 propdef.name = prop_name
                 propdef.required = propdef.name in typedef.required
+                propdef.line = propdef.typedef.line
 
                 typedef.properties[prop_name] = propdef
 
     else:
-        raise ValueError("Unexpected definition: {!r}".format(original_typedef.adict))
+        raise ValueError("Unexpected definition: {!r}".format(original_typedef.raw_dict.adict))
 
     assert typedef is not None
 
@@ -308,6 +316,8 @@ def recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> Mut
 
         elif isinstance(value, (dict, collections.OrderedDict)):
             new_schema_dict[key] = recursively_strip_descriptions(schema_dict=value)
+        elif isinstance(value, swagger_to.swagger.RawDict):
+            new_schema_dict[key] = recursively_strip_descriptions(schema_dict=value.adict)
         else:
             new_schema_dict[key] = value
 
@@ -334,12 +344,12 @@ def to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef
         if definition_name in schema_definitions:
             continue
 
-        schema_definitions[definition_name] = definitions[definition_name].typedef.adict
+        schema_definitions[definition_name] = definitions[definition_name].typedef.raw_dict.adict
 
     if len(schema_definitions) > 0:
         schema['definitions'] = schema_definitions
 
-    for key, value in original_typedef.adict.items():
+    for key, value in original_typedef.raw_dict.adict.items():
         schema[key] = value
 
     schema = recursively_strip_descriptions(schema_dict=schema)
@@ -371,7 +381,7 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
     else:
         raise ValueError(
             "Could not resolve the type of the parameter, neither 'type' nor 'schema' defined: {!r}".format(
-                original_param.adict))
+                original_param.raw_dict.adict))
 
     typedef = anonymous_or_get_typedef(original_typedef=original_typedef, typedefs=typedefs)
 
@@ -381,6 +391,7 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
     param.name = original_param.name
     param.required = original_param.required
     param.description = original_param.description
+    param.line = original_param.__lineno__
 
     return param
 
@@ -392,7 +403,7 @@ def to_parameters(swagger: swagger_to.swagger.Swagger,
     for original_param in swagger.parameters.values():
         if original_param.ref != '':
             raise ValueError("Expected no 'ref' property in a parameter definition {!r}, but got: {!r}".format(
-                original_param.name, original_param.adict))
+                original_param.name, original_param.raw_dict.adict))
 
         param = to_parameter(original_param=original_param, typedefs=typedefs)
         params[param.name] = param
@@ -406,7 +417,7 @@ def anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typ
         param_ref_name = swagger_to.parse_parameter_ref(ref=original_param.ref)
         if param_ref_name not in params:
             raise ValueError("The parameter referenced by the parameter {!r} has not been defined: {!r}".format(
-                original_param.adict, original_param.ref))
+                original_param.raw_dict.adict, original_param.ref))
 
         return params[param_ref_name]
 
@@ -417,6 +428,7 @@ def to_response(swagger_response: swagger_to.swagger.Response, typedefs: Mutable
     resp = Response()
     resp.description = swagger_response.description
     resp.code = swagger_response.code
+    resp.line = swagger_response.__lineno__
 
     swagger_typedef = None  # type: Optional[swagger_to.swagger.Typedef]
 
@@ -457,6 +469,7 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
     endpt.description = method.description
     endpt.consumes = method.consumes
     endpt.produces = method.produces
+    endpt.line = method.__lineno__
 
     for original_param in method.parameters:
         param = anonymous_or_get_parameter(original_param=original_param, typedefs=typedefs, params=params)

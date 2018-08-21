@@ -13,13 +13,14 @@ import swagger_to
 class Complaint:
     """Encapsulates a complaint."""
 
-    def __init__(self, message: str, what: str, where: str):
+    def __init__(self, message: str, what: str, where: str, line: int) -> None:
         self.message = message
         self.what = what
         self.where = where
+        self.line = line
 
 
-def check_header(swagger: swagger_to.swagger) -> List[Complaint]:
+def check_header(swagger: swagger_to.swagger.Swagger) -> List[Complaint]:
     """
     Checks whether the swagger header conforms to the style guide.
 
@@ -31,23 +32,26 @@ def check_header(swagger: swagger_to.swagger) -> List[Complaint]:
     if swagger.name != swagger_to.snake_case(swagger.name):
         complaints.append(
             Complaint(
-                message="Name of the Swagger specification is not snake case",
+                message="Name of the Swagger specification is not snake case (e.g. snake_case)",
                 what=swagger.name,
-                where="In the Swagger header"))
+                where="In the Swagger header",
+                line=1))
 
     if not swagger.base_path.startswith("/"):
         complaints.append(
             Complaint(
                 message="Swagger base path doesn't start with a slash",
                 what=swagger.base_path,
-                where="In the Swagger header"))
+                where="In the Swagger header",
+                line=1))
 
     if swagger.description.capitalize() != swagger.description:
         complaints.append(
             Complaint(
                 message="Swagger description should be capitalized",
                 what=swagger.description,
-                where="In the Swagger header"))
+                where="In the Swagger header",
+                line=1))
 
     return complaints
 
@@ -81,22 +85,25 @@ def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) ->
         if endpoint.path != swagger_to.snake_case(endpoint.path):
             complaints.append(
                 Complaint(
-                    message="Path doesn't conform to snake case",
+                    message="Path doesn't conform to snake case (e.g. snake_case)",
                     what=endpoint.path,
-                    where="In endpoint {}".format(endpoint.operation_id)))
+                    where="In endpoint {}".format(endpoint.operation_id),
+                    line=endpoint.line))
         if endpoint.operation_id != swagger_to.snake_case(endpoint.operation_id):
             complaints.append(
                 Complaint(
-                    message="Endpoint operation ID is not a snake case (e.g. snake_case) identifier",
+                    message="Endpoint operation ID is not a snake case identifier (e.g. snake_case)",
                     what=endpoint.operation_id,
-                    where="In endpoint {}".format(endpoint.operation_id)))
+                    where="In endpoint {}".format(endpoint.operation_id),
+                    line=endpoint.line))
         for param in endpoint.parameters:
             if param.name != swagger_to.snake_case(param.name):
                 complaints.append(
                     Complaint(
-                        message="Parameter has not a snake case (e.g. snake_case) identifier",
+                        message="Parameter has not a snake case identifier (e.g. snake_case)",
                         what=param.name,
-                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name)))
+                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
+                        line=param.line))
 
     return complaints
 
@@ -132,21 +139,24 @@ def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoin
                 Complaint(
                     message=check_description(endpoint.description),
                     what=endpoint.description,
-                    where="In endpoint {}".format(endpoint.operation_id)))
+                    where="In endpoint {}".format(endpoint.operation_id),
+                    line=endpoint.line))
         for param in endpoint.parameters:
             if check_description(param.description):
                 complaints.append(
                     Complaint(
                         message=check_description(param.description),
                         what=param.description,
-                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name)))
+                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
+                        line=param.line))
         for _, resp in enumerate(endpoint.responses.values()):
             if check_description(resp.description):
                 complaints.append(
                     Complaint(
                         message=check_description(resp.description),
                         what=resp.description,
-                        where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code)))
+                        where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code),
+                        line=resp.line))
 
     return complaints
 
@@ -173,18 +183,20 @@ def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
         if typedef.identifier != "" and typedef.identifier != swagger_to.capital_camel_case(typedef.identifier):
             complaints.append(
                 Complaint(
-                    message="Not a capital camel case (e.g. CamelCase) identifier",
+                    message="Not a capital camel case identifier (e.g. CamelCase)",
                     what=typedef.identifier,
-                    where="In array {}".format(typedef.identifier)))
+                    where="In array {}".format(typedef.identifier),
+                    line=typedef.line))
         complaints.extend(_check_recursively_cases(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
         if typedef.identifier != "" and typedef.identifier != swagger_to.capital_camel_case(typedef.identifier):
             complaints.append(
                 Complaint(
-                    message="Not a capital camel case (e.g. CamelCase) identifier",
+                    message="Not a capital camel case identifier (e.g. CamelCase)",
                     what=typedef.identifier,
-                    where="In map {}".format(typedef.identifier)))
+                    where="In map {}".format(typedef.identifier),
+                    line=typedef.line))
         complaints.extend(_check_recursively_cases(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
@@ -192,17 +204,19 @@ def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
         if typedef.identifier != "" and typedef.identifier != swagger_to.capital_camel_case(typedef.identifier):
             complaints.append(
                 Complaint(
-                    message="Not a capital camel case (e.g. CamelCase) identifier",
+                    message="Not a capital camel case identifier (e.g. CamelCase)",
                     what=typedef.identifier,
-                    where="In object {}".format(typedef.identifier)))
+                    where="In object {}".format(typedef.identifier),
+                    line=typedef.line))
 
         for prop in typedef.properties.values():
             if prop.name != swagger_to.snake_case(prop.name):
                 complaints.append(
                     Complaint(
-                        message="Not a snake case (e.g. snake_case) identifier",
+                        message="Not a snake case identifier (e.g. snake_case)",
                         what=prop.name,
-                        where="In object {}, property {}".format(typedef.identifier, prop.name)))
+                        where="In object {}, property {}".format(typedef.identifier, prop.name),
+                        line=typedef.line))
             complaints.extend(_check_recursively_cases(typedef=prop.typedef, visited=visited))
 
     return complaints
@@ -232,7 +246,8 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
                 Complaint(
                     message=check_description(typedef.description),
                     what=typedef.description,
-                    where="In array {}".format(typedef.identifier)))
+                    where="In array {}".format(typedef.identifier),
+                    line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
@@ -241,7 +256,8 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
                 Complaint(
                     what=typedef.description,
                     message=check_description(typedef.description),
-                    where="In map {}".format(typedef.identifier)))
+                    where="In map {}".format(typedef.identifier),
+                    line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
@@ -250,7 +266,8 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
                 Complaint(
                     what=typedef.description,
                     message=check_description(typedef.description),
-                    where="In object {}".format(typedef.identifier)))
+                    where="In object {}".format(typedef.identifier),
+                    line=typedef.line))
 
         for prop in typedef.properties.values():
             if check_description(prop.description):
@@ -258,7 +275,8 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
                     Complaint(
                         what=prop.description,
                         message=check_description(prop.description),
-                        where="In object {}, property {}".format(typedef.identifier, prop.name)))
+                        where="In object {}, property {}".format(typedef.identifier, prop.name),
+                        line=typedef.line))
                 complaints.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
 
     return complaints
@@ -279,13 +297,15 @@ def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) 
                 Complaint(
                     message="Path doesn't include response 200",
                     what=endpoint.path,
-                    where="In endpoint {}".format(endpoint.operation_id)))
+                    where="In endpoint {}".format(endpoint.operation_id),
+                    line=endpoint.line))
         if "default" not in endpoint.responses.keys():
             complaints.append(
                 Complaint(
                     message="Path doesn't include default response",
                     what=endpoint.path,
-                    where="In endpoint {}".format(endpoint.operation_id)))
+                    where="In endpoint {}".format(endpoint.operation_id),
+                    line=endpoint.line))
 
     return complaints
 
@@ -305,7 +325,8 @@ def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> Li
                 Complaint(
                     message="Path doesn't begin with a slash",
                     what=endpoint.path,
-                    where="In endpoint {}".format(endpoint.operation_id)))
+                    where="In endpoint {}".format(endpoint.operation_id),
+                    line=endpoint.line))
 
     return complaints
 
