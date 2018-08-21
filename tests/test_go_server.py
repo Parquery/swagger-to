@@ -16,6 +16,7 @@ import swagger_to.swagger
 
 class TestGoServer(unittest.TestCase):
     def test_that_it_works(self):
+        # pylint: disable=too-many-locals
         script_dir = pathlib.Path(os.path.realpath(__file__)).parent
         swagger_path = script_dir / "swagger.yaml"
 
@@ -72,7 +73,8 @@ class TestGoServer(unittest.TestCase):
 
         with io.StringIO() as buf:
             buffid = cast(TextIO, buf)
-            swagger_to.go_server.write_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs, fid=buffid)
+            swagger_to.go_server.write_json_schemas_go(
+                package=package, routes=go_routes, typedefs=go_typedefs, fid=buffid)
 
             got = buf.getvalue()
 

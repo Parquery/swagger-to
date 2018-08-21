@@ -36,6 +36,34 @@ class TestStyleCheck(unittest.TestCase):
         expected = (script_dir / "expected" / "style" / "errors.txt").read_text()
         self.assertEqual(expected, "\n".join(cmpl_strings))
 
+    def test_with_line_numbers(self):
+        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
+        swagger_path = script_dir / "swagger.yaml"
+        swagger_path_rel = "tests/swagger.yaml"
+
+        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
+        if errs:
+            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+
+        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
+        intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
+
+        endpoints = swagger_to.intermediate.to_endpoints(
+            swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
+
+        complaints = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
+        complaints.sort(key=lambda complaint: complaint.line)
+
+        cmpl_strings = []
+        for cmpl in complaints:
+            complaint_str = "{}:{} {} \"{}\"".format(swagger_path_rel, cmpl.line, cmpl.message,
+                                                     cmpl.what.replace('\n', ' '))
+
+            cmpl_strings.append(complaint_str)
+
+        expected = (script_dir / "expected" / "style" / "errors_line_numbers.txt").read_text()
+        self.assertEqual(expected, "\n".join(cmpl_strings))
+
 
 class TestDescription(unittest.TestCase):
     def test_that_it_works(self):
