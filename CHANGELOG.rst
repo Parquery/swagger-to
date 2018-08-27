@@ -1,7 +1,12 @@
+2.2.0
+=====
+* Added options to style checks to include line numbers of failed checks and verbose error messages.
+* Added tests for comparing the output of all generation scripts against expected values.
+
 2.1.0
 =====
 * Added a script to generate Elm client code.
-* Added a script to check Swagger files for style (descriptions, definition names, property names)
+* Added a script to check Swagger files for style (descriptions, definition names, property names).
 
 2.0.2
 =====
@@ -37,5 +42,5 @@
 
 1.0.0
 =====
-* Initial version
+* Initial version.
 
