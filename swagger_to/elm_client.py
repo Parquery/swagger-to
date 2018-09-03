@@ -808,9 +808,15 @@ def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: 
               "import Json.Decode\n"
               "import Json.Decode.Pipeline\n"
               "import Json.Encode\n"
-              "import Json.Encode.Extra\n"
-              "import QueryString\n"
-              "import Time\n\n\n")
+              "import Json.Encode.Extra\n")
+
+    # import QueryString only if needed
+    for request in requests:
+        if request.query_parameters:
+            fid.write("import QueryString\n")
+            break
+
+    fid.write("import Time\n\n\n")
 
 
 def write_footer(fid: TextIO) -> None:
