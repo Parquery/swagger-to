@@ -276,6 +276,8 @@ def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
         param, param_errors = parse_parameter(raw_dict=param_dict)
         errors.extend(['in parameter {} (name: {!r}): {}'.format(i, param.name, error) for error in param_errors])
 
+        param.method = mth
+
         mth.parameters.append(param)
 
     for resp_code, resp_dict in adict.get('responses', RawDict()).adict.items():
