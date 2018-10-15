@@ -1,3 +1,7 @@
+2.2.1
+=====
+* Fixed that anonymous types of body parameters are named in intermediate representation.
+
 2.2.0
 =====
 * Added options to style checks to include line numbers of failed checks and verbose error messages.
