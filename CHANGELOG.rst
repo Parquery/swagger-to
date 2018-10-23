@@ -1,3 +1,8 @@
+2.2.2
+=====
+* swagger-to-py-client suffixes values parsed from an object to avoid conflicts with ``path`` field
+* swagger-to-py-client adds type assertions to make the generated code compliant with mypy 0.630
+
 2.2.1
 =====
 * Fixed that anonymous types of body parameters are named in intermediate representation.
