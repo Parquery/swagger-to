@@ -382,7 +382,7 @@ def write_header(service_name: str, fid: TextIO) -> None:
     fid.write("# pydocstyle: add-ignore=D105,D107,D401\n\n")
 
     fid.write('import contextlib\n')
-    fid.write("from typing import Any, BinaryIO, List, Dict, Optional\n\n")
+    fid.write("from typing import Any, BinaryIO, Dict, List, Optional\n\n")
     fid.write("import requests\n")
     fid.write("import requests.auth\n")
 
@@ -716,10 +716,26 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     if not isinstance(obj, exp):
         raise ValueError("Expected object of type {} at path {!r}, but got {}.".format(exp, path, type(obj)))
 
-    if exp in [bool, int, float, str]:
+    # Assert on primitive types to help type-hinting.
+    if exp == bool:
+        assert isinstance(obj, bool)
+        return obj
+
+    if exp == int:
+        assert isinstance(obj, int)
+        return obj
+
+    if exp == float:
+        assert isinstance(obj, float)
+        return obj
+
+    if exp == str:
+        assert isinstance(obj, str)
         return obj
 
     if exp == list:
+        assert isinstance(obj, list)
+
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
             lst.append(to_jsonable(value, expected=expected[1:], path=''.join([path, '[', str(i), ']'])))
@@ -727,6 +743,8 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
         return lst
 
     if exp == dict:
+        assert isinstance(obj, dict)
+
         adict = dict()  # type: Dict[str, Any]
         for key, value in obj.items():
             if not isinstance(key, str):
@@ -739,6 +757,7 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     for classdef in classdefs:
         fid.write('\n\n')
         fid.write(INDENT + 'if exp == {}:\n'.format(classdef.identifier))
+        fid.write(INDENT * 2 + 'assert isinstance(obj, {})\n'.format(classdef.identifier))
         fid.write(INDENT * 2 + 'return {}_to_jsonable(obj, path=path)'.format(
             swagger_to.snake_case(classdef.identifier)))
 

@@ -6,7 +6,7 @@
 # pydocstyle: add-ignore=D105,D107,D401
 
 import contextlib
-from typing import Any, BinaryIO, List, Dict, Optional
+from typing import Any, BinaryIO, Dict, List, Optional
 
 import requests
 import requests.auth
@@ -97,10 +97,26 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
     if not isinstance(obj, exp):
         raise ValueError("Expected object of type {} at path {!r}, but got {}.".format(exp, path, type(obj)))
 
-    if exp in [bool, int, float, str]:
+    # Assert on primitive types to help type-hinting.
+    if exp == bool:
+        assert isinstance(obj, bool)
+        return obj
+
+    if exp == int:
+        assert isinstance(obj, int)
+        return obj
+
+    if exp == float:
+        assert isinstance(obj, float)
+        return obj
+
+    if exp == str:
+        assert isinstance(obj, str)
         return obj
 
     if exp == list:
+        assert isinstance(obj, list)
+
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
             lst.append(to_jsonable(value, expected=expected[1:], path=''.join([path, '[', str(i), ']'])))
@@ -108,6 +124,8 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
         return lst
 
     if exp == dict:
+        assert isinstance(obj, dict)
+
         adict = dict()  # type: Dict[str, Any]
         for key, value in obj.items():
             if not isinstance(key, str):
@@ -118,21 +136,27 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
         return adict
 
     if exp == Product:
+        assert isinstance(obj, Product)
         return product_to_jsonable(obj, path=path)
 
     if exp == ProductList:
+        assert isinstance(obj, ProductList)
         return product_list_to_jsonable(obj, path=path)
 
     if exp == PriceEstimate:
+        assert isinstance(obj, PriceEstimate)
         return price_estimate_to_jsonable(obj, path=path)
 
     if exp == Profile:
+        assert isinstance(obj, Profile)
         return profile_to_jsonable(obj, path=path)
 
     if exp == Activity:
+        assert isinstance(obj, Activity)
         return activity_to_jsonable(obj, path=path)
 
     if exp == Activities:
+        assert isinstance(obj, Activities)
         return activities_to_jsonable(obj, path=path)
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))
