@@ -17,7 +17,7 @@ with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='swagger_to',
-    version='2.2.1',
+    version='2.2.2',
     description='Generates code from swagger definitions; an alternative to swagger codegen',
     long_description=long_description,
     url='https://github.com/Parquery/swagger-to',
@@ -29,7 +29,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.5',
     ],
-    license = "License :: OSI Approved :: MIT License",
+    license="License :: OSI Approved :: MIT License",
     keywords='swagger code generation python elm go typescript server client angular',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=['pyyaml>=3.12'],
