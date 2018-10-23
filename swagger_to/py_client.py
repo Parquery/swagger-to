@@ -659,7 +659,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
         # yapf: disable
         set_attr_stmt_parts = [
-            '{} = from_obj('.format(attr.name),
+            '{}_from_obj = from_obj('.format(attr.name),
             'obj["{0}"]'.format(attr.name),
             'expected=[{}]'.format(
                 expected_type_expression(typedef=attr.typedef)),
@@ -682,7 +682,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
     suffix = ')'
     args = []  # type: List[str]
     for attr in classdef.attributes.values():
-        args.append('{0}={0}'.format(attr.name))
+        args.append('{0}={0}_from_obj'.format(attr.name))
 
     line = prefix + ', '.join(args) + suffix
     if len(line) <= 80:

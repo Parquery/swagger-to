@@ -213,31 +213,31 @@ def product_from_obj(obj: Any, path: str = "") -> Product:
         if not isinstance(key, str):
             raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))
 
-    product_id = from_obj(obj["product_id"],
-                          expected=[str],
-                          path=path + ".product_id")  # type: str
+    product_id_from_obj = from_obj(obj["product_id"],
+                                   expected=[str],
+                                   path=path + ".product_id")  # type: str
 
-    desc = from_obj(obj["desc"],
-                    expected=[str],
-                    path=path + ".desc")  # type: str
+    desc_from_obj = from_obj(obj["desc"],
+                             expected=[str],
+                             path=path + ".desc")  # type: str
 
-    display_name = from_obj(obj["display_name"],
-                            expected=[str],
-                            path=path + ".display_name")  # type: str
+    display_name_from_obj = from_obj(obj["display_name"],
+                                     expected=[str],
+                                     path=path + ".display_name")  # type: str
 
-    capacity = from_obj(obj["capacity"],
-                        expected=[int],
-                        path=path + ".capacity")  # type: int
+    capacity_from_obj = from_obj(obj["capacity"],
+                                 expected=[int],
+                                 path=path + ".capacity")  # type: int
 
-    image = from_obj(obj["image"],
-                     expected=[str],
-                     path=path + ".image")  # type: str
+    image_from_obj = from_obj(obj["image"],
+                              expected=[str],
+                              path=path + ".image")  # type: str
 
-    return Product(product_id=product_id,
-                   desc=desc,
-                   display_name=display_name,
-                   capacity=capacity,
-                   image=image)
+    return Product(product_id=product_id_from_obj,
+                   desc=desc_from_obj,
+                   display_name=display_name_from_obj,
+                   capacity=capacity_from_obj,
+                   image=image_from_obj)
 
 
 def product_to_jsonable(product: Product, path: str = "") -> Dict[str, Any]:
@@ -285,11 +285,11 @@ def product_list_from_obj(obj: Any, path: str = "") -> ProductList:
         if not isinstance(key, str):
             raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))
 
-    products = from_obj(obj["products"],
-                        expected=[list, Product],
-                        path=path + ".products")  # type: List[Product]
+    products_from_obj = from_obj(obj["products"],
+                                 expected=[list, Product],
+                                 path=path + ".products")  # type: List[Product]
 
-    return ProductList(products=products)
+    return ProductList(products=products_from_obj)
 
 
 def product_list_to_jsonable(product_list: ProductList, path: str = "") -> Dict[str, Any]:
@@ -362,47 +362,47 @@ def price_estimate_from_obj(obj: Any, path: str = "") -> PriceEstimate:
         if not isinstance(key, str):
             raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))
 
-    product_id = from_obj(obj["product_id"],
-                          expected=[str],
-                          path=path + ".product_id")  # type: str
+    product_id_from_obj = from_obj(obj["product_id"],
+                                   expected=[str],
+                                   path=path + ".product_id")  # type: str
 
-    currency_code = from_obj(obj["currency_code"],
-                             expected=[str],
-                             path=path + ".currency_code")  # type: str
+    currency_code_from_obj = from_obj(obj["currency_code"],
+                                      expected=[str],
+                                      path=path + ".currency_code")  # type: str
 
-    display_name = from_obj(obj["display_name"],
-                            expected=[str],
-                            path=path + ".display_name")  # type: str
+    display_name_from_obj = from_obj(obj["display_name"],
+                                     expected=[str],
+                                     path=path + ".display_name")  # type: str
 
-    estimate = from_obj(obj["estimate"],
-                        expected=[str],
-                        path=path + ".estimate")  # type: str
+    estimate_from_obj = from_obj(obj["estimate"],
+                                 expected=[str],
+                                 path=path + ".estimate")  # type: str
 
     low_estimate = None  # type: Optional[float]
     if "low_estimate" in obj:
-        low_estimate = from_obj(obj["low_estimate"],
-                                expected=[float],
-                                path=path + ".low_estimate")  # type: float
+        low_estimate_from_obj = from_obj(obj["low_estimate"],
+                                         expected=[float],
+                                         path=path + ".low_estimate")  # type: float
 
     high_estimate = None  # type: Optional[float]
     if "high_estimate" in obj:
-        high_estimate = from_obj(obj["high_estimate"],
-                                 expected=[float],
-                                 path=path + ".high_estimate")  # type: float
+        high_estimate_from_obj = from_obj(obj["high_estimate"],
+                                          expected=[float],
+                                          path=path + ".high_estimate")  # type: float
 
     surge_multiplier = None  # type: Optional[float]
     if "surge_multiplier" in obj:
-        surge_multiplier = from_obj(obj["surge_multiplier"],
-                                    expected=[float],
-                                    path=path + ".surge_multiplier")  # type: float
+        surge_multiplier_from_obj = from_obj(obj["surge_multiplier"],
+                                             expected=[float],
+                                             path=path + ".surge_multiplier")  # type: float
 
-    return PriceEstimate(product_id=product_id,
-                         currency_code=currency_code,
-                         display_name=display_name,
-                         estimate=estimate,
-                         low_estimate=low_estimate,
-                         high_estimate=high_estimate,
-                         surge_multiplier=surge_multiplier)
+    return PriceEstimate(product_id=product_id_from_obj,
+                         currency_code=currency_code_from_obj,
+                         display_name=display_name_from_obj,
+                         estimate=estimate_from_obj,
+                         low_estimate=low_estimate_from_obj,
+                         high_estimate=high_estimate_from_obj,
+                         surge_multiplier=surge_multiplier_from_obj)
 
 
 def price_estimate_to_jsonable(price_estimate: PriceEstimate, path: str = "") -> Dict[str, Any]:
@@ -474,35 +474,35 @@ def profile_from_obj(obj: Any, path: str = "") -> Profile:
         if not isinstance(key, str):
             raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))
 
-    last_name = from_obj(obj["last_name"],
-                         expected=[str],
-                         path=path + ".last_name")  # type: str
+    last_name_from_obj = from_obj(obj["last_name"],
+                                  expected=[str],
+                                  path=path + ".last_name")  # type: str
 
-    email = from_obj(obj["email"],
-                     expected=[str],
-                     path=path + ".email")  # type: str
+    email_from_obj = from_obj(obj["email"],
+                              expected=[str],
+                              path=path + ".email")  # type: str
 
-    picture = from_obj(obj["picture"],
-                       expected=[str],
-                       path=path + ".picture")  # type: str
+    picture_from_obj = from_obj(obj["picture"],
+                                expected=[str],
+                                path=path + ".picture")  # type: str
 
     first_name = None  # type: Optional[str]
     if "first_name" in obj:
-        first_name = from_obj(obj["first_name"],
-                              expected=[str],
-                              path=path + ".first_name")  # type: str
+        first_name_from_obj = from_obj(obj["first_name"],
+                                       expected=[str],
+                                       path=path + ".first_name")  # type: str
 
     promo_code = None  # type: Optional[str]
     if "promo_code" in obj:
-        promo_code = from_obj(obj["promo_code"],
-                              expected=[str],
-                              path=path + ".promo_code")  # type: str
+        promo_code_from_obj = from_obj(obj["promo_code"],
+                                       expected=[str],
+                                       path=path + ".promo_code")  # type: str
 
-    return Profile(last_name=last_name,
-                   email=email,
-                   picture=picture,
-                   first_name=first_name,
-                   promo_code=promo_code)
+    return Profile(last_name=last_name_from_obj,
+                   email=email_from_obj,
+                   picture=picture_from_obj,
+                   first_name=first_name_from_obj,
+                   promo_code=promo_code_from_obj)
 
 
 def profile_to_jsonable(profile: Profile, path: str = "") -> Dict[str, Any]:
@@ -552,11 +552,11 @@ def activity_from_obj(obj: Any, path: str = "") -> Activity:
         if not isinstance(key, str):
             raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))
 
-    uuid = from_obj(obj["uuid"],
-                    expected=[str],
-                    path=path + ".uuid")  # type: str
+    uuid_from_obj = from_obj(obj["uuid"],
+                             expected=[str],
+                             path=path + ".uuid")  # type: str
 
-    return Activity(uuid=uuid)
+    return Activity(uuid=uuid_from_obj)
 
 
 def activity_to_jsonable(activity: Activity, path: str = "") -> Dict[str, Any]:
@@ -608,23 +608,26 @@ def activities_from_obj(obj: Any, path: str = "") -> Activities:
         if not isinstance(key, str):
             raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))
 
-    offset = from_obj(obj["offset"],
-                      expected=[int],
-                      path=path + ".offset")  # type: int
+    offset_from_obj = from_obj(obj["offset"],
+                               expected=[int],
+                               path=path + ".offset")  # type: int
 
-    limit = from_obj(obj["limit"],
-                     expected=[int],
-                     path=path + ".limit")  # type: int
+    limit_from_obj = from_obj(obj["limit"],
+                              expected=[int],
+                              path=path + ".limit")  # type: int
 
-    count = from_obj(obj["count"],
-                     expected=[int],
-                     path=path + ".count")  # type: int
+    count_from_obj = from_obj(obj["count"],
+                              expected=[int],
+                              path=path + ".count")  # type: int
 
-    history = from_obj(obj["history"],
-                       expected=[list, Activity],
-                       path=path + ".history")  # type: List[Activity]
+    history_from_obj = from_obj(obj["history"],
+                                expected=[list, Activity],
+                                path=path + ".history")  # type: List[Activity]
 
-    return Activities(offset=offset, limit=limit, count=count, history=history)
+    return Activities(offset=offset_from_obj,
+                      limit=limit_from_obj,
+                      count=count_from_obj,
+                      history=history_from_obj)
 
 
 def activities_to_jsonable(activities: Activities, path: str = "") -> Dict[str, Any]:
