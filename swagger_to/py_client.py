@@ -671,7 +671,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
         if attr.required:
             write_set_attr_stmt(indention=INDENT, set_attr_stmt_parts=set_attr_stmt_parts)
         else:
-            fid.write(INDENT + '''{} = None  # type: Optional[{}]\n'''.format(attr.name, attr_type_expr))
+            fid.write(INDENT + '''{}_from_obj = None  # type: Optional[{}]\n'''.format(attr.name, attr_type_expr))
 
             fid.write(INDENT + 'if "{}" in obj:\n'.format(attr.name))
             write_set_attr_stmt(indention=INDENT * 2, set_attr_stmt_parts=set_attr_stmt_parts)

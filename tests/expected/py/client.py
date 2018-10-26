@@ -378,19 +378,19 @@ def price_estimate_from_obj(obj: Any, path: str = "") -> PriceEstimate:
                                  expected=[str],
                                  path=path + ".estimate")  # type: str
 
-    low_estimate = None  # type: Optional[float]
+    low_estimate_from_obj = None  # type: Optional[float]
     if "low_estimate" in obj:
         low_estimate_from_obj = from_obj(obj["low_estimate"],
                                          expected=[float],
                                          path=path + ".low_estimate")  # type: float
 
-    high_estimate = None  # type: Optional[float]
+    high_estimate_from_obj = None  # type: Optional[float]
     if "high_estimate" in obj:
         high_estimate_from_obj = from_obj(obj["high_estimate"],
                                           expected=[float],
                                           path=path + ".high_estimate")  # type: float
 
-    surge_multiplier = None  # type: Optional[float]
+    surge_multiplier_from_obj = None  # type: Optional[float]
     if "surge_multiplier" in obj:
         surge_multiplier_from_obj = from_obj(obj["surge_multiplier"],
                                              expected=[float],
@@ -486,13 +486,13 @@ def profile_from_obj(obj: Any, path: str = "") -> Profile:
                                 expected=[str],
                                 path=path + ".picture")  # type: str
 
-    first_name = None  # type: Optional[str]
+    first_name_from_obj = None  # type: Optional[str]
     if "first_name" in obj:
         first_name_from_obj = from_obj(obj["first_name"],
                                        expected=[str],
                                        path=path + ".first_name")  # type: str
 
-    promo_code = None  # type: Optional[str]
+    promo_code_from_obj = None  # type: Optional[str]
     if "promo_code" in obj:
         promo_code_from_obj = from_obj(obj["promo_code"],
                                        expected=[str],
