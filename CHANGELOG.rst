@@ -1,3 +1,8 @@
+2.2.3
+=====
+* Fixed swagger-to-py-client to include suffixes in the names of intermediate representations of the
+  optional properties in ``X_from_obj``
+
 2.2.2
 =====
 * swagger-to-py-client suffixes values parsed from an object to avoid conflicts with ``path`` field
