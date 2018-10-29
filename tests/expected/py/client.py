@@ -378,23 +378,26 @@ def price_estimate_from_obj(obj: Any, path: str = "") -> PriceEstimate:
                                  expected=[str],
                                  path=path + ".estimate")  # type: str
 
-    low_estimate_from_obj = None  # type: Optional[float]
     if "low_estimate" in obj:
         low_estimate_from_obj = from_obj(obj["low_estimate"],
                                          expected=[float],
-                                         path=path + ".low_estimate")  # type: float
+                                         path=path + ".low_estimate")  # type: Optional[float]
+    else:
+        low_estimate_from_obj = None
 
-    high_estimate_from_obj = None  # type: Optional[float]
     if "high_estimate" in obj:
         high_estimate_from_obj = from_obj(obj["high_estimate"],
                                           expected=[float],
-                                          path=path + ".high_estimate")  # type: float
+                                          path=path + ".high_estimate")  # type: Optional[float]
+    else:
+        high_estimate_from_obj = None
 
-    surge_multiplier_from_obj = None  # type: Optional[float]
     if "surge_multiplier" in obj:
         surge_multiplier_from_obj = from_obj(obj["surge_multiplier"],
                                              expected=[float],
-                                             path=path + ".surge_multiplier")  # type: float
+                                             path=path + ".surge_multiplier")  # type: Optional[float]
+    else:
+        surge_multiplier_from_obj = None
 
     return PriceEstimate(product_id=product_id_from_obj,
                          currency_code=currency_code_from_obj,
@@ -486,17 +489,19 @@ def profile_from_obj(obj: Any, path: str = "") -> Profile:
                                 expected=[str],
                                 path=path + ".picture")  # type: str
 
-    first_name_from_obj = None  # type: Optional[str]
     if "first_name" in obj:
         first_name_from_obj = from_obj(obj["first_name"],
                                        expected=[str],
-                                       path=path + ".first_name")  # type: str
+                                       path=path + ".first_name")  # type: Optional[str]
+    else:
+        first_name_from_obj = None
 
-    promo_code_from_obj = None  # type: Optional[str]
     if "promo_code" in obj:
         promo_code_from_obj = from_obj(obj["promo_code"],
                                        expected=[str],
-                                       path=path + ".promo_code")  # type: str
+                                       path=path + ".promo_code")  # type: Optional[str]
+    else:
+        promo_code_from_obj = None
 
     return Profile(last_name=last_name_from_obj,
                    email=email_from_obj,

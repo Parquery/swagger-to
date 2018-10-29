@@ -657,6 +657,9 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
         attr_type_expr = type_expression(typedef=attr.typedef, path=attr.classdef.identifier + "." + attr.name)
 
+        if not attr.required:
+            attr_type_expr = "Optional[{}]".format(attr_type_expr)
+
         # yapf: disable
         set_attr_stmt_parts = [
             '{}_from_obj = from_obj('.format(attr.name),
@@ -671,10 +674,11 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
         if attr.required:
             write_set_attr_stmt(indention=INDENT, set_attr_stmt_parts=set_attr_stmt_parts)
         else:
-            fid.write(INDENT + '''{}_from_obj = None  # type: Optional[{}]\n'''.format(attr.name, attr_type_expr))
-
             fid.write(INDENT + 'if "{}" in obj:\n'.format(attr.name))
             write_set_attr_stmt(indention=INDENT * 2, set_attr_stmt_parts=set_attr_stmt_parts)
+            fid.write("\n")
+            fid.write(INDENT + "else:\n")
+            fid.write(INDENT * 2 + '''{}_from_obj = None'''.format(attr.name))
 
     fid.write('\n\n')
 
