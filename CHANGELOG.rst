@@ -1,3 +1,8 @@
+2.2.4
+=====
+* swagger-to-py-client sets the correct type for the optional properties to make the generated code
+  compliant with mypy 0.630
+
 2.2.3
 =====
 * Fixed swagger-to-py-client to include suffixes in the names of intermediate representations of the
