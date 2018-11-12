@@ -575,8 +575,8 @@ def write_request(request: Request, fid: TextIO) -> None:
             types.append('Maybe {}'.format(type_expression(typedef=param.typedef)))
             names.append('maybe{}'.format(swagger_to.capital_camel_case(param.name)))
 
-    return_type = ''
-    return_type_decoder = ''
+    return_type = None  # type: Optional[str]
+    return_type_decoder = None  # type: Optional[str]
     if '200' in request.responses:
         resp = request.responses['200']
         if resp.typedef is not None:
@@ -592,10 +592,10 @@ def write_request(request: Request, fid: TextIO) -> None:
     names_str = ' '.join(names)
 
     line1 = function_name + ' : ' + types_str
-    if return_type:
-        line1 += 'Http.Request {}\n'.format(return_type)
-    else:
+    if return_type is None:
         line1 += 'Http.Request String\n'
+    else:
+        line1 += 'Http.Request {}\n'.format(return_type)
     line2 = function_name + ' ' + names_str + ' ='
     indent = 1
 
@@ -607,7 +607,10 @@ def write_request(request: Request, fid: TextIO) -> None:
         join_str = '\n' + INDENT + '-> '
 
         fid.write(INDENT + '{}\n'.format(join_str.join(types)))
-        fid.write(INDENT + '-> Http.Request {}\n'.format(return_type))
+        if return_type is None:
+            fid.write(INDENT + '-> Http.Request String\n')
+        else:
+            fid.write(INDENT + '-> Http.Request {}\n'.format(return_type))
 
         if len(line2) > 120:
             fid.write(function_name)
@@ -714,10 +717,10 @@ def write_request(request: Request, fid: TextIO) -> None:
     else:
         fid.write('Http.emptyBody')
     fid.write('\n')
-    if return_type:
-        fid.write(INDENT * (indent + 1) + ', expect = Http.expectJson {}\n'.format(return_type_decoder))
-    else:
+    if return_type is None:
         fid.write(INDENT * (indent + 1) + ', expect = Http.expectString\n')
+    else:
+        fid.write(INDENT * (indent + 1) + ', expect = Http.expectJson {}\n'.format(return_type_decoder))
     fid.write(INDENT * (indent + 1) + ', headers = []\n')
     fid.write(INDENT * (indent + 1) + ', method = "{}"\n'.format(mth))
     fid.write(INDENT * (indent + 1) + ', timeout = maybeTimeout\n')
