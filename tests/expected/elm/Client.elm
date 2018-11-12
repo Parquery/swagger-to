@@ -29,6 +29,7 @@ module Client
         , encodeProfile
         , estimatesPriceRequest
         , estimatesTimeRequest
+        , historyRequest
         , productsRequest
         , updateMeRequest
         )
@@ -405,6 +406,35 @@ updateMeRequest prefix maybeTimeout withCredentials updateUser =
         , expect = Http.expectJson decodeProfile
         , headers = []
         , method = "PATCH"
+        , timeout = maybeTimeout
+        , url = url
+        , withCredentials = withCredentials
+        }
+
+
+{-| Contains a "get" request to the endpoint: /history, to be sent with Http.send
+    
+    The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
+    include pickup locations and times, dropoff locations and times, the distance of past requests, and
+    information about which products were requested.
+-}
+historyRequest : String -> Maybe Time.Time -> Bool -> Maybe Int -> Maybe Int -> Http.Request Activities
+historyRequest prefix maybeTimeout withCredentials maybeOffset maybeLimit =
+    let
+        baseUrl = prefix ++ "history"
+        queryString = 
+            paramsToQuery
+                []
+                [ ("offset", (Maybe.map toString maybeOffset))
+                , ("limit", (Maybe.map toString maybeLimit))
+                ]
+        url = baseUrl ++ queryString
+    in
+    Http.request
+        { body = Http.emptyBody
+        , expect = Http.expectJson decodeActivities
+        , headers = []
+        , method = "GET"
         , timeout = maybeTimeout
         , url = url
         , withCredentials = withCredentials

@@ -291,11 +291,6 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     :param typedefs: translated type definitions
     :return: request function
     """
-    if endpoint.produces != ['application/json']:
-        raise ValueError("Can not translate an end point to Elm client "
-                         "which does not produces strictly application/json: {} {}".format(
-                             endpoint.path, endpoint.method))
-
     req = Request()
     req.description = endpoint.description
     req.method = endpoint.method
@@ -336,17 +331,12 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
     """
     Translates the endpoints to Elm request functions.
 
-    Endpoints which do not produce strictly 'application/json' are ignored.
-
     :param endpoints: to be translated
     :param typedefs: translated type definitions
     :return: translated request functions
     """
     requests = []  # type: List[Request]
     for endpoint in endpoints:
-        if endpoint.produces != ['application/json']:
-            continue
-
         requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
 
     return requests
@@ -600,7 +590,12 @@ def write_request(request: Request, fid: TextIO) -> None:
     types_str = ' -> '.join(types)
     types_str += ' -> '
     names_str = ' '.join(names)
-    line1 = function_name + ' : ' + types_str + 'Http.Request {}\n'.format(return_type)
+
+    line1 = function_name + ' : ' + types_str
+    if return_type:
+        line1 += 'Http.Request {}\n'.format(return_type)
+    else:
+        line1 += 'Http.Request String\n'
     line2 = function_name + ' ' + names_str + ' ='
     indent = 1
 
@@ -719,7 +714,10 @@ def write_request(request: Request, fid: TextIO) -> None:
     else:
         fid.write('Http.emptyBody')
     fid.write('\n')
-    fid.write(INDENT * (indent + 1) + ', expect = Http.expectJson {}\n'.format(return_type_decoder))
+    if return_type:
+        fid.write(INDENT * (indent + 1) + ', expect = Http.expectJson {}\n'.format(return_type_decoder))
+    else:
+        fid.write(INDENT * (indent + 1) + ', expect = Http.expectString\n')
     fid.write(INDENT * (indent + 1) + ', headers = []\n')
     fid.write(INDENT * (indent + 1) + ', method = "{}"\n'.format(mth))
     fid.write(INDENT * (indent + 1) + ', timeout = maybeTimeout\n')
