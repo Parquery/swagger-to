@@ -1,0 +1,49 @@
+# this is an example of the Uber API (taken from https://github.com/OAI/OpenAPI-Specification and then customized)
+swagger: '2.0'
+info:
+  title: Uber API
+  description: Move your app forward with the Uber API
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: uber
+paths:
+  /me:
+    patch:
+      operationId: update_me
+      tags:
+        - uber
+      description: Update an User Profile.
+      consumes:
+        -  application/json
+      parameters:
+        - name: username
+          in: query
+          type: string
+          description: profile of a user to update
+          required: true
+      responses:
+        200:
+          description: Signals the succesful user update
+        default:
+          description: Unexpected error
+  /history:
+    delete:
+      operationId: delete_history
+      tags:
+        - uber
+      description: |
+          Instructs the Back End to delete all the history about a user.
+      parameters:
+        - name: username
+          in: query
+          type: string
+      responses:
+        200:
+          description: Confirms that all went well.
+        404:
+          description: User not found.
+        default:
+          description: Unexpected error
