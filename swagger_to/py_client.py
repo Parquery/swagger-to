@@ -134,7 +134,7 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
     """
     If the type has an identifier, it is retrieved from the translated typedefs.
 
-    Otherwise, it is translated on the spot to the corresponding typescript type.
+    Otherwise, it is translated on the spot to the corresponding python type.
 
     :param intermediate_typedef: to be translated
     :param typedefs: translated type definitions
@@ -219,7 +219,7 @@ def to_typedefs(
 def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
-    Translates an intermediate parameter to a typescript parameter.
+    Translates an intermediate parameter to a python parameter.
 
     :param intermediate_parameter: to be translated
     :param typedefs: translated type definitions
@@ -303,9 +303,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
                 typedefs: MutableMapping[str, Typedef]) -> List[Request]:
     """
-    Translates the endpoints to typescript request functions.
-
-    Endpoints which do not produce strictly 'application/json' are ignored.
+    Translates the endpoints to python request functions.
 
     :param endpoints: to be translated
     :param typedefs: translated type definitions
