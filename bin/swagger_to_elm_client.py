@@ -63,8 +63,7 @@ def main() -> None:
         swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=fid_textio)
 
     pkg_pth = outdir / 'elm-package.sample.json'
-    needs_query_strings = swagger_to.elm_client.needs_query_strings(requests=elm_requests)
-    elm_package_json = swagger_to.elm_client.elm_package_json(query_strings=needs_query_strings)
+    elm_package_json = swagger_to.elm_client.elm_package_json()
     with pkg_pth.open('wt') as fid:
         json.dump(elm_package_json, fp=fid, indent=2, sort_keys=False)
 

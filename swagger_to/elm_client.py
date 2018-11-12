@@ -658,25 +658,51 @@ def write_request(request: Request, fid: TextIO) -> None:
 
     # query parameters
     if request.query_parameters:
-        fid.write(INDENT * (indent + 1) + 'queryString = QueryString.empty\n')
-        for i, param in enumerate(request.query_parameters):
-            camel_case_name = swagger_to.camel_case(identifier=param.name)
-            if param.required:
-                arg = camel_case_name
-                if not isinstance(param.typedef, Stringdef):
-                    arg = '(toString {})'.format(camel_case_name)
-                fid.write(INDENT * (indent + 2) + '|> QueryString.add "{}" {}\n'.format(param.name, arg))
-            else:
-                var_name = 'maybe{}'.format(swagger_to.capital_camel_case(identifier=param.name))
-                fid.write(INDENT * (indent + 2) + '|> \\queryStr -> Maybe.withDefault queryStr (Maybe.map \n')
-                if isinstance(param.typedef, Stringdef):
-                    function_param = 'var'
-                else:
-                    function_param = '(toString var)'
-                fid.write(INDENT * (indent + 3) + '(\\var -> QueryString.add "{}" {} queryStr) {})\n'.format(
-                    param.name, function_param, var_name))
+        required = []  # type: List[str]
+        not_required = []  # type: List[str]
 
-        fid.write(INDENT * (indent + 1) + 'url = baseUrl ++ (QueryString.render queryString)\n')
+        for i, param in enumerate(request.query_parameters):
+            if param.required:
+                arg_name = swagger_to.camel_case(identifier=param.name)
+                arg = arg_name
+                if not isinstance(param.typedef, Stringdef):
+                    arg = '(toString {})'.format(arg_name)
+
+                required.append('("' + param.name + '", ' + arg + ')')
+            else:
+                arg_name = 'maybe{}'.format(swagger_to.capital_camel_case(identifier=param.name))
+                arg = arg_name
+                if not isinstance(param.typedef, Stringdef):
+                    arg = '(Maybe.map toString {})'.format(arg_name)
+
+                not_required.append('("' + param.name + '", ' + arg + ')')
+
+        fid.write(INDENT * (indent + 1) + 'queryString = \n')
+        fid.write(INDENT * (indent + 2) + 'paramsToQuery\n')
+
+        if required:
+            fid.write((INDENT * (indent + 3)) + "[ ")
+            for i, tuple_str in enumerate(required):
+                if i == 0:
+                    fid.write(tuple_str + "\n")
+                else:
+                    fid.write((INDENT * (indent + 3)) + ", " + tuple_str + "\n")
+            fid.write((INDENT * (indent + 3)) + "]\n")
+        else:
+            fid.write((INDENT * (indent + 3)) + '[]\n')
+
+        if not_required:
+            fid.write((INDENT * (indent + 3)) + "[ ")
+            for i, tuple_str in enumerate(not_required):
+                if i == 0:
+                    fid.write(tuple_str + "\n")
+                else:
+                    fid.write((INDENT * (indent + 3)) + ", " + tuple_str + "\n")
+            fid.write((INDENT * (indent + 3)) + "]\n")
+        else:
+            fid.write((INDENT * (indent + 3)) + '[]\n')
+
+        fid.write(INDENT * (indent + 1) + 'url = baseUrl ++ queryString\n')
 
     fid.write(indent * INDENT + 'in\n')
 
@@ -808,15 +834,8 @@ def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: 
               "import Json.Decode\n"
               "import Json.Decode.Pipeline\n"
               "import Json.Encode\n"
-              "import Json.Encode.Extra\n")
-
-    # import QueryString only if needed
-    for request in requests:
-        if request.query_parameters:
-            fid.write("import QueryString\n")
-            break
-
-    fid.write("import Time\n\n\n")
+              "import Json.Encode.Extra\n"
+              "import Time\n\n\n")
 
 
 def write_footer(fid: TextIO) -> None:
@@ -828,6 +847,40 @@ def write_footer(fid: TextIO) -> None:
     """
 
     fid.write("-- Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+
+
+def write_query_function(fid: TextIO) -> None:
+    """
+    Writes the function needed to translate query parameters into a string.
+
+    :param fid: target
+    :return:
+    """
+
+    fid.write('{-| Translates a list of (name, parameter) and a list of (name, optional parameter) to a\n')
+    fid.write('well-formatted query string.\n')
+    fid.write('-}\n')
+    fid.write('paramsToQuery : List ( String, String ) -> List ( String, Maybe String ) -> String\n')
+    fid.write('paramsToQuery params maybeParams =\n')
+
+    fid.write(INDENT + 'let\n')
+    fid.write(INDENT * 2 + 'queryParams : List String\n')
+    fid.write(INDENT * 2 + 'queryParams =\n')
+    fid.write(INDENT * 3 + 'List.map (\\( name, value ) -> name ++ "=" ++ Http.encodeUri value) params\n\n')
+    fid.write(INDENT * 2 + 'filteredParams : List String\n')
+    fid.write(INDENT * 2 + 'filteredParams =\n')
+    fid.write(INDENT * 3 + 'List.filter (\\( _, maybeValue ) -> maybeValue /= Nothing) maybeParams\n')
+    fid.write(INDENT * 4 + '|> List.map (\\( name, maybeValue ) -> ( name, Maybe.withDefault "" maybeValue ))\n')
+    fid.write(INDENT * 4 + '|> List.map (\\( name, value ) -> name ++ "=" ++ Http.encodeUri value)\n')
+
+    fid.write(INDENT + 'in\n')
+    fid.write(INDENT + 'List.concat [queryParams, filteredParams]\n')
+    fid.write(INDENT * 2 + '|> String.join "&"\n')
+    fid.write(INDENT * 2 + '|> \\str ->\n')
+    fid.write(INDENT * 3 + 'if String.isEmpty str then\n')
+    fid.write(INDENT * 4 + '""\n')
+    fid.write(INDENT * 3 + 'else\n')
+    fid.write(INDENT * 4 + '"?" ++ str\n')
 
 
 def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
@@ -929,25 +982,10 @@ def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def needs_query_strings(requests: List[Request]) -> bool:
-    """
-    Determines whether the QueryString package is needed by the client.
-
-    :param requests: translated request functions.
-    :return: true if any of the Requests contains nonempty query parameters, false otherwise
-    """
-    for request in requests:
-        if request.query_parameters:
-            return True
-
-    return False
-
-
-def elm_package_json(query_strings: bool) -> MutableMapping[str, Any]:
+def elm_package_json() -> MutableMapping[str, Any]:
     """
     Returns the elm-package json file.
 
-    :param query_strings: if true, the package Bogdanp/querystring is inserted in the package.
     :return: The JSON Elm package for the project as a Dictionary.
     """
     elm_pkg = collections.OrderedDict()  # type: Dict[str, Any]
@@ -962,8 +1000,6 @@ def elm_package_json(query_strings: bool) -> MutableMapping[str, Any]:
     packages['elm-lang/core'] = '2.0.0 <= v <= 2.0.0'
     packages['elm-lang/http'] = '1.0.0 <= v <= 1.0.0'
     packages['elm-community/json-extra'] = '2.7.0 <= v <= 2.7.0'
-    if query_strings:
-        packages['Bogdanp/elm-querystring'] = '1.0.0 <= v <= 1.0.0'
     packages['NoRedInk/elm-decode-pipeline'] = '3.0.0 <= v <= 3.0.0'
 
     elm_pkg['dependencies'] = packages
@@ -992,5 +1028,10 @@ def write_client_elm(typedefs: MutableMapping[str, Typedef], requests: List[Requ
 
     if requests:
         write_client(requests=requests, fid=fid)
+
+        for request in requests:
+            if request.query_parameters:
+                write_query_function(fid=fid)
+                break
 
     write_footer(fid=fid)
