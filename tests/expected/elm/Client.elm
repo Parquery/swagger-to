@@ -39,7 +39,6 @@ import Json.Decode
 import Json.Decode.Pipeline
 import Json.Encode
 import Json.Encode.Extra
-import QueryString
 import Time
 
 
@@ -283,10 +282,13 @@ productsRequest : String -> Maybe Time.Time -> Bool -> Float -> Float -> Http.Re
 productsRequest prefix maybeTimeout withCredentials latitude longitude =
     let
         baseUrl = prefix ++ "products"
-        queryString = QueryString.empty
-            |> QueryString.add "latitude" (toString latitude)
-            |> QueryString.add "longitude" (toString longitude)
-        url = baseUrl ++ (QueryString.render queryString)
+        queryString = 
+            paramsToQuery
+                [ ("latitude", (toString latitude))
+                , ("longitude", (toString longitude))
+                ]
+                []
+        url = baseUrl ++ queryString
     in
     Http.request
         { body = Http.emptyBody
@@ -334,10 +336,12 @@ estimatesPriceRequest
                 ++ (toString endLatitude)
                 ++ "/"
                 ++ (toString endLongitude)
-            queryString = QueryString.empty
-                |> \queryStr -> Maybe.withDefault queryStr (Maybe.map 
-                    (\var -> QueryString.add "max_lines" (toString var) queryStr) maybeMaxLines)
-            url = baseUrl ++ (QueryString.render queryString)
+            queryString = 
+                paramsToQuery
+                    []
+                    [ ("max_lines", (Maybe.map toString maybeMaxLines))
+                    ]
+            url = baseUrl ++ queryString
         in
         Http.request
             { body = Http.emptyBody
@@ -366,14 +370,15 @@ estimatesTimeRequest :
 estimatesTimeRequest prefix maybeTimeout withCredentials startLatitude startLongitude maybeCustomerUuid maybeProductID =
     let
         baseUrl = prefix ++ "estimates/time"
-        queryString = QueryString.empty
-            |> QueryString.add "start_latitude" (toString startLatitude)
-            |> QueryString.add "start_longitude" (toString startLongitude)
-            |> \queryStr -> Maybe.withDefault queryStr (Maybe.map 
-                (\var -> QueryString.add "customer_uuid" var queryStr) maybeCustomerUuid)
-            |> \queryStr -> Maybe.withDefault queryStr (Maybe.map 
-                (\var -> QueryString.add "product_id" var queryStr) maybeProductID)
-        url = baseUrl ++ (QueryString.render queryString)
+        queryString = 
+            paramsToQuery
+                [ ("start_latitude", (toString startLatitude))
+                , ("start_longitude", (toString startLongitude))
+                ]
+                [ ("customer_uuid", maybeCustomerUuid)
+                , ("product_id", maybeProductID)
+                ]
+        url = baseUrl ++ queryString
     in
     Http.request
         { body = Http.emptyBody
@@ -407,4 +412,27 @@ updateMeRequest prefix maybeTimeout withCredentials updateUser =
 
 
 
+{-| Translates a list of (name, parameter) and a list of (name, optional parameter) to a
+well-formatted query string.
+-}
+paramsToQuery : List ( String, String ) -> List ( String, Maybe String ) -> String
+paramsToQuery params maybeParams =
+    let
+        queryParams : List String
+        queryParams =
+            List.map (\( name, value ) -> name ++ "=" ++ Http.encodeUri value) params
+
+        filteredParams : List String
+        filteredParams =
+            List.filter (\( _, maybeValue ) -> maybeValue /= Nothing) maybeParams
+                |> List.map (\( name, maybeValue ) -> ( name, Maybe.withDefault "" maybeValue ))
+                |> List.map (\( name, value ) -> name ++ "=" ++ Http.encodeUri value)
+    in
+    List.concat [queryParams, filteredParams]
+        |> String.join "&"
+        |> \str ->
+            if String.isEmpty str then
+                ""
+            else
+                "?" ++ str
 -- Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

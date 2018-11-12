@@ -104,12 +104,11 @@ File                         Description
 ``elm-package.sample.json``  The Elm JSON Package containing the libraries used in Client.elm.
 ===========================  ========================================================================================
 
-Three non-standard libraries are used in the Client:
+Two non-standard libraries are used in the Client:
 
 * "NoRedInk/elm-decode-pipeline" is used to decode JSON objects in a more scalable way than the one supported by the
-  elm-lang libraries;
-* "elm-community/json-extra" is needed to encode Dict variables;
-* "Bogdanp/elm-querystring" is used to deal with queries in URLs;
+  elm-lang libraries; and
+* "elm-community/json-extra" is needed to encode Dict variables.
 
 
 We use Elm's built-in Int type to represent both 32 and 64-bit integers. Please be careful: Elm depends on JavaScript
