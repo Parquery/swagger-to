@@ -17,7 +17,7 @@ with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='swagger_to',
-    version='2.2.4',
+    version='2.3.0',
     description='Generates code from swagger definitions; an alternative to swagger codegen',
     long_description=long_description,
     url='https://github.com/Parquery/swagger-to',

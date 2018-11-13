@@ -1,3 +1,8 @@
+2.3.0
+=====
+* swagger-to-elm-client allows non-JSON endpoints
+* swagger-to-elm-client uses standard library for encoding URLs
+
 2.2.4
 =====
 * swagger-to-py-client sets the correct type for the optional properties to make the generated code
