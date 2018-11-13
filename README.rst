@@ -12,7 +12,7 @@ to substantially simplify the generation code since it reduced the impedance mis
 constructs (such as Maps) instead of directly referring to "raw" Swagger constructs (such as additional properties of
 an object).
 
-The underlying language (Python), readable generated code and the intermediate representation layer are the two main
+The underlying language (Python), readable generated code and the intermediate representation layer are the three main
 differentiators to other similar code generation projects.
 
 Supported languages:
