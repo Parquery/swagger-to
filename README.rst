@@ -33,13 +33,14 @@ our simple and not-so-simple use cases. We believe they can also cover most of t
 
 Here is a non-comprehensive list.
 
-* **definitions**. We don't support anonymous objects in the definitions. Please define all objects as top level
+* **anoynimous objects**. We do not support anonymous objects in the definitions. Please define all objects as top level
   definitions.
 
-* **parameters**. Most generators cover only query, body and path parameters. We do not support default values for the
-  parameters due to impedance mismatch between JSON and the target languages.
+* **parameters**. Most generators cover only query, body and path parameters.
 
-* **responses**. Responses from the server are not validated due to the complexity and run-time overhead.
+* **default values**. We do not support default values due to impedance mismatch between JSON and the target languages.
+
+* **validation of responses**. Responses from the server are not validated due to the complexity and the run-time overhead.
 
 Related Projects
 ================
