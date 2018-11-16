@@ -149,6 +149,35 @@ paths:
             $ref: '#/definitions/Profile'
         default:
           description: Unexpected error
+  /upload_infos:
+    patch:
+      operationId: upload_infos
+      tags:
+        - uber
+      description: Upload information about an User.
+      consumes:
+        -  multipart/form-data
+      parameters:
+        - name: user_id
+          in: formData
+          description: identifies a user.
+          required: true
+          type: string
+        - name: profile_picture
+          in: formData
+          description: contains the user image encoded in JPEG as a multi-value field.
+          required: true
+          type: file
+        - name: birthday
+          in: formData
+          description: is the user's birth date.
+          type: string
+          required: false
+      responses:
+        200:
+          description: Confirms that the information was uploaded.
+        default:
+          description: Unexpected error
   /history:
     get:
       operationId: history
