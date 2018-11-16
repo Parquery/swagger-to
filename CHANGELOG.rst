@@ -1,3 +1,9 @@
+2.4.0
+=====
+* swagger-to-elm-client ignores formData parameters gracefully
+* Added `no_samples` flag to swagger-to-elm-client and swagger-to-go-server to 
+  avoid generating sample files.
+
 2.3.0
 =====
 * swagger-to-elm-client allows non-JSON endpoints
