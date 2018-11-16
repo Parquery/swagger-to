@@ -337,12 +337,12 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
     """
     requests = []  # type: List[Request]
     for endpoint in endpoints:
-        form_data = False
+        has_form_data = False
         for param in endpoint.parameters:
             if param.in_what == 'formData':
-                form_data = True
+                has_form_data = True
 
-        if not form_data:
+        if not has_form_data:
             requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
 
     return requests
