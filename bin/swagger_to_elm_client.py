@@ -20,10 +20,12 @@ def main() -> None:
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces Elm client code.")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
     parser.add_argument("--outdir", help="path to the output directory", required=True)
+    parser.add_argument("--no_samples", help="if set, do not generate sample files", action="store_true")
     parser.add_argument("--force", help="overwrite existing files", action="store_true")
     args = parser.parse_args()
 
     assert isinstance(args.force, bool)
+    assert isinstance(args.no_samples, bool)
     assert isinstance(args.outdir, str)
     assert isinstance(args.swagger_path, str)
 
@@ -62,10 +64,11 @@ def main() -> None:
         fid_textio = cast(TextIO, fid)
         swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=fid_textio)
 
-    pkg_pth = outdir / 'elm-package.sample.json'
-    elm_package_json = swagger_to.elm_client.elm_package_json()
-    with pkg_pth.open('wt') as fid:
-        json.dump(elm_package_json, fp=fid, indent=2, sort_keys=False)
+    if not args.no_samples:
+        pkg_pth = outdir / 'elm-package.sample.json'
+        elm_package_json = swagger_to.elm_client.elm_package_json()
+        with pkg_pth.open('wt') as fid:
+            json.dump(elm_package_json, fp=fid, indent=2, sort_keys=False)
 
     print("Generated Elm client code in: {}".format(outdir))
 

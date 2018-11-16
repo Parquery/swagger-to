@@ -18,10 +18,12 @@ def main() -> None:
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces Go code")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
     parser.add_argument("--outdir", help="path to the output directory", required=True)
+    parser.add_argument("--no_samples", help="if set, do not generate sample files", action="store_true")
     parser.add_argument("--force", help="overwrite existing files", action="store_true")
     args = parser.parse_args()
 
     assert isinstance(args.force, bool)
+    assert isinstance(args.no_samples, bool)
     assert isinstance(args.outdir, str)
     assert isinstance(args.swagger_path, str)
 
@@ -66,9 +68,10 @@ def main() -> None:
     with open(pth, 'wt') as fid:
         swagger_to.go_server.write_handler_go(package=package, routes=go_routes, fid=fid)
 
-    pth = os.path.join(args.outdir, 'handler_impl.go.sample')
-    with open(pth, 'wt') as fid:
-        swagger_to.go_server.write_handler_impl_go(package=package, routes=go_routes, fid=fid)
+    if not args.no_samples:
+        pth = os.path.join(args.outdir, 'handler_impl.go.sample')
+        with open(pth, 'wt') as fid:
+            swagger_to.go_server.write_handler_impl_go(package=package, routes=go_routes, fid=fid)
 
     pth = os.path.join(args.outdir, 'jsonschemas.go')
     with open(pth, 'wt') as fid:
