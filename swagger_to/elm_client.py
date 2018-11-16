@@ -329,7 +329,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
                 typedefs: MutableMapping[str, Typedef]) -> List[Request]:
     """
-    Translates the endpoints to Elm request functions.
+    Translates the endpoints to Elm request functions, ignoring endpoints consuming formData.
 
     :param endpoints: to be translated
     :param typedefs: translated type definitions
@@ -337,7 +337,13 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
     """
     requests = []  # type: List[Request]
     for endpoint in endpoints:
-        requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
+        has_form_data = False
+        for param in endpoint.parameters:
+            if param.in_what == 'formData':
+                has_form_data = True
+
+        if not has_form_data:
+            requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
 
     return requests
 

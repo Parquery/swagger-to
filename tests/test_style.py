@@ -32,8 +32,8 @@ class TestStyleCheck(unittest.TestCase):
         cmpl_strings = []
         for cmpl in complaints:
             cmpl_strings.append("{}: {}: \"{}\"".format(cmpl.where, cmpl.message, cmpl.what.replace('\n', ' ')))
-
         expected = (script_dir / "expected" / "style" / "errors.txt").read_text()
+
         self.assertEqual(expected, "\n".join(cmpl_strings))
 
     def test_with_line_numbers(self):

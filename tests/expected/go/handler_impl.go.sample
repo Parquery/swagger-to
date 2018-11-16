@@ -50,6 +50,13 @@ func (h *HandlerImpl) UpdateMe(w http.ResponseWriter,
 	h.LogErr.Printf("Not implemented: UpdateMe")
 }
 
+// UploadInfos implements Handler.UploadInfos.
+func (h *HandlerImpl) UploadInfos(w http.ResponseWriter,
+	r *http.Request) {
+	http.Error(w, "Not implemented: UploadInfos", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: UploadInfos")
+}
+
 // History implements Handler.History.
 func (h *HandlerImpl) History(w http.ResponseWriter,
 	r *http.Request,

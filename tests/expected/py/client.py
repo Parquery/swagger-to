@@ -757,6 +757,32 @@ class RemoteCaller:
             resp.raise_for_status()
             return from_obj(obj=resp.json(), expected=[Profile], path="")
 
+    def upload_infos(self,
+                     user_id: str,
+                     profile_picture: BinaryIO,
+                     birthday: Optional[str] = None) -> bytes:
+        """
+        Upload information about an User.
+
+        :param user_id: identifies a user.
+        :param profile_picture: contains the user image encoded in JPEG as a multi-value field.
+        :param birthday: is the user's birth date.
+
+        """
+        url = self.url_prefix + "/upload_infos"
+
+        data = {
+            "user_id": user_id,
+            "birthday": birthday}
+
+        files = {
+            "profile_picture": profile_picture}
+
+        resp = requests.request(method='patch', url=url, data=data, files=files, auth=self.auth)
+        with contextlib.closing(resp):
+            resp.raise_for_status()
+            return resp.content
+
     def history(self,
                 offset: Optional[int] = None,
                 limit: Optional[int] = None) -> bytes:

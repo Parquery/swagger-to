@@ -34,6 +34,11 @@ func SetupRouter(h Handler) *mux.Router {
 			WrapUpdateMe(h, w, r)
 		}).Methods("patch")
 
+	r.HandleFunc(`/upload_infos`,
+		func(w http.ResponseWriter, r *http.Request) {
+			WrapUploadInfos(h, w, r)
+		}).Methods("patch")
+
 	r.HandleFunc(`/history`,
 		func(w http.ResponseWriter, r *http.Request) {
 			WrapHistory(h, w, r)
@@ -277,6 +282,15 @@ func WrapUpdateMe(h Handler, w http.ResponseWriter, r *http.Request) {
 	h.UpdateMe(w,
 		r,
 		aUpdateUser)
+}
+
+// WrapUploadInfos wraps the path `/upload_infos` with the method "patch"
+//
+// Path description:
+// Upload information about an User.
+func WrapUploadInfos(h Handler, w http.ResponseWriter, r *http.Request) {
+	h.UploadInfos(w,
+		r)
 }
 
 // WrapHistory wraps the path `/history` with the method "get"

@@ -48,6 +48,13 @@ type Handler interface {
 		r *http.Request,
 		updateUser Profile)
 
+	// UploadInfos handles the path `/upload_infos` with the method "patch".
+	//
+	// Path description:
+	// Upload information about an User.
+	UploadInfos(w http.ResponseWriter,
+		r *http.Request)
+
 	// History handles the path `/history` with the method "get".
 	//
 	// Path description:
