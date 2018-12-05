@@ -1,7 +1,8 @@
-venv3
+venv3/
 .mypy_cache/
-.idea
+.idea/
 *.pyc
-.precommit_hashes
+.precommit_hashes/
 *.egg-info
 dist/
+venv/
