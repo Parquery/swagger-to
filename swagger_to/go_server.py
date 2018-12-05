@@ -6,11 +6,14 @@ Generates server stubs from Swagger specification in Go.
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements, too-many-lines
 
+from typing import MutableMapping, Union, Set, List, Optional, Mapping  # pylint: disable=unused-import
+
 import collections
-import io
-from typing import MutableMapping, Union, Set, List, TextIO, Optional  # pylint: disable=unused-import
+import icontract
+import jinja2
 
 import swagger_to
+import swagger_to.indent
 import swagger_to.intermediate
 import swagger_to.swagger
 
@@ -19,24 +22,6 @@ class JsonSchema:
     def __init__(self):
         self.identifier = ''
         self.text = ''
-
-    def text_identifier(self) -> str:
-        """
-        :return: name of the global variable holding the schema text
-        """
-        return 'jsonSchema{}Text'.format(swagger_to.capital_camel_case(self.identifier))
-
-    def schema_identifier(self) -> str:
-        """
-        :return: name of the global variable holding the schema
-        """
-        return 'jsonSchema{}'.format(swagger_to.capital_camel_case(self.identifier))
-
-    def validate_func_name(self) -> str:
-        """
-        :return: name of the function that validate the object against the schema.
-        """
-        return 'ValidateAgainst{}Schema'.format(swagger_to.capital_camel_case(self.identifier))
 
 
 def to_json_schema(intermediate_schema: swagger_to.intermediate.JsonSchema) -> JsonSchema:
@@ -283,7 +268,7 @@ class Route:
         self.handler = Handler()
 
 
-def endpoint_to_route_path(endpoint: swagger_to.intermediate.Endpoint) -> str:
+def _endpoint_to_route_path(endpoint: swagger_to.intermediate.Endpoint) -> str:
     """
     Converts an endpoint path to Gorrila Mux route path.
 
@@ -320,7 +305,7 @@ def endpoint_to_route_path(endpoint: swagger_to.intermediate.Endpoint) -> str:
 def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Route:
     route = Route()
     route.method = endpoint.method.lower()
-    route.path = endpoint_to_route_path(endpoint=endpoint)
+    route.path = _endpoint_to_route_path(endpoint=endpoint)
     route.description = endpoint.description
 
     # parameters to arguments
@@ -394,112 +379,158 @@ def to_routes(endpoints: List[swagger_to.intermediate.Endpoint], typedefs: Mutab
     return routes
 
 
-INDENT = '\t'
+def _raise(message: str) -> None:
+    """Raise an exception in a template."""
+    raise Exception(message)
 
 
-def write_description(description: str, fid: TextIO, indention: str) -> None:
-    lines = description.strip().splitlines()
-    for i, line in enumerate(lines):
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _comment(text: str) -> str:
+    r"""
+    Geneartes a (possibly multi-line) comment from the text.
+
+    >>> cmt = _comment("  testme\n  \nagain\n")
+    >>> assert cmt == '//   testme\n//\n// again\n//'
+
+    :param text: of the comment
+    :return: Go code
+    """
+    out = []  # type: List[str]
+    lines = text.split('\n')
+    for line in lines:
         rstripped = line.rstrip()
         if len(rstripped) > 0:
-            fid.write(indention + '// {}'.format(rstripped))
+            out.append('// {}'.format(rstripped))
         else:
-            fid.write(indention + '//')
+            out.append('//')
 
-        if i < len(lines) - 1:
-            fid.write('\n')
-
-
-def write_type_code_or_identifier(typedef: Typedef, fid: TextIO, indention: str) -> None:
-    if typedef.identifier != '':
-        fid.write(typedef.identifier)
-
-    else:
-        write_type_code(typedef=typedef, fid=fid, indention=indention)
+    return '\n'.join(out)
 
 
-def write_type_code(typedef: Typedef, fid: TextIO, indention: str) -> None:
+@icontract.ensure(lambda result: result.startswith('"'))
+@icontract.ensure(lambda result: result.endswith('"'))
+def _escaped_str(text: str) -> str:
+    """Escapes the text and returns it as a valid Golang string."""
+    return '"{}"'.format(
+        text.replace('\\', '\\\\').replace('"', '\\"').replace('\a', '\\a').replace('\f', '\\f').replace('\t', '\\t')
+        .replace('\n', '\\n').replace('\r', '\\r').replace('\v', '\\v'))
+
+
+ENV = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=jinja2.BaseLoader())
+ENV.filters.update({
+    'capital_camel_case': swagger_to.capital_camel_case,
+    'comment': _comment,
+    'escaped_str': _escaped_str,
+    'raise': _raise
+})
+
+ENV.globals.update({'is_pointerdef': lambda typedef: isinstance(typedef, Pointerdef)})
+
+_STRUCT_TPL = ENV.from_string('''\
+struct {
+{% for fielddef in typedef.fields.values() %}
+{% if not loop.first %}
+
+
+{% endif %}
+{% if fielddef.description %}
+    {{ fielddef.description|comment|indent }}
+{% endif %}
+{% set json_tags = fielddef.json_name %}
+{% if fielddef.name not in typedef.required %}
+{% set json_tags = json_tags + ',omitempty' %}
+{% endif %}
+    {{ fielddef.name }} {{ field_type[fielddef] }} `json:{{ json_tags|escaped_str }}`{% if loop.last %}}{% endif %}
+{% endfor %}
+''')
+
+
+@icontract.ensure(lambda result: result == result.strip())
+def _express_type(typedef: Typedef) -> str:
+    """Expresses the type in Golang corresponding to the type definition."""
     if isinstance(typedef, Primitivedef):
-        fid.write(typedef.type)
+        return typedef.type
 
-    elif isinstance(typedef, Pointerdef):
-        fid.write('*')
-        write_type_code_or_identifier(typedef=typedef.pointed, fid=fid, indention=indention)
+    if isinstance(typedef, Pointerdef):
+        return "*{}".format(_express_type(typedef.pointed))
 
-    elif isinstance(typedef, Arraydef):
-        fid.write('[]')
-        write_type_code_or_identifier(typedef=typedef.items, fid=fid, indention=indention)
+    if isinstance(typedef, Arraydef):
+        return "[]{}".format(_express_or_identify_type(typedef.items))
 
-    elif isinstance(typedef, Mapdef):
-        fid.write('map[string]')
-        write_type_code_or_identifier(typedef=typedef.values, fid=fid, indention=indention)
+    if isinstance(typedef, Mapdef):
+        return "map[string]{}".format(_express_or_identify_type(typedef.values))
 
-    elif isinstance(typedef, Structdef):
-        fid.write('struct {\n')
-
-        has_description = False
-        for fielddef in typedef.fields.values():
-            if fielddef.description != '':
-                has_description = True
-
-        for i, fielddef in enumerate(typedef.fields.values()):
-            if fielddef.description != '':
-                write_description(description=fielddef.description, fid=fid, indention=indention + INDENT)
-                if fielddef.description != '':
-                    fid.write('\n')
-
-            fid.write(indention + INDENT)
-            fid.write(fielddef.name + " ")
-            write_type_code_or_identifier(typedef=fielddef.typedef, fid=fid, indention=indention + INDENT)
-            fid.write(" ")
-
-            if fielddef.name in typedef.required:
-                fid.write('`json:"{}"`'.format(fielddef.json_name))
-            else:
-                fid.write('`json:"{},omitempty"`'.format(fielddef.json_name))
-
-            if i < len(typedef.fields) - 1:
-                fid.write("\n")
-
-                # if at least one field has a description, add a new line for easier reading
-                if has_description:
-                    fid.write('\n')
-
-        fid.write('}')
+    if isinstance(typedef, Structdef):
+        return _STRUCT_TPL.render(
+            typedef=typedef,
+            field_type={fielddef: _express_or_identify_type(fielddef.typedef)
+                        for fielddef in typedef.fields.values()})
 
     else:
         raise NotImplementedError("No Go type writing defined for typedef of type: {!r}".format(type(typedef)))
 
 
-def write_type_definition(typedef: Typedef, fid: io.StringIO) -> None:
-    fid.write("type {} ".format(typedef.identifier))
+@icontract.ensure(lambda result: result == result.strip())
+def _express_or_identify_type(typedef: Typedef) -> str:
+    """Gives the type identifier or expresses the type if the typedef lacks an identifier."""
+    if typedef.identifier != '':
+        return typedef.identifier
+
+    return _express_type(typedef=typedef)
 
 
-def write_imports(import_set: Set[str], fid: TextIO) -> None:
-    import_lst = sorted(list(import_set))
-
-    if len(import_lst) == 1:
-        fid.write('import "{}"'.format(import_lst[0]))
-    elif len(import_lst) > 1:
-        fid.write("import (\n")
-        for import_stmt in import_lst:
-            fid.write(INDENT + '"{}"\n'.format(import_stmt))
-        fid.write(")")
+@icontract.require(lambda typedef: typedef.identifier != '')
+@icontract.ensure(lambda result: result == result.strip())
+def _define_type(typedef: Typedef) -> str:
+    """Defines the type in Golang code."""
+    return 'type {} {}'.format(typedef.identifier, _express_type(typedef=typedef))
 
 
-def write_types_go(package: str, typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+_IMPORTS_TPL = ENV.from_string('''\
+{% if imports|length == 0 %}
+{% elif imports|length == 1 %}
+import "{{ imports[0] }}"
+{% else %}
+import (
+{% for imprt in imports %}
+    "{{ imprt }}"
+{% endfor %}
+){% endif %}''')
+
+
+@icontract.ensure(lambda result: not result.endswith('\n'))
+@icontract.ensure(lambda import_set, result: len(import_set) != 0 or result == '')
+def _state_imports(import_set: Set[str]) -> str:
+    """States the imports in Golang code."""
+    return _IMPORTS_TPL.render(imports=sorted(import_set))
+
+
+_TYPES_GO_TPL = ENV.from_string('''\
+package {{ package }}
+
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+{% if imports_code != '' %}
+
+{{ imports_code }}
+{% endif %}
+{% for typedef in typedefs.values() %}
+
+{% if typedef.description != '' %}{{ typedef.description|comment }}{% endif %}
+type {{ typedef.identifier }} {{ type_expression[typedef] }}
+{% endfor %}
+
+''')
+
+
+@icontract.ensure(lambda result: result.endswith('\n'), "final newline")
+def generate_types_go(package: str, typedefs: Mapping[str, Typedef]) -> str:
     """
     Generates a file which defines all the involved types.
 
     :param package: name of the package
     :param typedefs: type definitions
-    :param fid: where output is written to
-    :return:
+    :return: golang code
     """
-    fid.write("package {}\n\n".format(package))
-
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
-
     # imports
     import_set = set()  # type: Set[str]
     for typedef in typedefs.values():
@@ -508,28 +539,109 @@ def write_types_go(package: str, typedefs: MutableMapping[str, Typedef], fid: Te
                 if another_typedef.type == 'time.Time':
                     import_set.add('time')
 
-    write_imports(import_set=import_set, fid=fid)
-    if len(import_set) > 0:
-        fid.write('\n\n')
+    text = _TYPES_GO_TPL.render(
+        package=package,
+        imports_code=_state_imports(import_set=import_set),
+        typedefs=typedefs,
+        type_expression={typedef: _express_type(typedef)
+                         for typedef in typedefs.values()})
 
-    # type definitions
-    for i, typedef in enumerate(typedefs.values()):
-        if typedef.description != '':
-            write_description(description=typedef.identifier + ' ' + typedef.description, fid=fid, indention='')
-            fid.write('\n')
-
-        fid.write("type {} ".format(typedef.identifier))
-        write_type_code(typedef=typedef, fid=fid, indention='')
-        fid.write("\n")
-
-        if i < len(typedefs) - 1:
-            fid.write('\n')
+    return swagger_to.indent.reindent(text=text, indention='\t')
 
 
-def write_argument_from_string(argument: Argument, string_identifier: str, indention: str, fid: TextIO) -> None:
+_STRING_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{% if is_pointerdef(argument.typedef) %}
+val := {{ string_identifier }}
+{{ target_identifier }} = &val{#
+#}{% else %}
+{{ target_identifier }} = {{ string_identifier }}
+{% endif %}''')
+
+_INT_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{
+    parsed, err := strconv.ParseInt({{ string_identifier }}, 10, 64)
+    if err != nil {
+{% set msg = "Parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(), http.StatusBadRequest)
+        return
+    }
+    converted := int(parsed)
+{% if is_pointerdef(argument.typedef) %}
+    {{ target_identifier }} = &converted
+{% else %}
+    {{ target_identifier }} = converted
+{% endif %}
+}''')
+
+_INT64_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{
+    parsed, err := strconv.ParseInt({{ string_identifier }}, 10, 64)
+    if err != nil {
+{% set msg = "Parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(), http.StatusBadRequest)
+        return
+    }
+    converted := int64(parsed)
+{% if is_pointerdef(argument.typedef) %}
+    {{ target_identifier }} = &converted
+{% else %}
+    {{ target_identifier }} = converted
+{% endif %}
+}''')
+
+_INT32_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{
+    parsed, err := strconv.ParseInt({{ string_identifier }}, 10, 32)
+    if err != nil {
+{% set msg = "Parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(), http.StatusBadRequest)
+        return
+    }
+    converted := int32(parsed)
+{% if is_pointerdef(argument.typedef) %}
+    {{ target_identifier }} = &converted
+{% else %}
+    {{ target_identifier }} = converted
+{% endif %}
+}''')
+
+_FLOAT32_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{
+    parsed, err := strconv.ParseFloat({{ string_identifier }}, 32)
+    if err != nil {
+{% set msg = "Parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(), http.StatusBadRequest)
+        return
+    }
+    converted := float32(parsed)
+{% if is_pointerdef(argument.typedef) %}
+    {{ target_identifier }} = &converted
+{% else %}
+    {{ target_identifier }} = converted
+{% endif %}
+}''')
+
+_FLOAT64_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{
+    parsed, err := strconv.ParseFloat({{ string_identifier }}, 64)
+    if err != nil {
+{% set msg = "Parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(), http.StatusBadRequest)
+        return
+    }
+    converted := float64(parsed)
+{% if is_pointerdef(argument.typedef) %}
+    {{ target_identifier }} = &converted
+{% else %}
+    {{ target_identifier }} = converted
+{% endif %}
+}''')
+
+
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _argument_from_string(argument: Argument, string_identifier: str) -> str:
+    """Generates the code to parse an argument from a string."""
     tajp = ''
-    target_identifier = ''
-
     if isinstance(argument.typedef, Primitivedef):
         target_identifier = argument.parsing_identifier
         tajp = argument.typedef.type
@@ -543,152 +655,190 @@ def write_argument_from_string(argument: Argument, string_identifier: str, inden
         raise NotImplementedError("Parsing argument from string {!r} of type: {!r}".format(
             string_identifier, type(argument)))
 
+    assert tajp != '', 'Expected tajp to be set in the previous execution path.'
+
     if tajp == 'string':
-        if isinstance(argument.typedef, Pointerdef):
-            fid.write(indention + 'val := {}\n'.format(string_identifier))
-            fid.write(indention + '{} = &val'.format(target_identifier))
-        else:
-            fid.write(indention + '{} = {}'.format(target_identifier, string_identifier))
+        return _STRING_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     elif tajp == 'int':
-        fid.write(indention + "{\n")
-        fid.write(indention + INDENT + 'parsed, err := strconv.ParseInt({}, 10, 64)\n'.format(string_identifier))
-        fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
-                  format(argument.parameter_name))
-        fid.write(indention + INDENT * 2 + 'return\n')
-        fid.write(indention + INDENT + "}\n")
-
-        fid.write(indention + INDENT + 'converted := int(parsed)\n')
-
-        if isinstance(argument.typedef, Pointerdef):
-            fid.write(indention + INDENT + '{} = &converted\n'.format(target_identifier))
-        else:
-            fid.write(indention + INDENT + '{} = converted\n'.format(target_identifier))
-
-        fid.write(indention + "}")
+        return _INT_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     elif tajp == 'int64':
-        fid.write(indention + "{\n")
-        fid.write(indention + INDENT + 'parsed, err := strconv.ParseInt({}, 10, 64)\n'.format(string_identifier))
-
-        fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
-                  format(argument.parameter_name))
-        fid.write(indention + INDENT * 2 + 'return\n')
-        fid.write(indention + INDENT + "}\n")
-
-        fid.write(indention + INDENT + 'converted := int64(parsed)\n')
-
-        if isinstance(argument.typedef, Pointerdef):
-            fid.write(indention + INDENT + '{} = &converted\n'.format(target_identifier))
-        else:
-            fid.write(indention + INDENT + '{} = converted\n'.format(target_identifier))
-
-        fid.write(indention + "}")
+        return _INT64_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     elif tajp == 'int32':
-        fid.write(indention + "{\n")
-        fid.write(indention + INDENT + 'parsed, err := strconv.ParseInt({}, 10, 32)\n'.format(string_identifier))
-
-        fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
-                  format(argument.parameter_name))
-        fid.write(indention + INDENT * 2 + 'return\n')
-        fid.write(indention + INDENT + "}\n")
-
-        fid.write(indention + INDENT + 'converted := int32(parsed)\n')
-
-        if isinstance(argument.typedef, Pointerdef):
-            fid.write(indention + INDENT + '{} = &converted\n'.format(target_identifier))
-        else:
-            fid.write(indention + INDENT + '{} = converted\n'.format(target_identifier))
-
-        fid.write(indention + "}")
+        return _INT32_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     elif tajp == 'float32':
-        fid.write(indention + "{\n")
-        fid.write(indention + INDENT + 'parsed, err := strconv.ParseFloat({}, 32)\n'.format(string_identifier))
-
-        fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
-                  format(argument.parameter_name))
-        fid.write(indention + INDENT * 2 + 'return\n')
-        fid.write(indention + INDENT + "}\n")
-
-        fid.write(indention + INDENT + 'converted := float32(parsed)\n')
-
-        if isinstance(argument.typedef, Pointerdef):
-            fid.write(indention + INDENT + '{} = &converted\n'.format(target_identifier))
-        else:
-            fid.write(indention + INDENT + '{} = converted\n'.format(target_identifier))
-
-        fid.write(indention + "}")
+        return _FLOAT32_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     elif tajp == 'float64':
-        fid.write(indention + "{\n")
-        fid.write(indention + INDENT + 'parsed, err = strconv.ParseFloat({}, 64)\n'.format(string_identifier))
-
-        fid.write(indention + INDENT + "if err != nil {\n")
-        fid.write(indention + INDENT * 2 + 'http.Error(w, "Parameter \'{}\': "+err.Error(), http.StatusBadRequest)\n'.
-                  format(argument.parameter_name))
-        fid.write(indention + INDENT * 2 + 'return\n')
-        fid.write(indention + INDENT + "}\n")
-
-        fid.write(indention + INDENT + 'converted := float64(parsed)\n')
-
-        if isinstance(argument.typedef, Pointerdef):
-            fid.write(indention + INDENT + '{} = &converted\n'.format(target_identifier))
-        else:
-            fid.write(indention + INDENT + '{} = converted\n'.format(target_identifier))
-
-        fid.write(indention + "}")
+        return _FLOAT64_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     else:
         raise NotImplementedError("Parsing argument from string {!r} of Go type: {!r}".format(string_identifier, tajp))
 
 
-def write_parse_argument_from_body(argument: Argument, indention: str, fid: TextIO) -> None:
-    fid.write(indention + "{\n")
+_ARGUMENT_FROM_BODY_TPL = ENV.from_string('''\
+{
+    var err error
+    r.Body = http.MaxBytesReader(w, r.Body, 1024*1024)
+    body, err := ioutil.ReadAll(r.Body)
+    if err != nil {
+        http.Error(w, "Body unreadable: "+err.Error(), http.StatusBadRequest)
+        return
+    }
 
-    fid.write(indention + INDENT + "var err error\n")
-    fid.write(indention + INDENT + "r.Body = http.MaxBytesReader(w, r.Body, 1024*1024)\n")
-    fid.write(indention + INDENT + 'body, err := ioutil.ReadAll(r.Body)\n')
-    fid.write(indention + INDENT + 'if err != nil {\n')
-    fid.write(indention + 2 * INDENT + 'http.Error(w, "Body unreadable: "+err.Error(), http.StatusBadRequest)\n')
-    fid.write(indention + 2 * INDENT + 'return\n')
-    fid.write(indention + INDENT + '}\n\n')
+    err = ValidateAgainst{{ argument.json_schema.identifier|capital_camel_case }}Schema(body)
+    if err != nil {
+        http.Error(w, "Failed to validate against schema: "+err.Error(), http.StatusBadRequest)
+        return
+    }
 
-    fid.write(indention + INDENT + "err = {}(body)\n".format(argument.json_schema.validate_func_name()))
-    fid.write(indention + INDENT + 'if err != nil {\n')
-    fid.write(indention + 2 * INDENT + 'http.Error(w, "Failed to validate against schema: "+err.Error(),\n')
-    fid.write(indention + 2 * INDENT + '           http.StatusBadRequest)\n')
-    fid.write(indention + 2 * INDENT + 'return\n')
-    fid.write(indention + INDENT + '}\n\n')
-
-    fid.write(indention + INDENT + "err = json.Unmarshal(body, &{})\n".format(argument.parsing_identifier))
-    fid.write(indention + INDENT + 'if err != nil {\n')
-    fid.write(indention + 2 * INDENT + 'http.Error(w, "Error JSON-decoding body parameter \'{}\': "+err.Error(),\n'.
-              format(argument.parameter_name))
-    fid.write(indention + 3 * INDENT + 'http.StatusBadRequest)\n')
-    fid.write(indention + 2 * INDENT + 'return\n')
-    fid.write(indention + INDENT + '}\n')
-
-    fid.write(indention + '}')
+    err = json.Unmarshal(body, &{{ argument.parsing_identifier }})
+    if err != nil {
+{% set msg = "Error JSON-decoding body parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(),
+            http.StatusBadRequest)
+        return
+    }
+}''')
 
 
-def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _argument_from_body(argument: Argument) -> str:
+    """Generates the code to parse the argument from a request body."""
+    return _ARGUMENT_FROM_BODY_TPL.render(argument=argument)
+
+
+_WRAPPER_TPL = ENV.from_string('''\
+{% set newliner = joiner("XXX") %}
+{% if route.wrapper.description %}
+{{ route.wrapper.description|comment }}
+{% endif %}
+func {{ route.wrapper.identifier }}(h Handler, w http.ResponseWriter, r *http.Request) {
+{% if route.handler.arguments %}{# intermediate variables #}
+{% if newliner() %}{{ '\n' }}{% endif %}
+{% for argument in route.handler.arguments %}
+    var {{ argument.parsing_identifier }} {{ express_or_identify_type(argument.typedef)|indent|indent }}
+{% endfor %}
+{% endif %}{# /if intermediate variables #}
+{% if route.wrapper.query_arguments %}
+    {% if newliner() %}{{ '\n' }}{% endif %}
+    q := r.URL.Query()
+{% for argument in route.wrapper.query_arguments %}{# query arguments #}
+
+{% if argument.required %}
+    if _, ok := q[{{ argument.parameter_name|escaped_str }}]; !ok {
+{% set msg = "Parameter '%s' expected in query"|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}, http.StatusBadRequest)
+        return
+    }
+    {{ argument_from_string(argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent }}
+{% else %}
+    if _, ok := q[{{ argument.parameter_name|escaped_str }}]; ok {
+        {{ argument_from_string(argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent|indent }}
+    }
+{% endif %}
+{% endfor %}{# /query arguments #}
+{% endif %}{# /if query arguments #}
+{% if route.wrapper.path_arguments %}
+    {% if newliner() %}{{ '\n' }}{% endif %}
+    vars := mux.Vars(r)
+{% for argument in route.wrapper.path_arguments %}
+
+{% if argument.required %}
+    if _, ok := vars[{{ argument.parameter_name|escaped_str }}]; !ok {
+{% set msg = "Parameter '%s' expected in path"|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}, http.StatusBadRequest)
+        return
+    }
+    {{ argument_from_string(argument, "vars[%s]"|format(argument.parameter_name|escaped_str))|indent }}
+{% else %}
+    if value, ok := vars[{{ argument.parameter_name|escaped_str }}]; ok {
+        {{ argument_from_string(argument, "vars[%s]"|format(argument.parameter_name|escaped_str))|indent|indent }}
+    }
+{% endif %}
+{% endfor %}{# /path arguments #}
+{% endif %}{# /if path arguments #}
+{% if route.wrapper.body_argument is not none %}
+    {% if newliner() %}{{ '\n' }}{% endif %}
+{% if route.wrapper.body_argument.required %}
+    if r.Body == nil {
+{% set msg = "Parameter '%s' expected in body, but got no body"|format(route.wrapper.body_argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}, http.StatusBadRequest)
+        return
+    }
+    {{ argument_from_body(route.wrapper.body_argument)|indent }}
+{% else %}
+    if r.Body != nil {
+        {{ argument_from_body(route.wrapper.body_argument)|indent|indent }}
+    }
+{% endif %}
+{% endif %}{# /if body argument #}
+{% if newliner() %}{{ '\n' }}{% endif %}
+{% if not route.handler.arguments %}
+    h.{{ route.handler.identifier }}(w, r)
+{% else %}
+    h.{{ route.handler.identifier }}(w,
+        r,
+{% for argument in route.handler.arguments %}
+        {{ argument.parsing_identifier }}{{ "," if not loop.last else ")" }}
+{% endfor %}
+{% endif %}
+}
+''')
+
+_ROUTES_GO_TPL = ENV.from_string('''\
+package {{ package }}
+
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+{% if imports_code != '' %}
+
+{{ imports_code }}
+{% endif %}
+
+// SetupRouter sets up a router. If you don't use any middleware, you are good to go.
+// Otherwise, you need to maually re-implement this function with your middlewares.
+func SetupRouter(h Handler) *mux.Router {
+    r := mux.NewRouter()
+{% for route in routes %}
+
+    r.HandleFunc(`{{ route.path }}`,
+        func(w http.ResponseWriter, r *http.Request) {
+            {{ route.wrapper.identifier }}(h, w, r)
+        }).Methods({{ route.method|escaped_str }})
+{% endfor %}
+
+    return r
+}
+{% if routes %}
+{% for route in routes %}
+
+{{ wrapper_code[route] }}
+{% endfor %}
+
+{% endif %}
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+
+''')
+
+
+@icontract.ensure(lambda result: result.endswith('\n'), "final new line")
+def generate_routes_go(package: str, routes: List[Route]) -> str:
     """
     Generates the file which defines the router and the routes.
 
     :param package: name of the package
     :param routes: routes that the router will handle.
-    :param fid: where the output is written to
-    :return:
+    :return: golang code
     """
-    fid.write("package {}\n\n".format(package))
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
-
     # imports
     import_set = {"github.com/gorilla/mux", "net/http"}
 
@@ -709,250 +859,197 @@ def write_routes_go(package: str, routes: List[Route], fid: TextIO) -> None:
                 if tajp in ['int', 'int32', 'int64', 'float32', 'float64']:
                     import_set.add('strconv')
 
-    write_imports(import_set=import_set, fid=fid)
-    if len(import_set) > 0:
-        fid.write('\n\n')
+    imports_code = _state_imports(import_set=import_set)
 
-    # default router
-    fid.write("// SetupRouter sets up a router. If you don't use any middleware, you are good to go.\n"
-              "// Otherwise, you need to maually re-implement this function with your middlewares.\n"
-              "func SetupRouter(h Handler) *mux.Router {\n")
+    wrapper_code = {
+        route: _WRAPPER_TPL.render(
+            route=route,
+            express_or_identify_type=_express_or_identify_type,
+            argument_from_string=_argument_from_string,
+            argument_from_body=_argument_from_body)
+        for route in routes
+    }
 
-    fid.write(INDENT + "r := mux.NewRouter()\n")
+    text = _ROUTES_GO_TPL.render(package=package, imports_code=imports_code, routes=routes, wrapper_code=wrapper_code)
 
-    for i, route in enumerate(routes):
-        if i > 0:
-            fid.write('\n\n')
-
-        fid.write(INDENT + "r.HandleFunc(`{}`,\n".format(route.path))
-        fid.write(INDENT * 2 + "func(w http.ResponseWriter, r *http.Request) {\n")
-        fid.write(INDENT * 3 + "{}(h, w, r)\n".format(route.wrapper.identifier))
-        fid.write(INDENT * 2 + '}}).Methods("{}")'.format(route.method))
-
-    if len(routes) > 0:
-        fid.write('\n')
-    fid.write(INDENT + 'return r\n')
-
-    fid.write("}\n")
-
-    if len(routes) > 0:
-        fid.write("\n")
-
-    # wrappers
-    for route_i, route in enumerate(routes):
-        if route_i > 0:
-            fid.write('\n')
-
-        wrapper = route.wrapper
-        if len(wrapper.description):
-            write_description(description=wrapper.description, fid=fid, indention='')
-            fid.write('\n')
-
-        fid.write('func {}(h Handler, w http.ResponseWriter, r *http.Request) {{\n'.format(wrapper.identifier))
-
-        # intermidiate variables
-        for argument in route.handler.arguments:
-            fid.write(INDENT + 'var {} '.format(argument.parsing_identifier))
-            write_type_code_or_identifier(typedef=argument.typedef, fid=fid, indention=INDENT)
-            fid.write('\n')
-
-        # query arguments
-        if len(route.wrapper.query_arguments) > 0:
-            fid.write('\n')
-            fid.write(INDENT + "q := r.URL.Query()\n\n")
-
-        for i, argument in enumerate(route.wrapper.query_arguments):
-            if i > 0:
-                fid.write("\n")
-
-            if argument.required:
-                fid.write(INDENT + 'if _, ok := q["{}"]; !ok {{\n'.format(argument.parameter_name))
-                fid.write(INDENT * 2 + 'http.Error(w, "Parameter \'{}\' expected in query", http.StatusBadRequest)\n'.
-                          format(argument.parameter_name))
-                fid.write(INDENT * 2 + 'return\n')
-                fid.write(INDENT + "}\n")
-                write_argument_from_string(
-                    argument=argument,
-                    string_identifier='q.Get("{}")'.format(argument.parameter_name),
-                    indention=INDENT,
-                    fid=fid)
-                fid.write('\n')
-            else:
-                fid.write(INDENT + 'if _, ok := q["{}"]; ok {{\n'.format(argument.parameter_name))
-                write_argument_from_string(
-                    argument=argument,
-                    string_identifier='q.Get("{}")'.format(argument.parameter_name),
-                    indention=INDENT * 2,
-                    fid=fid)
-                fid.write('\n')
-                fid.write(INDENT + '}\n')
-
-        # path arguments
-        if len(route.wrapper.path_arguments) > 0:
-            fid.write("\n")
-            fid.write(INDENT + "vars := mux.Vars(r)\n")
-
-        for i, argument in enumerate(route.wrapper.path_arguments):
-            if i > 0:
-                fid.write("\n")
-
-            fid.write("\n")
-            if argument.required:
-                fid.write(INDENT + 'if _, ok := vars["{}"]; !ok {{\n'.format(argument.parameter_name))
-                fid.write(INDENT * 2 + 'http.Error(w, "Parameter \'{}\' expected in path", http.StatusBadRequest)\n'.
-                          format(argument.parameter_name))
-                fid.write(INDENT * 2 + 'return\n')
-                fid.write(INDENT + "}\n")
-                write_argument_from_string(
-                    argument=argument,
-                    string_identifier='vars["{}"]'.format(argument.parameter_name),
-                    indention=INDENT,
-                    fid=fid)
-                fid.write('\n')
-            else:
-                fid.write(INDENT + 'if value, ok := vars["{}"]; ok {{\n'.format(argument.parameter_name))
-                write_argument_from_string(argument=argument, string_identifier='value', indention=INDENT * 2, fid=fid)
-                fid.write('\n}\n')
-
-        # body argument
-        if route.wrapper.body_argument is not None:
-            if len(route.wrapper.path_arguments) > 0 or len(route.wrapper.query_arguments) > 0:
-                fid.write('\n')
-
-            if route.wrapper.body_argument.required:
-                fid.write(INDENT + 'if r.Body == nil {\n')
-                fid.write(INDENT * 2 + (
-                    'http.Error(w, "Parameter \'{}\' expected in body, '
-                    'but got no body", http.StatusBadRequest)\n').format(route.wrapper.body_argument.parameter_name))
-
-                fid.write(INDENT * 2 + 'return\n')
-                fid.write(INDENT + '}\n')
-
-                write_parse_argument_from_body(argument=route.wrapper.body_argument, indention=INDENT, fid=fid)
-                fid.write('\n')
-            else:
-                fid.write(INDENT + 'if r.Body != nil {\n')
-                write_parse_argument_from_body(argument=route.wrapper.body_argument, indention=2 * INDENT, fid=fid)
-                fid.write('\n')
-                fid.write(INDENT + '}\n')
-
-        # call handler
-        if len(route.wrapper.query_arguments) > 0 or \
-                len(route.wrapper.path_arguments) > 0 or route.wrapper.body_argument is not None:
-            fid.write("\n")
-        prefix = INDENT + 'h.{}('.format(route.handler.identifier)
-        fid.write(prefix)
-
-        fid.write('w,\n')
-        fid.write(2 * INDENT + 'r')
-
-        for argument in route.handler.arguments:
-            fid.write(",\n")
-            fid.write(2 * INDENT + argument.parsing_identifier)
-        fid.write(")")
-
-        fid.write('\n}\n')
-
-    fid.write("\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+    return swagger_to.indent.reindent(text=text, indention='\t')
 
 
-def write_handler_impl_go(package: str, routes: List[Route], fid: TextIO) -> None:
+_HANDLER_IMPL_GO_TPL = ENV.from_string('''\
+package {{ package }}
+
+import (
+    "net/http"
+    "log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+    LogErr *log.Logger
+    LogOut *log.Logger}
+{% for route in routes %}
+
+// {{ route.handler.identifier }} implements Handler.{{ route.handler.identifier }}.
+{% if not route.handler.arguments %}
+func (h *HandlerImpl) {{ route.handler.identifier }}(w http.ResponseWriter,
+    r *http.Request) {
+{% else %}
+func (h *HandlerImpl) {{ route.handler.identifier }}(w http.ResponseWriter,
+    r *http.Request,
+{% for argument in route.handler.arguments %}
+    {{ argument.identifier }} {{ argument_type[argument] }}{{ ',' if not loop.last else ') {' }}
+{% endfor %}
+{% endif %}{# /if not route.handler.arguments #}
+    {% set msg = "Not implemented: %s"|format(route.handler.identifier)|escaped_str %}
+    http.Error(w, {{ msg }}, http.StatusInternalServerError)
+    h.LogErr.Printf({{ msg }})
+}
+{% endfor %}{# /routes #}
+''')
+
+
+@icontract.ensure(lambda result: result.endswith('\n'), "final newline")
+def generate_handler_impl_go(package: str, routes: List[Route]) -> str:
     """
-    Generates the file which implements the handler interface with empty methods.
+    Generates a file which implements the handler interface with empty methods.
 
     :param package: name of the package
     :param routes: that a handler will handle
-    :param fid: where the output is written to
-    :return:
+    :return: golang code
     """
-    fid.write("package {}\n\n".format(package))
+    text = _HANDLER_IMPL_GO_TPL.render(
+        package=package,
+        routes=routes,
+        argument_type={
+            argument: _express_or_identify_type(argument.typedef)
+            for route in routes for argument in route.handler.arguments
+        })
 
-    fid.write('import (\n')
-    fid.write(INDENT + '"net/http"\n')
-    fid.write(INDENT + '"log"\n')
-    fid.write(')\n\n')
-
-    # yapf: disable
-    fid.write('// HandlerImpl implements the Handler.\n')
-    fid.write('type HandlerImpl struct {\n' +
-              INDENT + 'LogErr *log.Logger\n' +
-              INDENT + 'LogOut *log.Logger}')
-    # yapf: enable
-
-    if routes:
-        fid.write('\n\n')
-
-    for i, route in enumerate(routes):
-        if i > 0:
-            fid.write('\n\n')
-
-        fid.write('// {0} implements Handler.{0}.\n'.format(route.handler.identifier))
-        fid.write("func (h *HandlerImpl) {}(".format(route.handler.identifier))
-        fid.write('w http.ResponseWriter,\n')
-        fid.write(INDENT + 'r *http.Request')
-
-        for argument in route.handler.arguments:
-            fid.write(",\n")
-            fid.write(INDENT)
-
-            fid.write(argument.identifier + ' ')
-            write_type_code_or_identifier(typedef=argument.typedef, fid=fid, indention='')
-
-        fid.write(") {\n")
-        fid.write(INDENT + 'http.Error(w, "Not implemented: {}", http.StatusInternalServerError)\n'.format(
-            route.handler.identifier))
-        fid.write(INDENT + 'h.LogErr.Printf("Not implemented: {}")\n'.format(route.handler.identifier))
-        fid.write("}")
-
-    fid.write('\n')
+    return swagger_to.indent.reindent(text=text, indention='\t')
 
 
-def write_handler_go(package: str, routes: List[Route], fid: TextIO) -> None:
+_HANDLER_GO_TPL = ENV.from_string('''\
+package {{ package }}
+
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+
+import "net/http"
+
+// Handler defines an interface to handling the routes.
+type Handler interface {
+{% for route in routes %}
+    {% if not loop.first %}
+    
+    {% endif %}
+    {% if route.handler.description %}
+    {{ route.handler.description|comment|indent }}
+    {% endif %}
+    {% if not route.handler.arguments %}
+    {{ route.handler.identifier }}(w http.ResponseWriter,
+        r *http.Request)
+    {% else %}
+    {{ route.handler.identifier }}(w http.ResponseWriter,
+        r *http.Request,
+    {% for argument in route.handler.arguments %}
+        {{ argument.identifier }} {{ argument_type[argument] }}{{ ',' if not loop.last else ')' }}
+    {% endfor %}
+    {% endif %}{# /if not route.handler.arguments #}
+{% endfor %}
+}
+
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+
+''')
+
+
+@icontract.ensure(lambda result: result.endswith('\n'), "final newline")
+def generate_handler_go(package: str, routes: List[Route]) -> str:
     """
-    Generates the file which defines the handler interface.
+    Generates a file which defines the handler interface.
 
     :param package: name of the package
     :param routes: that a handler will handle
-    :param fid: where the output is written to
-    :return:
+    :return: golang code
     """
-    fid.write("package {}\n\n".format(package))
+    text = _HANDLER_GO_TPL.render(
+        package=package,
+        routes=routes,
+        argument_type={
+            argument: _express_or_identify_type(argument.typedef)
+            for route in routes for argument in route.handler.arguments
+        })
 
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
-
-    fid.write('import "net/http"\n\n')
-
-    fid.write('// Handler defines an interface to handling the routes.\n')
-    fid.write('type Handler interface {\n')
-
-    for i, route in enumerate(routes):
-        if i > 0:
-            fid.write('\n')
-
-        if len(route.handler.description) > 0:
-            write_description(description=route.handler.description, fid=fid, indention=INDENT)
-            fid.write('\n')
-
-        fid.write(INDENT + "{}(".format(route.handler.identifier))
-        fid.write('w http.ResponseWriter,\n')
-        fid.write(2 * INDENT + 'r *http.Request')
-
-        for argument in route.handler.arguments:
-            fid.write(",\n")
-            fid.write(2 * INDENT)
-
-            fid.write(argument.identifier + ' ')
-            write_type_code_or_identifier(typedef=argument.typedef, fid=fid, indention='')
-
-        fid.write(")\n")
-
-    fid.write('}\n')
-
-    fid.write("\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+    return swagger_to.indent.reindent(text=text, indention='\t')
 
 
-def write_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMapping[str, Typedef],
-                          fid: TextIO) -> None:
+_JSON_SCHEMAS_GO_TPL = ENV.from_string('''\
+{# This template must be indented with tabs since we need to include the schema as text and hence can not re-indent
+   since re-indention . #}
+package {{ package }}
+
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+
+{% if not schemas %}
+// No schemas are defined in the swagger.
+{% else %}
+import (
+	"errors"
+	"fmt"
+	"github.com/xeipuuv/gojsonschema"
+)
+
+func mustNewJSONSchema(text string, name string) *gojsonschema.Schema {
+	loader := gojsonschema.NewStringLoader(text)
+	schema, err := gojsonschema.NewSchema(loader)
+	if err != nil {
+		panic(fmt.Sprintf("failed to load JSON Schema %#v: %s", text, err.Error()))
+	}
+	return schema
+}
+{% for schema in schemas.values() %}
+
+var jsonSchema{{ schema.identifier|capital_camel_case }}Text = `{{ schema.text|replace('`', '` + "`" + `') }}`
+{% endfor %}
+{% for schema in schemas.values() %}
+
+var jsonSchema{{ schema.identifier|capital_camel_case }} = mustNewJSONSchema(
+	jsonSchema{{ schema.identifier|capital_camel_case }}Text,
+	{{ schema.identifier|escaped_str }})
+{% endfor %}
+{% for schema in schemas.values() %}
+
+{% set validateFuncName = "ValidateAgainst%sSchema"|format(schema.identifier|capital_camel_case) %}
+// {{ validateFuncName }} validates a message coming from the client against {{ schema.identifier }} schema.
+func {{ validateFuncName }}(bb []byte) error {
+	loader := gojsonschema.NewStringLoader(string(bb))
+	result, err := jsonSchema{{ schema.identifier|capital_camel_case }}.Validate(loader)
+	if err != nil {
+		return err
+	}
+
+	if result.Valid() {
+		return nil
+	}
+
+	msg := ""
+	for i, valErr := range result.Errors() {
+		if i > 0 {
+			msg += ", "
+		}
+		msg += valErr.String()
+	}
+	return errors.New(msg)
+}
+{% endfor %}
+{% endif %}{# /if not schemas #}
+
+// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+
+''')
+
+
+@icontract.ensure(lambda result: result.endswith('\n'), "final newline")
+def generate_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMapping[str, Typedef]) -> str:
     """
     Represents the definitions as json schemas and hard-codes them as strings in Go.
 
@@ -963,12 +1060,8 @@ def write_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMa
     :param package: package name
     :param routes: needed to generate the parameter schemas if they are not already defined in the definitions
     :param typedefs: type definitions to generate the schemas for
-    :param fid: where output is written to
+    :return: golang code
     """
-    fid.write("package {}\n\n".format(package))
-
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
-
     schemas = collections.OrderedDict()  # type: MutableMapping[str, JsonSchema]
 
     for route in routes:
@@ -984,63 +1077,4 @@ def write_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMa
         if typedef.json_schema.identifier not in schemas:
             schemas[typedef.json_schema.identifier] = typedef.json_schema
 
-    if len(schemas) == 0:
-        return
-
-    fid.write('import (\n')
-    fid.write(INDENT + '"errors"\n')
-    fid.write(INDENT + '"fmt"\n')
-    fid.write(INDENT + '"github.com/xeipuuv/gojsonschema"\n')
-    fid.write(")\n\n")
-
-    fid.write("func mustNewJSONSchema(text string, name string) *gojsonschema.Schema {\n")
-    fid.write(INDENT + "loader := gojsonschema.NewStringLoader(text)\n")
-    fid.write(INDENT + "schema, err := gojsonschema.NewSchema(loader)\n")
-    fid.write(INDENT + "if err != nil {\n")
-    fid.write(INDENT * 2 + 'panic(fmt.Sprintf("failed to load JSON Schema %#v: %s", text, err.Error()))\n')
-    fid.write(INDENT + "}\n")
-    fid.write(INDENT + "return schema\n")
-    fid.write("}\n\n")
-
-    for i, schema in enumerate(schemas.values()):
-        if i > 0:
-            fid.write('\n\n')
-
-        fid.write('var {} = `{}`'.format(schema.text_identifier(), schema.text.replace(r'`', '` + "`" + `')))
-
-    fid.write('\n\n')
-
-    for schema in schemas.values():
-        fid.write('var {} = mustNewJSONSchema({}, "{}")\n'.format(schema.schema_identifier(), schema.text_identifier(),
-                                                                  schema.identifier))
-
-    fid.write('\n')
-
-    for i, schema in enumerate(schemas.values()):
-        if i > 0:
-            fid.write('\n\n')
-
-        fid.write("// {} validates a message coming from the client against {} schema.\n".format(
-            schema.validate_func_name(), schema.identifier))
-
-        fid.write("func {}(bb []byte) error {{\n".format(schema.validate_func_name()))
-        fid.write(INDENT + "loader := gojsonschema.NewStringLoader(string(bb))\n")
-        fid.write(INDENT + "result, err := {}.Validate(loader)\n".format(schema.schema_identifier()))
-        fid.write(INDENT + "if err != nil {\n")
-        fid.write(2 * INDENT + "return err\n")
-        fid.write(INDENT + "}\n\n")
-        fid.write(INDENT + "if result.Valid() {\n")
-        fid.write(2 * INDENT + "return nil\n")
-        fid.write(INDENT + "}\n\n")
-
-        fid.write(INDENT + 'msg := ""\n')
-        fid.write(INDENT + 'for i, valErr := range result.Errors() {\n')
-        fid.write(2 * INDENT + 'if i > 0 {\n')
-        fid.write(3 * INDENT + 'msg += ", "\n')
-        fid.write(2 * INDENT + '}\n')
-        fid.write(2 * INDENT + 'msg += valErr.String()\n')
-        fid.write(INDENT + '}\n')
-        fid.write(INDENT + "return errors.New(msg)\n")
-        fid.write("}")
-
-    fid.write("\n\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
+    return _JSON_SCHEMAS_GO_TPL.render(package=package, schemas=schemas)

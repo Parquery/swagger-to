@@ -341,14 +341,37 @@ var jsonSchemaActivitiesText = `{
   ]
 }`
 
-var jsonSchemaProfile = mustNewJSONSchema(jsonSchemaProfileText, "Profile")
-var jsonSchemaProduct = mustNewJSONSchema(jsonSchemaProductText, "Product")
-var jsonSchemaProductList = mustNewJSONSchema(jsonSchemaProductListText, "ProductList")
-var jsonSchemaProductMap = mustNewJSONSchema(jsonSchemaProductMapText, "ProductMap")
-var jsonSchemaPriceEstimate = mustNewJSONSchema(jsonSchemaPriceEstimateText, "PriceEstimate")
-var jsonSchemaPriceEstimateArray = mustNewJSONSchema(jsonSchemaPriceEstimateArrayText, "PriceEstimateArray")
-var jsonSchemaActivity = mustNewJSONSchema(jsonSchemaActivityText, "Activity")
-var jsonSchemaActivities = mustNewJSONSchema(jsonSchemaActivitiesText, "Activities")
+var jsonSchemaProfile = mustNewJSONSchema(
+	jsonSchemaProfileText,
+	"Profile")
+
+var jsonSchemaProduct = mustNewJSONSchema(
+	jsonSchemaProductText,
+	"Product")
+
+var jsonSchemaProductList = mustNewJSONSchema(
+	jsonSchemaProductListText,
+	"ProductList")
+
+var jsonSchemaProductMap = mustNewJSONSchema(
+	jsonSchemaProductMapText,
+	"ProductMap")
+
+var jsonSchemaPriceEstimate = mustNewJSONSchema(
+	jsonSchemaPriceEstimateText,
+	"PriceEstimate")
+
+var jsonSchemaPriceEstimateArray = mustNewJSONSchema(
+	jsonSchemaPriceEstimateArrayText,
+	"PriceEstimateArray")
+
+var jsonSchemaActivity = mustNewJSONSchema(
+	jsonSchemaActivityText,
+	"Activity")
+
+var jsonSchemaActivities = mustNewJSONSchema(
+	jsonSchemaActivitiesText,
+	"Activities")
 
 // ValidateAgainstProfileSchema validates a message coming from the client against Profile schema.
 func ValidateAgainstProfileSchema(bb []byte) error {

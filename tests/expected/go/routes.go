@@ -14,6 +14,7 @@ import (
 // Otherwise, you need to maually re-implement this function with your middlewares.
 func SetupRouter(h Handler) *mux.Router {
 	r := mux.NewRouter()
+
 	r.HandleFunc(`/products`,
 		func(w http.ResponseWriter, r *http.Request) {
 			WrapProducts(h, w, r)
@@ -43,6 +44,7 @@ func SetupRouter(h Handler) *mux.Router {
 		func(w http.ResponseWriter, r *http.Request) {
 			WrapHistory(h, w, r)
 		}).Methods("get")
+
 	return r
 }
 
@@ -61,7 +63,7 @@ func WrapProducts(h Handler, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(q.Get("latitude"), 64)
+		parsed, err := strconv.ParseFloat(q.Get("latitude"), 64)
 		if err != nil {
 			http.Error(w, "Parameter 'latitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -75,7 +77,7 @@ func WrapProducts(h Handler, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(q.Get("longitude"), 64)
+		parsed, err := strconv.ParseFloat(q.Get("longitude"), 64)
 		if err != nil {
 			http.Error(w, "Parameter 'longitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -124,7 +126,7 @@ func WrapEstimatesPrice(h Handler, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(vars["start_latitude"], 64)
+		parsed, err := strconv.ParseFloat(vars["start_latitude"], 64)
 		if err != nil {
 			http.Error(w, "Parameter 'start_latitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -133,13 +135,12 @@ func WrapEstimatesPrice(h Handler, w http.ResponseWriter, r *http.Request) {
 		aStartLatitude = converted
 	}
 
-
 	if _, ok := vars["start_longitude"]; !ok {
 		http.Error(w, "Parameter 'start_longitude' expected in path", http.StatusBadRequest)
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(vars["start_longitude"], 64)
+		parsed, err := strconv.ParseFloat(vars["start_longitude"], 64)
 		if err != nil {
 			http.Error(w, "Parameter 'start_longitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -148,13 +149,12 @@ func WrapEstimatesPrice(h Handler, w http.ResponseWriter, r *http.Request) {
 		aStartLongitude = converted
 	}
 
-
 	if _, ok := vars["end_latitude"]; !ok {
 		http.Error(w, "Parameter 'end_latitude' expected in path", http.StatusBadRequest)
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(vars["end_latitude"], 64)
+		parsed, err := strconv.ParseFloat(vars["end_latitude"], 64)
 		if err != nil {
 			http.Error(w, "Parameter 'end_latitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -163,13 +163,12 @@ func WrapEstimatesPrice(h Handler, w http.ResponseWriter, r *http.Request) {
 		aEndLatitude = converted
 	}
 
-
 	if _, ok := vars["end_longitude"]; !ok {
 		http.Error(w, "Parameter 'end_longitude' expected in path", http.StatusBadRequest)
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(vars["end_longitude"], 64)
+		parsed, err := strconv.ParseFloat(vars["end_longitude"], 64)
 		if err != nil {
 			http.Error(w, "Parameter 'end_longitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -204,7 +203,7 @@ func WrapEstimatesTime(h Handler, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(q.Get("start_latitude"), 64)
+		parsed, err := strconv.ParseFloat(q.Get("start_latitude"), 64)
 		if err != nil {
 			http.Error(w, "Parameter 'start_latitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -218,7 +217,7 @@ func WrapEstimatesTime(h Handler, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		parsed, err = strconv.ParseFloat(q.Get("start_longitude"), 64)
+		parsed, err := strconv.ParseFloat(q.Get("start_longitude"), 64)
 		if err != nil {
 			http.Error(w, "Parameter 'start_longitude': "+err.Error(), http.StatusBadRequest)
 			return
@@ -251,6 +250,7 @@ func WrapEstimatesTime(h Handler, w http.ResponseWriter, r *http.Request) {
 // Update an User Profile.
 func WrapUpdateMe(h Handler, w http.ResponseWriter, r *http.Request) {
 	var aUpdateUser Profile
+
 	if r.Body == nil {
 		http.Error(w, "Parameter 'update_user' expected in body, but got no body", http.StatusBadRequest)
 		return
@@ -266,8 +266,7 @@ func WrapUpdateMe(h Handler, w http.ResponseWriter, r *http.Request) {
 
 		err = ValidateAgainstProfileSchema(body)
 		if err != nil {
-			http.Error(w, "Failed to validate against schema: "+err.Error(),
-			           http.StatusBadRequest)
+			http.Error(w, "Failed to validate against schema: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -289,8 +288,7 @@ func WrapUpdateMe(h Handler, w http.ResponseWriter, r *http.Request) {
 // Path description:
 // Upload information about an User.
 func WrapUploadInfos(h Handler, w http.ResponseWriter, r *http.Request) {
-	h.UploadInfos(w,
-		r)
+	h.UploadInfos(w, r)
 }
 
 // WrapHistory wraps the path `/history` with the method "get"
