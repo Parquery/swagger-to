@@ -97,7 +97,7 @@ def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) ->
                     where="In endpoint {}".format(endpoint.operation_id),
                     line=endpoint.line))
         for param in endpoint.parameters:
-            if param.name != swagger_to.snake_case(param.name) and not param.name.startswith("X-"):
+            if param.name != swagger_to.snake_case(param.name):
                 complaints.append(
                     Complaint(
                         message="Parameter has not a snake case identifier (e.g. snake_case)",
