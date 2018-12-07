@@ -245,138 +245,6 @@ def walk(typedef: Typedef, parent: Optional[Typedef]):
         raise NotImplementedError("walk for Go type definition of type: {}".format(type(typedef)))
 
 
-INDENT = '\t'
-
-
-def write_description(description: str, fid: TextIO, indention: str) -> None:
-    lines = description.strip().splitlines()
-    for i, line in enumerate(lines):
-        rstripped = line.rstrip()
-        if len(rstripped) > 0:
-            fid.write(indention + '// {}'.format(rstripped))
-        else:
-            fid.write(indention + '//')
-
-        if i < len(lines) - 1:
-            fid.write('\n')
-
-
-def write_type_code_or_identifier(typedef: Typedef, fid: TextIO, indention: str) -> None:
-    if typedef.identifier != '':
-        fid.write(typedef.identifier)
-
-    else:
-        write_type_code(typedef=typedef, fid=fid, indention=indention)
-
-
-def write_type_code(typedef: Typedef, fid: TextIO, indention: str) -> None:
-    if isinstance(typedef, Primitivedef):
-        fid.write(typedef.type)
-
-    elif isinstance(typedef, Pointerdef):
-        fid.write('*')
-        write_type_code_or_identifier(typedef=typedef.pointed, fid=fid, indention=indention)
-
-    elif isinstance(typedef, Arraydef):
-        fid.write('[]')
-        write_type_code_or_identifier(typedef=typedef.items, fid=fid, indention=indention)
-
-    elif isinstance(typedef, Mapdef):
-        fid.write('map[string]')
-        write_type_code_or_identifier(typedef=typedef.values, fid=fid, indention=indention)
-
-    elif isinstance(typedef, Structdef):
-        fid.write('struct {\n')
-
-        has_description = False
-        for fielddef in typedef.fields.values():
-            if fielddef.description != '':
-                has_description = True
-
-        for i, fielddef in enumerate(typedef.fields.values()):
-            if fielddef.description != '':
-                write_description(description=fielddef.description, fid=fid, indention=indention + INDENT)
-                if fielddef.description != '':
-                    fid.write('\n')
-
-            fid.write(indention + INDENT)
-            fid.write(fielddef.name + " ")
-            write_type_code_or_identifier(typedef=fielddef.typedef, fid=fid, indention=indention + INDENT)
-            fid.write(" ")
-
-            if fielddef.name in typedef.required:
-                fid.write('`json:"{}"`'.format(fielddef.json_name))
-            else:
-                fid.write('`json:"{},omitempty"`'.format(fielddef.json_name))
-
-            if i < len(typedef.fields) - 1:
-                fid.write("\n")
-
-                # if at least one field has a description, add a new line for easier reading
-                if has_description:
-                    fid.write('\n')
-
-        fid.write('}')
-
-    else:
-        raise NotImplementedError("No Go type writing defined for typedef of type: {!r}".format(type(typedef)))
-
-
-def write_type_definition(typedef: Typedef, fid: io.StringIO) -> None:
-    fid.write("type {} ".format(typedef.identifier))
-
-
-def write_imports(import_set: Set[str], fid: TextIO) -> None:
-    import_lst = sorted(list(import_set))
-
-    if len(import_lst) == 1:
-        fid.write('import "{}"'.format(import_lst[0]))
-    elif len(import_lst) > 1:
-        fid.write("import (\n")
-        for import_stmt in import_lst:
-            fid.write(INDENT + '"{}"\n'.format(import_stmt))
-        fid.write(")")
-
-
-def write_types_go(package: str, typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
-    """
-    Generates a file which defines all the involved types.
-
-    :param package: name of the package
-    :param typedefs: type definitions
-    :param fid: where output is written to
-    :return:
-    """
-    fid.write("package {}\n\n".format(package))
-
-    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
-
-    # imports
-    import_set = set()  # type: Set[str]
-    for typedef in typedefs.values():
-        for _, another_typedef in walk(typedef=typedef, parent=None):
-            if isinstance(another_typedef, Primitivedef):
-                if another_typedef.type == 'time.Time':
-                    import_set.add('time')
-
-    write_imports(import_set=import_set, fid=fid)
-    if len(import_set) > 0:
-        fid.write('\n\n')
-
-    # type definitions
-    for i, typedef in enumerate(typedefs.values()):
-        if typedef.description != '':
-            write_description(description=typedef.identifier + ' ' + typedef.description, fid=fid, indention='')
-            fid.write('\n')
-
-        fid.write("type {} ".format(typedef.identifier))
-        write_type_code(typedef=typedef, fid=fid, indention='')
-        fid.write("\n")
-
-        if i < len(typedefs) - 1:
-            fid.write('\n')
-
-
 class Argument:
     def __init__(self):
         self.typedef = None  # type: Union[None, Typedef]
@@ -524,6 +392,138 @@ def to_routes(endpoints: List[swagger_to.intermediate.Endpoint], typedefs: Mutab
         routes.append(to_route(endpoint=endpoint, typedefs=typedefs))
 
     return routes
+
+
+INDENT = '\t'
+
+
+def write_description(description: str, fid: TextIO, indention: str) -> None:
+    lines = description.strip().splitlines()
+    for i, line in enumerate(lines):
+        rstripped = line.rstrip()
+        if len(rstripped) > 0:
+            fid.write(indention + '// {}'.format(rstripped))
+        else:
+            fid.write(indention + '//')
+
+        if i < len(lines) - 1:
+            fid.write('\n')
+
+
+def write_type_code_or_identifier(typedef: Typedef, fid: TextIO, indention: str) -> None:
+    if typedef.identifier != '':
+        fid.write(typedef.identifier)
+
+    else:
+        write_type_code(typedef=typedef, fid=fid, indention=indention)
+
+
+def write_type_code(typedef: Typedef, fid: TextIO, indention: str) -> None:
+    if isinstance(typedef, Primitivedef):
+        fid.write(typedef.type)
+
+    elif isinstance(typedef, Pointerdef):
+        fid.write('*')
+        write_type_code_or_identifier(typedef=typedef.pointed, fid=fid, indention=indention)
+
+    elif isinstance(typedef, Arraydef):
+        fid.write('[]')
+        write_type_code_or_identifier(typedef=typedef.items, fid=fid, indention=indention)
+
+    elif isinstance(typedef, Mapdef):
+        fid.write('map[string]')
+        write_type_code_or_identifier(typedef=typedef.values, fid=fid, indention=indention)
+
+    elif isinstance(typedef, Structdef):
+        fid.write('struct {\n')
+
+        has_description = False
+        for fielddef in typedef.fields.values():
+            if fielddef.description != '':
+                has_description = True
+
+        for i, fielddef in enumerate(typedef.fields.values()):
+            if fielddef.description != '':
+                write_description(description=fielddef.description, fid=fid, indention=indention + INDENT)
+                if fielddef.description != '':
+                    fid.write('\n')
+
+            fid.write(indention + INDENT)
+            fid.write(fielddef.name + " ")
+            write_type_code_or_identifier(typedef=fielddef.typedef, fid=fid, indention=indention + INDENT)
+            fid.write(" ")
+
+            if fielddef.name in typedef.required:
+                fid.write('`json:"{}"`'.format(fielddef.json_name))
+            else:
+                fid.write('`json:"{},omitempty"`'.format(fielddef.json_name))
+
+            if i < len(typedef.fields) - 1:
+                fid.write("\n")
+
+                # if at least one field has a description, add a new line for easier reading
+                if has_description:
+                    fid.write('\n')
+
+        fid.write('}')
+
+    else:
+        raise NotImplementedError("No Go type writing defined for typedef of type: {!r}".format(type(typedef)))
+
+
+def write_type_definition(typedef: Typedef, fid: io.StringIO) -> None:
+    fid.write("type {} ".format(typedef.identifier))
+
+
+def write_imports(import_set: Set[str], fid: TextIO) -> None:
+    import_lst = sorted(list(import_set))
+
+    if len(import_lst) == 1:
+        fid.write('import "{}"'.format(import_lst[0]))
+    elif len(import_lst) > 1:
+        fid.write("import (\n")
+        for import_stmt in import_lst:
+            fid.write(INDENT + '"{}"\n'.format(import_stmt))
+        fid.write(")")
+
+
+def write_types_go(package: str, typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+    """
+    Generates a file which defines all the involved types.
+
+    :param package: name of the package
+    :param typedefs: type definitions
+    :param fid: where output is written to
+    :return:
+    """
+    fid.write("package {}\n\n".format(package))
+
+    fid.write("// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n\n")
+
+    # imports
+    import_set = set()  # type: Set[str]
+    for typedef in typedefs.values():
+        for _, another_typedef in walk(typedef=typedef, parent=None):
+            if isinstance(another_typedef, Primitivedef):
+                if another_typedef.type == 'time.Time':
+                    import_set.add('time')
+
+    write_imports(import_set=import_set, fid=fid)
+    if len(import_set) > 0:
+        fid.write('\n\n')
+
+    # type definitions
+    for i, typedef in enumerate(typedefs.values()):
+        if typedef.description != '':
+            write_description(description=typedef.identifier + ' ' + typedef.description, fid=fid, indention='')
+            fid.write('\n')
+
+        fid.write("type {} ".format(typedef.identifier))
+        write_type_code(typedef=typedef, fid=fid, indention='')
+        fid.write("\n")
+
+        if i < len(typedefs) - 1:
+            fid.write('\n')
 
 
 def write_argument_from_string(argument: Argument, string_identifier: str, indention: str, fid: TextIO) -> None:
