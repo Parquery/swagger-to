@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generates code for an Elm client.
-"""
+"""Check that the Swagger spec conforms to our style guide."""
 # pylint: disable=too-many-lines
 from typing import MutableSet, MutableMapping, List, Optional
 
@@ -11,9 +9,10 @@ import swagger_to
 
 
 class Complaint:
-    """Encapsulates a complaint."""
+    """Encapsulate a complaint."""
 
     def __init__(self, message: str, what: str, where: str, line: int) -> None:
+        """Initialize with the given values."""
         self.message = message
         self.what = what
         self.where = where
@@ -22,9 +21,9 @@ class Complaint:
 
 def check_header(swagger: swagger_to.swagger.Swagger) -> List[Complaint]:
     """
-    Checks whether the swagger header conforms to the style guide.
+    Check whether the swagger header conforms to our style guide.
 
-    :param swagger: parsed swagger file
+    :param swagger: parsed Swagger spec
     :return: the list of failed checks
     """
     complaints = []  # type: List[Complaint]
@@ -58,7 +57,7 @@ def check_header(swagger: swagger_to.swagger.Swagger) -> List[Complaint]:
 
 def check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
-    Checks whether the typedefs conform to the casing conventions.
+    Check whether the typedefs conform to the casing conventions.
 
     :param typedefs: swagger type definitions
     :return: the list of failed checks
@@ -74,7 +73,7 @@ def check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.
 
 def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
-    Checks whether the endpoints conform to the casing conventions.
+    Check whether the endpoints conform to the casing conventions.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
@@ -110,7 +109,7 @@ def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) ->
 
 def check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
-    Checks whether the typedefs conform to the description conventions.
+    Check whether the typedefs conform to the description conventions.
 
     :param typedefs: swagger type definitions
     :return: the list of failed checks
@@ -126,7 +125,7 @@ def check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.interme
 
 def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
-    Checks whether the endpoints conform to the description conventions.
+    Check whether the endpoints conform to the description conventions.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
@@ -164,7 +163,7 @@ def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoin
 def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
                              visited: MutableSet[swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
-    Checks the typedef's adherence to the casing conventions.
+    Check the typedef's adherence to the casing conventions.
 
     :param typedef: to be translated
     :param visited: already seen typedefs
@@ -225,7 +224,7 @@ def _check_recursively_cases(typedef: swagger_to.intermediate.Typedef,
 def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
                                     visited: MutableSet[swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
-    Checks the typedef's adherence to the description conventions.
+    Check the typedef's adherence to the description conventions.
 
     :param typedef: to be translated
     :param visited: already seen typedefs
@@ -284,7 +283,7 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
 
 def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
-    Checks whether the endpoints conform to the conventions for responses.
+    Check whether the endpoints conform to the conventions for responses.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
@@ -312,7 +311,7 @@ def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) 
 
 def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
-    Checks whether the endpoints conform to the conventions for paths.
+    Check whether the endpoints conform to the conventions for paths.
 
     :param endpoints: swagger endpoint definitions
     :return: the list of failed checks
@@ -333,7 +332,8 @@ def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> Li
 
 def check_description(description: str) -> Optional[str]:
     """
-    Checks whether a description is well-styled.
+    Check whether a description is well-styled.
+
     :param description: the description
     :return: the failed check, if any
     """
@@ -384,7 +384,7 @@ def check_description(description: str) -> Optional[str]:
 def perform(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[str, swagger_to.intermediate.Typedef],
             endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
-    Checks whether the typedefs and endpoints conform to the swagger style guide.
+    Check whether the typedefs and endpoints conform to our Swagger style guide.
 
     :param swagger: parsed swagger file
     :param typedefs: swagger type definitions

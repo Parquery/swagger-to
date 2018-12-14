@@ -1,141 +1,129 @@
 #!/usr/bin/env python3
-"""
-Generates code for an Elm client.
-"""
+"""Generate code for an Elm client."""
 # pylint: disable=too-many-lines
 from typing import Optional, MutableMapping, List, Dict, TextIO, Any  # pylint: disable=unused-import
+
 import collections
 
-import swagger_to.intermediate
 import swagger_to
+import swagger_to.intermediate
 
 INDENT = ' ' * 4
 
 
 class Typedef:
-    """
-    Represents an Elm type.
-    """
+    """Represent an Elm type."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.description = ''
         self.identifier = ''
 
     def __str__(self) -> str:
+        """Represent the type definition by its class and the identifier."""
         return '{}({})'.format(self.__class__.__name__, self.identifier)
 
 
 class BracketedTypedef(Typedef):
-    """
-    Represents an Elm type wrapped in brackets.
-    """
+    """Represent an Elm type wrapped in brackets."""
 
     def __str__(self) -> str:
+        """Represent the type definition by its class name."""
         return '({})'.format(self.__class__.__name__)
 
 
 class Booldef(Typedef):
-    """
-    Represents Elm booleans.
-    """
+    """Represent an Elm boolean."""
+
     pass
 
 
 class Intdef(Typedef):
-    """
-    Represents Elm Ints.
-    """
+    """Represent an Elm integer."""
+
     pass
 
 
 class Floatdef(Typedef):
-    """
-    Represents Elm floating-point numbers.
-    """
+    """Represent an Elm floating-point number."""
+
     pass
 
 
 class Stringdef(Typedef):
-    """
-    Represents Elm strings.
-    """
+    """Represent an Elm string."""
+
     pass
 
 
 class Listdef(BracketedTypedef):
-    """
-    Represents Elm lists.
-    """
+    """Represent an Elm list."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.items = None  # type: Optional[Typedef]
         super().__init__()
 
 
 class Dictdef(BracketedTypedef):
-    """
-    Represents Elm dicts.
-    """
+    """Represent an Elm dictionary."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.values = None  # type: Optional[Typedef]
         super().__init__()
 
 
 class Property:
-    """
-    Represents an Elm record property.
-    """
+    """Represent a property of an Elm record."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.name = ''
         self.description = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
 
     def __str__(self) -> str:
+        """Represent the property by its name and type definition."""
         return '{}: {}'.format(self.name, self.typedef)
 
 
 class Recorddef(Typedef):
-    """
-    Represents Elm records.
-    """
+    """Represent an Elm record."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.properties = collections.OrderedDict()  # type: MutableMapping[str, Property]
         super().__init__()
 
 
 class Parameter:
-    """
-    Represents a parameter of a request.
-    """
+    """Represent a prameter of a request."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.name = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
 
 
 class Response:
-    """
-    Represents a response from a request.
-    """
+    """Represent a response from a request."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.code = ''
         self.typedef = None  # type: Optional[Typedef]
         self.description = ''
 
 
 class Request:
-    """
-    Represents a request function of the client.
-    """
+    """Represent a request function of the client."""
 
     # pylint: disable=too-many-instance-attributes
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.operation_id = ''
         self.path = ''
         self.method = ''
@@ -153,11 +141,10 @@ class Request:
 
 
 def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
-    """
-    Translates the intermediate typedef to an Elm typedef.
+    """Translate the intermediate type definition to a definition of an Elm type.
 
-    :param intermediate_typedef: to be translated
-    :return:
+    :param intermediate_typedef: intermediate type definition
+    :return: definition of an Elm type
     """
     # pylint: disable=too-many-branches
     typedef = None  # type: Optional[Typedef]
@@ -213,10 +200,10 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 def to_typedefs(
         intermediate_typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> MutableMapping[str, Typedef]:
     """
-    Translates the intermediate typedefs to Elm typedefs.
+    Translate a table of the intermediate type definitions to a table of definitions of Elm types.
 
-    :param intermediate_typedefs: to be translated
-    :return: translated typedefs
+    :param intermediate_typedefs: table of intermediate type definitions
+    :return: table of Elm type definitions
     """
     typedefs = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
 
@@ -232,13 +219,11 @@ def to_typedefs(
 def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
-    If the type has an identifier, it is retrieved from the translated typedefs.
+    Create an anonyomus type definition or get the type definition from the table of Elm type definitions, if available.
 
-    Otherwise, it is translated on the spot to the corresponding Elm type.
-
-    :param intermediate_typedef: to be translated
-    :param typedefs: translated type definitions
-    :return: translated type
+    :param intermediate_typedef: intermediate type definition
+    :param typedefs: table of Elm type definitions
+    :return: Elm type definition
     """
     if intermediate_typedef.identifier:
         if intermediate_typedef.identifier not in typedefs:
@@ -253,11 +238,11 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
-    Translates an intermediate parameter to an Elm parameter.
+    Translate an intermediate representation of an endpoint parameter to an Elm parameter.
 
-    :param intermediate_parameter: to be translated
-    :param typedefs: translated type definitions
-    :return: translated parameter
+    :param intermediate_parameter: intermediate representation of an endpoint parameter
+    :param typedefs: table of Elm type definitions
+    :return: representation of the parameter suitable for generating Elm client code
     """
     param = Parameter()
     param.name = intermediate_parameter.name
@@ -269,11 +254,11 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
 def to_response(intermediate_response: swagger_to.intermediate.Response,
                 typedefs: MutableMapping[str, Typedef]) -> Response:
     """
-    Translates an intermediate response to an Elm response.
+    Translate an intermediate response to an Elm response.
 
-    :param intermediate_response: to be translated
-    :param typedefs: translated type definitions
-    :return: translated response
+    :param intermediate_response: intermediate representation of the endpoint response
+    :param typedefs: table of Elm type definitions
+    :return: representation of the response suitable for generating Elm client code
     """
     resp = Response()
     resp.code = intermediate_response.code
@@ -285,11 +270,11 @@ def to_response(intermediate_response: swagger_to.intermediate.Response,
 
 def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
-    Translates an endpoint to a client request function.
+    Translate an endpoint to a client request function.
 
     :param endpoint: to be translated
-    :param typedefs: translated type definitions
-    :return: request function
+    :param typedefs: table of Elm type definitions
+    :return: representation of the request function suitable for generating Elm client code
     """
     req = Request()
     req.description = endpoint.description
@@ -316,7 +301,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 
         req.parameters.append(param)
 
-    # parameters are sorted so that first come the required ones; Elm requires the optional ones to come
+    # Parameters are sorted so that first come the required ones; Elm requires the optional ones to come
     # at the end.
     req.parameters.sort(key=lambda param: not param.required)
 
@@ -329,10 +314,10 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
                 typedefs: MutableMapping[str, Typedef]) -> List[Request]:
     """
-    Translates the endpoints to Elm request functions, ignoring endpoints consuming formData.
+    Translate the endpoints to Elm request functions, ignoring endpoints consuming formData.
 
     :param endpoints: to be translated
-    :param typedefs: translated type definitions
+    :param typedefs: table of Elm type definitions
     :return: translated request functions
     """
     requests = []  # type: List[Request]
@@ -350,7 +335,7 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
 
 def write_description(description: str, indent: str, fid: TextIO) -> None:
     """
-    Writes a description as -- comment block.
+    Write a description as -- comment block.
 
     :param description: to be written
     :param indent: indention as prefix to each line
@@ -371,7 +356,7 @@ def write_description(description: str, indent: str, fid: TextIO) -> None:
 
 def write_top_level_description(description: str, fid: TextIO) -> None:
     """
-    Writes a top level description as {|- -} comment block.
+    Write a top level description as {|- -} comment block.
 
     :param description: to be written
     :param fid: target
@@ -389,14 +374,14 @@ def write_top_level_description(description: str, fid: TextIO) -> None:
 
 def argument_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to an argument expression for an Elm function signature.
-    Most importantly, this means it add brackets where they are due.
+    Translate the typedef to an argument expression for an Elm function signature.
+
+    Notably, add brackets where they are due.
 
     :param typedef: to be translated
     :param path: path in the intermediate representation
     :return: type expression
     """
-
     if isinstance(typedef, BracketedTypedef):
         return '(' + type_expression(typedef=typedef, path=path) + ')'
 
@@ -405,14 +390,14 @@ def argument_expression(typedef: Typedef, path: Optional[str] = None) -> str:
 
 def argument_decoder_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to a argument decoder expression for an Elm function signature.
-    Most importantly, this means it add brackets where they are due.
+    Translate the typedef to a argument decoder expression for an Elm function signature.
+
+    Notably, add brackets where they are due.
 
     :param typedef: to be translated
     :param path: path in the intermediate representation
     :return: type expression
     """
-
     if isinstance(typedef, BracketedTypedef):
         return '(' + type_decoder(typedef=typedef, path=path) + ')'
 
@@ -421,7 +406,7 @@ def argument_decoder_expression(typedef: Typedef, path: Optional[str] = None) ->
 
 def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
     """
-    Writes the type definition in the Elm code.
+    Write the type definition in the Elm code.
 
     :param typedef: to be declared
     :param fid: target
@@ -458,7 +443,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
 
 def write_encoder(typedef: Typedef, fid: TextIO) -> None:
     """
-    Writes the Encoder in the Elm code.
+    Write the Encoder in the Elm code.
 
     :param typedef: to be encoded
     :param fid: target
@@ -501,7 +486,7 @@ def write_encoder(typedef: Typedef, fid: TextIO) -> None:
 
 def write_decoder(typedef: Typedef, fid: TextIO) -> None:
     """
-    Writes the Decoder in the Elm code.
+    Write the Decoder in the Elm code.
 
     :param typedef: to be decoded
     :param fid: target
@@ -536,26 +521,26 @@ def write_decoder(typedef: Typedef, fid: TextIO) -> None:
         raise AssertionError("Unexpected type {}.".format(typedef.__class__))
 
 
-def escape_string(to_escape: str) -> str:
+def escape_string(text: str) -> str:
     """
+    Escape special characters in the given string.
 
-    :param to_escape: string to escape
-    :return: the same string, with all Elm special characters escaped.
+    :param text: string to escape
+    :return: the string with all Elm special characters escaped
     """
+    text.replace('\\', '\\\\')
+    text.replace('\n', '\\n')
+    text.replace('\r', '\\r')
+    text.replace('\t', '\\t')
+    text.replace("\'", "\\'")
+    text.replace('\"', '\\"')
 
-    to_escape.replace('\\', '\\\\')
-    to_escape.replace('\n', '\\n')
-    to_escape.replace('\r', '\\r')
-    to_escape.replace('\t', '\\t')
-    to_escape.replace("\'", "\\'")
-    to_escape.replace('\"', '\\"')
-
-    return to_escape
+    return text
 
 
 def write_request(request: Request, fid: TextIO) -> None:
     """
-    Generates the code of the request function.
+    Generate the code of the request function.
 
     :param request: function definition
     :param fid: target
@@ -655,7 +640,7 @@ def write_request(request: Request, fid: TextIO) -> None:
                 fid.write(INDENT * (indent + 2) + '++ {}'.format(camel_case_name))
             else:
                 # escape special characters
-                fid.write(INDENT * (indent + 2) + '++ "{}"'.format(escape_string(to_escape=tkn)))
+                fid.write(INDENT * (indent + 2) + '++ "{}"'.format(escape_string(text=tkn)))
 
     if request.path_parameters and request.query_parameters:
         fid.write("\n")
@@ -737,7 +722,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 
 def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
-    Writes all type definitions as Elm code.
+    Write all type definitions as Elm code.
 
     :param typedefs: type definitions to be declared
     :param fid: target
@@ -755,7 +740,7 @@ def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) 
 
 def write_encoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
-    Writes all JSON encoders as Elm code.
+    Write all JSON encoders as Elm code.
 
     :param typedefs: type definitions to be encoded
     :param fid: target
@@ -774,7 +759,7 @@ def write_encoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
 
 def write_decoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
-    Writes all JSON decoders as Elm code.
+    Write all JSON decoders as Elm code.
 
     :param typedefs: type definitions to be decoded
     :param fid: target
@@ -793,7 +778,7 @@ def write_decoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
 
 def write_client(requests: List[Request], fid: TextIO) -> None:
     """
-    Generates the client.
+    Generate the client.
 
     :param requests: translated request functions
     :param fid: target
@@ -811,7 +796,7 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
 
 def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: List[Request]) -> None:
     """
-    Writes the header.
+    Write the header.
 
     :param fid: target
     :param typedefs: translated type definitions
@@ -847,23 +832,21 @@ def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: 
 
 def write_footer(fid: TextIO) -> None:
     """
-    Writes the footer (same for all the Elm clients).
+    Write the footer (same for all the Elm clients).
 
     :param fid: target
     :return:
     """
-
     fid.write("-- Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
 def write_query_function(fid: TextIO) -> None:
     """
-    Writes the function needed to translate query parameters into a string.
+    Write the function needed to translate query parameters into a string.
 
     :param fid: target
     :return:
     """
-
     fid.write('{-| Translates a list of (name, parameter) and a list of (name, optional parameter) to a\n')
     fid.write('well-formatted query string.\n')
     fid.write('-}\n')
@@ -892,7 +875,7 @@ def write_query_function(fid: TextIO) -> None:
 
 def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to a type expression.
+    Translate the typedef to a type expression.
 
     :param typedef: to be translated
     :param path: path in the intermediate representation
@@ -925,7 +908,7 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
 
 def type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to a type encoder.
+    Translate the typedef to a type encoder.
 
     :param typedef: to be translated
     :param path: path in the intermediate representation
@@ -958,7 +941,7 @@ def type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
 
 def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to a type decoder.
+    Translate the typedef to a type decoder.
 
     :param typedef: to be translated
     :param path: path in the intermediate representation
@@ -991,7 +974,7 @@ def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
 
 def elm_package_json() -> MutableMapping[str, Any]:
     """
-    Returns the elm-package json file.
+    Generate the elm-package json file.
 
     :return: The JSON Elm package for the project as a Dictionary.
     """
@@ -1017,7 +1000,7 @@ def elm_package_json() -> MutableMapping[str, Any]:
 
 def write_client_elm(typedefs: MutableMapping[str, Typedef], requests: List[Request], fid: TextIO) -> None:
     """
-    Generates the file with the client code.
+    Generate the file with the client code.
 
     :param typedefs: translated type definitions
     :param requests: translated request functions

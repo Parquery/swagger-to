@@ -1,33 +1,32 @@
-"""
-Swagger representation
-"""
-import pathlib
+"""Parse Swagger spec."""
 
 import collections
-import sys
+import pathlib
 from typing import List, Optional, MutableMapping, Any, Tuple, Union  # pylint: disable=unused-import
 
-try:
-    import yaml
-    from yaml.composer import Composer
-    from yaml.constructor import Constructor
-except ImportError as err:
-    print("Package pyyaml was not installed. pip3 install pyyaml?")
-    sys.exit(1)
+import yaml
+from yaml.composer import Composer
+from yaml.constructor import Constructor
+
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 
 
 class RawDict:
-    """Represents a raw dictionary from a schema file."""
+    """Represent a raw dictionary from a Swagger spec file."""
 
-    def __init__(self, adict=collections.OrderedDict(), source='', lineno=0):
+    def __init__(self, adict: MutableMapping[str, Any] = collections.OrderedDict(), source: str = '',
+                 lineno: int = 0) -> None:
+        """Initialize with the given values."""
         self.adict = adict
         self.source = source
         self.lineno = lineno
 
 
 class Typedef:
+    """Represent a type definition in a Swagger spec."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.ref = ''
         self.description = ''
         self.type = ''
@@ -44,17 +43,23 @@ class Typedef:
 
 
 class Definition:
+    """Represent an identifiable data type from the Swagger spec."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.identifier = ''
         self.typedef = None  # type: Optional[Typedef]
         self.swagger = None  # type: Optional[Swagger]
 
         # original specification dictionary, if available; not deep-copied, do not modify
-        self.raw_dict = None  # type: RawDict
+        self.raw_dict = None  # type: Optional[RawDict]
 
 
 class Parameter:
+    """Represent a parameer of a method in Swagger spec."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.method = None  # type: Optional[Method]
         self.name = ''
         self.in_what = ''
@@ -68,11 +73,14 @@ class Parameter:
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
-        self.raw_dict = None  # type: RawDict
+        self.raw_dict = None  # type: Optional[RawDict]
 
 
 class Response:
+    """Represent an endpoint response in Swagger spec."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.code = ''
         self.description = ''
         self.schema = None  # type: Optional[Typedef]
@@ -82,11 +90,14 @@ class Response:
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
-        self.raw_dict = None  # type: RawDict
+        self.raw_dict = None  # type: Optional[RawDict]
 
 
 class Method:
+    """Represent an endpoint method in Swagger spec."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.identifier = ''
         self.operation_id = ''
         self.tags = []  # type: List[str]
@@ -100,22 +111,28 @@ class Method:
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
-        self.raw_dict = None  # type: RawDict
+        self.raw_dict = None  # type: Optional[RawDict]
 
 
 class Path:
+    """Represent an endpoint path in Swagger spec."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.identifier = ''
         self.methods = []  # type: List[Method]
         self.swagger = None  # type: Optional[Swagger]
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
-        self.raw_dict = None  # type: RawDict
+        self.raw_dict = None  # type: Optional[RawDict]
 
 
 class Swagger:
+    """Represent a parsed Swagger specification."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.name = ""
         self.base_path = ""
         self.description = ""
@@ -123,10 +140,16 @@ class Swagger:
         self.definitions = collections.OrderedDict()  # type: MutableMapping[str, Definition]
         self.parameters = collections.OrderedDict()  # type: MutableMapping[str, Parameter]
 
-        self.raw_dict = None  # type: RawDict
+        self.raw_dict = None  # type: Optional[RawDict]
 
 
 def parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
+    """
+    Parse the type definition from the raw dictionary in the Swagger spec.
+
+    :param raw_dict: raw dictionary of the Swagger spec
+    :return: (parsed type definition, parsing errors if any)
+    """
     adict = raw_dict.adict
 
     typedef = Typedef()
@@ -181,10 +204,10 @@ def parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
 
 def parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
     """
-    Parses a parameter from the dictionary.
+    Parse a parameter from the raw dictionary of the Swagger spec.
 
-    :param raw_dict: to be parsed
-    :return: parameter, list of errors
+    :param raw_dict: raw dictionary of the Swagger spec
+    :return: (parsed parameter, parsing errors if any)
     """
     adict = raw_dict.adict
 
@@ -221,10 +244,10 @@ def parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
 
 def parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
     """
-    Parses a response from the dictionary.
+    Parse an endpoint response from the raw dictionary of the Swagger spec.
 
-    :param raw_dict: to be parsed
-    :return: response, list of errors
+    :param raw_dict: raw dictionary of the Swagger spec
+    :return: (parsed response, parsing errors if any)
     """
     adict = raw_dict.adict
 
@@ -251,10 +274,10 @@ def parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
 
 def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     """
-    Parses a method from the dictionary.
+    Parse an endpoint method from the raw dictionary of the Swagger spec.
 
-    :param raw_dict: to be parsed
-    :return: method, list of errors
+    :param raw_dict: raw dictionary of the Swagger spec
+    :return: (parsed method, parsing errors if any)
     """
     mth = Method()
     errors = []  # type: List[str]
@@ -294,11 +317,11 @@ def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
 
 def parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
     """
-    Parses a path from the dictionary.
+    Parse an endpoint path from the dictionary.
 
-    :param path_id: identifier
-    :param raw_dict: to be parsed
-    :return: path, list of errors
+    :param path_id: path identifier
+    :param raw_dict: raw dictionary of the Swagger spec
+    :return: (parsed path, parsing errors if any)
     """
     pth = Path()
     errors = []  # type: List[str]
@@ -319,10 +342,10 @@ def parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
 
 def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     """
-    Parses the Swagger specification from the given text.
+    Parse the Swagger specification from the given text.
 
     :param stream: YAML representation of the Swagger spec satisfying file interface
-    :return: Swagger specification, list of errors
+    :return: (parsed Swagger specification, parsing errors if any)
     """
     # adapted from https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
     # and https://stackoverflow.com/questions/13319067/parsing-yaml-return-with-line-number
@@ -406,10 +429,10 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
 
 def parse_yaml_file(path: Union[str, pathlib.Path]) -> Tuple[Swagger, List[str]]:
     """
-    Parses the Swagger specification from the given file.
+    Parse the Swagger specification from the given file.
 
-    :param path: to the .yaml file
-    :return: Swagger specification, list of errors
+    :param path: path to the .yaml file
+    :return: (parsed Swagger specification, parsing errors if any)
     """
     with open(str(path), 'rt') as fid:
         return parse_yaml(stream=fid)

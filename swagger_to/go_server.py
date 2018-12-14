@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-Generates server stubs from Swagger specification in Go.
-"""
+"""Generate server stubs from Swagger specification in Go."""
 
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements, too-many-lines
 
-from typing import MutableMapping, Union, Set, List, Optional, Mapping  # pylint: disable=unused-import
+from typing import MutableMapping, Union, Set, List, Optional, Mapping, Iterable, Tuple  # pylint: disable=unused-import
 
 import collections
 import icontract
@@ -19,17 +17,20 @@ import swagger_to.swagger
 
 
 class JsonSchema:
+    """Represent a JSON validation schema."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.identifier = ''
         self.text = ''
 
 
 def to_json_schema(intermediate_schema: swagger_to.intermediate.JsonSchema) -> JsonSchema:
     """
-    Converts the intermediate schema to a representation that we can use to easily generate go code.
+    Convert the intermediate schema to a representation that we can use to easily generate go code.
 
     :param intermediate_schema: intermediate representation of a JSON schema
-    :return: go-suitable representation
+    :return: representation suitable for generation of Go code
     """
     schema = JsonSchema()
     schema.identifier = intermediate_schema.identifier
@@ -39,14 +40,20 @@ def to_json_schema(intermediate_schema: swagger_to.intermediate.JsonSchema) -> J
 
 
 class Typedef:
+    """Represent a type definition such that it's suitable for generation of Go code."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.identifier = ''
         self.description = ''
         self.json_schema = None  # type: Union[None, JsonSchema]
 
 
 class Fielddef:
+    """Represent a field definition of a struct suitable for generation of Go code."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.typedef = None  # type: Union[None, Typedef]
         self.description = ''
         self.json_name = ''
@@ -54,7 +61,10 @@ class Fielddef:
 
 
 class Structdef(Typedef):
+    """Represent a struct type."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.fields = collections.OrderedDict()  # type: MutableMapping[str, Fielddef]
@@ -62,34 +72,47 @@ class Structdef(Typedef):
 
 
 class Arraydef(Typedef):
+    """Represent an array type."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.items = None  # type: Union[None, Typedef]
 
 
 class Mapdef(Typedef):
+    """Represent a map type."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.values = None  # type: Union[None, Typedef]
 
 
 class Pointerdef(Typedef):
+    """Represent a pointer type."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.pointed = None  # type: Union[None, Typedef]
 
 
 class Primitivedef(Typedef):
+    """Represent a primitive type."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.type = ''
 
 
 def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+    """Convert intermediate type definition into a type definition suitable for Go code generation."""
     typedef = None  # type: Union[None, Typedef]
 
     if isinstance(intermediate_typedef, swagger_to.intermediate.Primitivedef):
@@ -180,8 +203,10 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
     return typedef
 
 
+@icontract.ensure(lambda result: all(key == typedef.identifier for key, typedef in result.items()))
 def to_typedefs(
         intermediate_typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> MutableMapping[str, Typedef]:
+    """Convert a table of intermediate type representations to a table of type definitions for generation of Go code."""
     typedefs = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
 
     for intermediate_typedef in intermediate_typedefs.values():
@@ -193,8 +218,17 @@ def to_typedefs(
     return typedefs
 
 
+# yapf: disable
+@icontract.ensure(
+    lambda intermediate_typedef, result:
+    intermediate_typedef.identifier == '' or result.identifier == intermediate_typedef.identifier)
+@icontract.ensure(
+    lambda intermediate_typedef, result:
+    intermediate_typedef.identifier != '' or result.identifier == '')
+# yapf: enable
 def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
+    """Create an anonymous type definition or retrieve the type definition from the existing definition table."""
     if intermediate_typedef.identifier != '':
         identifier = swagger_to.capital_camel_case(identifier=intermediate_typedef.identifier)
 
@@ -207,31 +241,35 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
     return to_typedef(intermediate_typedef=intermediate_typedef)
 
 
-def walk(typedef: Typedef, parent: Optional[Typedef]):
+def _walk(typedef: Typedef, parent: Optional[Typedef] = None) -> Iterable[Tuple[Optional[Typedef], Typedef]]:
+    """Walk the tree of nested type definitions as (nesting type definition, nested type definition)."""
     yield parent, typedef
 
     if isinstance(typedef, Primitivedef):
         pass
 
     elif isinstance(typedef, Pointerdef):
-        yield from walk(typedef=typedef.pointed, parent=typedef)
+        yield from _walk(typedef=typedef.pointed, parent=typedef)
 
     elif isinstance(typedef, Arraydef):
-        yield from walk(typedef=typedef.items, parent=typedef)
+        yield from _walk(typedef=typedef.items, parent=typedef)
 
     elif isinstance(typedef, Mapdef):
-        yield from walk(typedef=typedef.values, parent=typedef)
+        yield from _walk(typedef=typedef.values, parent=typedef)
 
     elif isinstance(typedef, Structdef):
         for fielddef in typedef.fields.values():
-            yield from walk(typedef=fielddef.typedef, parent=typedef)
+            yield from _walk(typedef=fielddef.typedef, parent=typedef)
 
     else:
-        raise NotImplementedError("walk for Go type definition of type: {}".format(type(typedef)))
+        raise NotImplementedError("_walk for Go type definition of type: {}".format(type(typedef)))
 
 
 class Argument:
+    """Represent an argument of a handler implementation."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.typedef = None  # type: Union[None, Typedef]
         self.identifier = ''
         self.in_what = ''
@@ -242,14 +280,20 @@ class Argument:
 
 
 class Handler:
+    """Represent a handler interface of an endpoint."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.identifier = ''
         self.arguments = []  # type: List[Argument]
         self.description = ''
 
 
 class Wrapper:
+    """Represent a wrapper that parses the arguments from a request and forwards them to the handler."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.identifier = ''
         self.description = ''
         self.handler = None  # type: Union[None, Handler]
@@ -260,7 +304,10 @@ class Wrapper:
 
 
 class Route:
+    """Represent a muxing route to an endpoint."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.description = ''
         self.path = ''
         self.method = ''
@@ -270,7 +317,7 @@ class Route:
 
 def _endpoint_to_route_path(endpoint: swagger_to.intermediate.Endpoint) -> str:
     """
-    Converts an endpoint path to Gorrila Mux route path.
+    Convert an endpoint path to Gorrila Mux route path.
 
     :param endpoint: whose path we need to convert
     :return: Gorrila Mux route path
@@ -303,6 +350,13 @@ def _endpoint_to_route_path(endpoint: swagger_to.intermediate.Endpoint) -> str:
 
 
 def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Route:
+    """
+    Convert an intermediate representation of an endpoint to a muxing route of Go server stub.
+
+    :param endpoint: intermediate representation of an endpoint
+    :param typedefs: table of type definitions
+    :return: converted route
+    """
     route = Route()
     route.method = endpoint.method.lower()
     route.path = _endpoint_to_route_path(endpoint=endpoint)
@@ -318,7 +372,7 @@ def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappin
             pass
         else:
             raise NotImplementedError(
-                "Handling of parameters in {} is not implemented yet: end point {} {}, parameter {}.".format(
+                "Handling of parameters in {} is not implemented yet: endpoint {} {}, parameter {}.".format(
                     param.in_what, endpoint.path, endpoint.method, param.name))
 
         argument = Argument()
@@ -372,16 +426,18 @@ def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappin
 
 
 def to_routes(endpoints: List[swagger_to.intermediate.Endpoint], typedefs: MutableMapping[str, Typedef]) -> List[Route]:
+    """
+    Convert the intermediate representation of endpoints to muxing routes of a Go server stub.
+
+    :param endpoints: intermediate representation of endpoints
+    :param typedefs: table of type definitions
+    :return: muxing routes of a Go server stub
+    """
     routes = []  # type: List[Route]
     for endpoint in endpoints:
         routes.append(to_route(endpoint=endpoint, typedefs=typedefs))
 
     return routes
-
-
-def _raise(message: str) -> None:
-    """Raise an exception in a template."""
-    raise Exception(message)
 
 
 @icontract.ensure(lambda result: not result.endswith('\n'))
@@ -410,18 +466,18 @@ def _comment(text: str) -> str:
 @icontract.ensure(lambda result: result.startswith('"'))
 @icontract.ensure(lambda result: result.endswith('"'))
 def _escaped_str(text: str) -> str:
-    """Escapes the text and returns it as a valid Golang string."""
+    """Escape the text and returns it as a valid Golang string."""
     return '"{}"'.format(
         text.replace('\\', '\\\\').replace('"', '\\"').replace('\a', '\\a').replace('\f', '\\f').replace('\t', '\\t')
         .replace('\n', '\\n').replace('\r', '\\r').replace('\v', '\\v'))
 
 
+# Jinja2 environment
 ENV = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=jinja2.BaseLoader())
 ENV.filters.update({
     'capital_camel_case': swagger_to.capital_camel_case,
     'comment': _comment,
-    'escaped_str': _escaped_str,
-    'raise': _raise
+    'escaped_str': _escaped_str
 })
 
 ENV.globals.update({'is_pointerdef': lambda typedef: isinstance(typedef, Pointerdef)})
@@ -447,7 +503,7 @@ struct {
 
 @icontract.ensure(lambda result: result == result.strip())
 def _express_type(typedef: Typedef) -> str:
-    """Expresses the type in Golang corresponding to the type definition."""
+    """Express the type in Golang corresponding to the type definition."""
     if isinstance(typedef, Primitivedef):
         return typedef.type
 
@@ -472,7 +528,7 @@ def _express_type(typedef: Typedef) -> str:
 
 @icontract.ensure(lambda result: result == result.strip())
 def _express_or_identify_type(typedef: Typedef) -> str:
-    """Gives the type identifier or expresses the type if the typedef lacks an identifier."""
+    """Give the type identifier or expresses the type if the typedef lacks an identifier."""
     if typedef.identifier != '':
         return typedef.identifier
 
@@ -482,7 +538,7 @@ def _express_or_identify_type(typedef: Typedef) -> str:
 @icontract.require(lambda typedef: typedef.identifier != '')
 @icontract.ensure(lambda result: result == result.strip())
 def _define_type(typedef: Typedef) -> str:
-    """Defines the type in Golang code."""
+    """Define the type in Golang code."""
     return 'type {} {}'.format(typedef.identifier, _express_type(typedef=typedef))
 
 
@@ -501,7 +557,7 @@ import (
 @icontract.ensure(lambda result: not result.endswith('\n'))
 @icontract.ensure(lambda import_set, result: len(import_set) != 0 or result == '')
 def _state_imports(import_set: Set[str]) -> str:
-    """States the imports in Golang code."""
+    """State the imports in Golang code."""
     return _IMPORTS_TPL.render(imports=sorted(import_set))
 
 
@@ -525,16 +581,16 @@ type {{ typedef.identifier }} {{ type_expression[typedef] }}
 @icontract.ensure(lambda result: result.endswith('\n'), "final newline")
 def generate_types_go(package: str, typedefs: Mapping[str, Typedef]) -> str:
     """
-    Generates a file which defines all the involved types.
+    Generate a file which defines all the involved types.
 
     :param package: name of the package
     :param typedefs: type definitions
-    :return: golang code
+    :return: Golang code
     """
     # imports
     import_set = set()  # type: Set[str]
     for typedef in typedefs.values():
-        for _, another_typedef in walk(typedef=typedef, parent=None):
+        for _, another_typedef in _walk(typedef=typedef, parent=None):
             if isinstance(another_typedef, Primitivedef):
                 if another_typedef.type == 'time.Time':
                     import_set.add('time')
@@ -640,7 +696,7 @@ _FLOAT64_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
 
 @icontract.ensure(lambda result: not result.endswith('\n'))
 def _argument_from_string(argument: Argument, string_identifier: str) -> str:
-    """Generates the code to parse an argument from a string."""
+    """Generate the code to parse an argument from a string."""
     tajp = ''
     if isinstance(argument.typedef, Primitivedef):
         target_identifier = argument.parsing_identifier
@@ -713,7 +769,7 @@ _ARGUMENT_FROM_BODY_TPL = ENV.from_string('''\
 
 @icontract.ensure(lambda result: not result.endswith('\n'))
 def _argument_from_body(argument: Argument) -> str:
-    """Generates the code to parse the argument from a request body."""
+    """Generate the code to parse the argument from a request body."""
     return _ARGUMENT_FROM_BODY_TPL.render(argument=argument)
 
 
@@ -833,11 +889,11 @@ func SetupRouter(h Handler) *mux.Router {
 @icontract.ensure(lambda result: result.endswith('\n'), "final new line")
 def generate_routes_go(package: str, routes: List[Route]) -> str:
     """
-    Generates the file which defines the router and the routes.
+    Generate the file which defines the router and the routes.
 
     :param package: name of the package
     :param routes: routes that the router will handle.
-    :return: golang code
+    :return: Golang code
     """
     # imports
     import_set = {"github.com/gorilla/mux", "net/http"}
@@ -911,11 +967,11 @@ func (h *HandlerImpl) {{ route.handler.identifier }}(w http.ResponseWriter,
 @icontract.ensure(lambda result: result.endswith('\n'), "final newline")
 def generate_handler_impl_go(package: str, routes: List[Route]) -> str:
     """
-    Generates a file which implements the handler interface with empty methods.
+    Generate a file which implements the handler interface with empty methods.
 
     :param package: name of the package
     :param routes: that a handler will handle
-    :return: golang code
+    :return: Golang code
     """
     text = _HANDLER_IMPL_GO_TPL.render(
         package=package,
@@ -965,11 +1021,11 @@ type Handler interface {
 @icontract.ensure(lambda result: result.endswith('\n'), "final newline")
 def generate_handler_go(package: str, routes: List[Route]) -> str:
     """
-    Generates a file which defines the handler interface.
+    Generate a file which defines the handler interface.
 
     :param package: name of the package
     :param routes: that a handler will handle
-    :return: golang code
+    :return: Golang code
     """
     text = _HANDLER_GO_TPL.render(
         package=package,
@@ -1051,7 +1107,7 @@ func {{ validateFuncName }}(bb []byte) error {
 @icontract.ensure(lambda result: result.endswith('\n'), "final newline")
 def generate_json_schemas_go(package: str, routes: List[Route], typedefs: MutableMapping[str, Typedef]) -> str:
     """
-    Represents the definitions as json schemas and hard-codes them as strings in Go.
+    Represent the definitions as json schemas and hard-codes them as strings in Go.
 
     It is assumed that the Swagger definitions already represent a subset of JSON Schema.
     This is theoretically not the case (some formats are swagger-only), but in most cases
@@ -1060,7 +1116,7 @@ def generate_json_schemas_go(package: str, routes: List[Route], typedefs: Mutabl
     :param package: package name
     :param routes: needed to generate the parameter schemas if they are not already defined in the definitions
     :param typedefs: type definitions to generate the schemas for
-    :return: golang code
+    :return: Golang code
     """
     schemas = collections.OrderedDict()  # type: MutableMapping[str, JsonSchema]
 

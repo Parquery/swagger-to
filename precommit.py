@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Runs precommit checks on the repository.
-"""
+"""Run precommit checks on the repository."""
 import argparse
 import concurrent.futures
 import hashlib
@@ -11,11 +9,14 @@ import subprocess
 import sys
 from typing import List, Union, Tuple  # pylint: disable=unused-import
 
+import icontract
 import yapf.yapflib.yapf_api
 
 
 def compute_hash(text: str) -> str:
     """
+    Compute the hash digest of the given text.
+
     :param text: to hash
     :return: hash digest
     """
@@ -25,31 +26,34 @@ def compute_hash(text: str) -> str:
 
 
 class Hasher:
-    """
-    Hashes the source code files and reports if they differed to one of the previous hashings.
-    """
+    """Hash the source code files and report if they differed to one of the previous hashings."""
 
     def __init__(self, source_dir: pathlib.Path, hash_dir: pathlib.Path) -> None:
+        """Initialize with the given values."""
         self.source_dir = source_dir
         self.hash_dir = hash_dir
 
-    def __hash_dir(self, path: pathlib.Path) -> pathlib.Path:
+    @icontract.require(
+        lambda self, path: self.source_dir in path.parents,
+        description="Expected the path to be beneath the source directory",
+        enabled=True)
+    def _hash_dir(self, path: pathlib.Path) -> pathlib.Path:
         """
+        Generate the path of the hash directory corresponding to the given repository file.
+
         :param path: to a source file
         :return: path to the file holding the hash of the source text
         """
-        if self.source_dir not in path.parents:
-            raise ValueError("Expected the path to be beneath the source directory {!r}, got: {!r}".format(
-                str(self.source_dir), str(path)))
-
         return self.hash_dir / path.relative_to(self.source_dir).parent / path.name
 
     def hash_differs(self, path: pathlib.Path) -> bool:
         """
+        Check if the hash of the file differs from one of the previous hashings.
+
         :param path: to the source file
-        :return: True if the hash of the content differs to one of the previous hashings.
+        :return: True if the hash differs
         """
-        hash_dir = self.__hash_dir(path=path)
+        hash_dir = self._hash_dir(path=path)
 
         if not hash_dir.exists():
             return True
@@ -62,12 +66,12 @@ class Hasher:
 
     def update_hash(self, path: pathlib.Path) -> None:
         """
-        Hashes the file content and stores it on disk.
+        Hash the file content and store it on disk.
 
         :param path: to the source file
         :return:
         """
-        hash_dir = self.__hash_dir(path=path)
+        hash_dir = self._hash_dir(path=path)
         hash_dir.mkdir(exist_ok=True, parents=True)
 
         new_hsh = compute_hash(text=path.read_text())
@@ -78,7 +82,7 @@ class Hasher:
 
 def check(path: pathlib.Path, py_dir: pathlib.Path, overwrite: bool) -> Union[None, str]:
     """
-    Runs all the checks on the given file.
+    Run all the checks on the given file.
 
     :param path: to the source file
     :param py_dir: path to the source files
@@ -124,6 +128,16 @@ def check(path: pathlib.Path, py_dir: pathlib.Path, overwrite: bool) -> Union[No
     if proc.returncode != 0:
         report.append("Failed to pylint {}:\nOutput:\n{}\n\nError:\n{}".format(path, stdout, stderr))
 
+    # pydocstyle
+    rel_pth = path.relative_to(py_dir)
+
+    if rel_pth.parent.name != 'tests':
+        proc = subprocess.Popen(
+            ['pydocstyle', str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = proc.communicate()
+        if proc.returncode != 0:
+            report.append("Failed to pydocstyle {}:\nOutput:\n{}\n\nError:\n{}".format(path, stdout, stderr))
+
     if len(report) > 0:
         return "\n".join(report)
 
@@ -131,9 +145,7 @@ def check(path: pathlib.Path, py_dir: pathlib.Path, overwrite: bool) -> Union[No
 
 
 def main() -> int:
-    """"
-    Main routine
-    """
+    """Execute the main routine."""
     # pylint: disable=too-many-locals
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -195,7 +207,11 @@ def main() -> int:
 
     print("Running unit tests...")
     source_dir = pathlib.Path(__file__).resolve().parent
-    retcode = subprocess.call(['python3', '-m', 'unittest', 'discover', str(source_dir / 'tests')])
+
+    env = os.environ.copy()
+    env['ICONTRACT_SLOW'] = 'true'
+
+    retcode = subprocess.call(['python3', '-m', 'unittest', 'discover', str(source_dir / 'tests')], env=env)
     success = success and retcode == 0
 
     if not success:

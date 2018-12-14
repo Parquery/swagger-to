@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Reads a correct swagger file and checks whether it conforms to a style guide.
-"""
+"""Read a correct swagger file and check whether it conforms to a style guide."""
 import argparse
 import pathlib
 from typing import List
@@ -14,9 +12,7 @@ import swagger_to.swagger
 
 
 def main() -> int:
-    """"
-    Main routine
-    """
+    """Execute the main routine."""
     parser = argparse.ArgumentParser("Reads a correct swagger file and checks that it conforms to the style guide.")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
     parser.add_argument("--verbose", help="if set, prints as much information as possible.", action="store_true")
@@ -67,7 +63,7 @@ def main() -> int:
 def format_complaints(complaints: List[swagger_to.style.Complaint], swagger_path: str, verbose: bool,
                       with_line_number: bool) -> List[str]:
     """
-    Converts a list of complaints into a well-formatted list of error messages.
+    Convert a list of complaints into a well-formatted list of error messages.
 
     :param complaints:
     :param swagger_path:

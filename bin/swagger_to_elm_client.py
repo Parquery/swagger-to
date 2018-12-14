@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Reads a correct swagger file and produces Elm client code.
-"""
+"""Read a correct swagger file and produce Elm client code."""
 import argparse
 import pathlib
 import json
@@ -13,9 +11,7 @@ import swagger_to.swagger
 
 
 def main() -> None:
-    """"
-    Main routine
-    """
+    """Execute the main routine."""
     # pylint: disable=too-many-locals
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces Elm client code.")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)

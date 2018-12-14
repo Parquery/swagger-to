@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""
-Generates code for an TypeScript client with Angular5.
-"""
+"""Generate code for an TypeScript client with Angular5."""
+
+from typing import MutableMapping, Optional, TextIO, List  # pylint: disable=unused-import
 
 import collections
-from typing import MutableMapping, Optional, TextIO, List  # pylint: disable=unused-import
+import icontract
 
 import swagger_to
 import swagger_to.intermediate
@@ -14,123 +14,117 @@ INDENT = ' ' * 4
 
 
 class Typedef:
-    """
-    Represents a typescript type.
-    """
+    """Represent the type definition in Typescript."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.description = ''
         self.identifier = ''
 
     def __str__(self) -> str:
+        """Represent the type definition as its class name and the identifier."""
         return '{}({})'.format(self.__class__.__name__, self.identifier)
 
 
 class Booleandef(Typedef):
-    """
-    Represents typescript booleans.
-    """
+    """Represent a Typescript boolean."""
+
     pass
 
 
 class Numberdef(Typedef):
-    """
-    Represents typescript numbers.
-    """
+    """Represent a Typescript number."""
+
     pass
 
 
 class Stringdef(Typedef):
-    """
-    Represents typescript strings.
-    """
+    """Represent a Typescript string."""
+
     pass
 
 
 class Arraydef(Typedef):
-    """
-    Represents typescript arrays.
-    """
+    """Represents a Typescript array."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.items = None  # type: Optional[Typedef]
         super().__init__()
 
     def __str__(self) -> str:
+        """Represent the array as its class name, identifier and the recursive representation of the items type."""
         return '{}({}, items: {})'.format(self.__class__.__name__, self.identifier, self.items)
 
 
 class Mapdef(Typedef):
-    """
-    Represents typescript maps.
-    """
+    """Represents a Typescript map."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.values = None  # type: Optional[Typedef]
         super().__init__()
 
     def __str__(self) -> str:
+        """Represent the array as its class name, identifier and the recursive representation of the values type."""
         return '{}({}, values: {})'.format(self.__class__.__name__, self.identifier, self.values)
 
 
 class Property:
-    """
-    Represents a typescript class property.
-    """
+    """Represents a Typescript class property."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.name = ''
         self.description = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
 
     def __str__(self) -> str:
+        """Represent the property as its name and the type."""
         return '{}: {}'.format(self.name, self.typedef)
 
 
 class Classdef(Typedef):
-    """
-    Represents typescript classes.
-    """
+    """Represent a Typescript class."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.properties = collections.OrderedDict()  # type: MutableMapping[str, Property]
         super().__init__()
 
     def __str__(self) -> str:
+        """Represent the class as its class name, identifier and the list of properties."""
         return '{}({}, properties: {})'.format(self.__class__.__name__, self.identifier,
                                                ', '.join([str(val) for val in self.properties.values()]))
 
 
 class Parameter:
-    """
-    Represents a parameter of a request.
-    """
+    """Represent a parameter of a request function in Typescript."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.name = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
 
 
 class Response:
-    """
-    Represents a response from a request.
-    """
+    """Represent a response from a request in Typescript."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.code = ''
         self.typedef = None  # type: Optional[Typedef]
         self.description = ''
 
 
 class Request:
-    """
-    Represents a request function of the client.
-    """
+    """Represent a request function of the client."""
 
     # pylint: disable=too-many-instance-attributes
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.operation_id = ''
         self.path = ''
         self.method = ''
@@ -149,10 +143,10 @@ class Request:
 
 def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
     """
-    Translates the intermediate typedef to a typescript typedef.
+    Translate the type definition in intermediate representation to Typescript.
 
-    :param intermediate_typedef: to be translated
-    :return:
+    :param intermediate_typedef: type definition in intermediate representation
+    :return: type definition in Typescript representation
     """
     typedef = None  # type: Optional[Typedef]
 
@@ -201,10 +195,10 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 def to_typedefs(
         intermediate_typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> MutableMapping[str, Typedef]:
     """
-    Translates the intermediate typedefs to typescript typedefs.
+    Translate type definitions from intermediate representation to Typescript.
 
-    :param intermediate_typedefs: to be translated
-    :return: translated typedefs
+    :param intermediate_typedefs: table of type definitions in intermediate representation
+    :return: table of type definitions in Typescript representation
     """
     typedefs = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
 
@@ -220,13 +214,14 @@ def to_typedefs(
 def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
-    If the type has an identifier, it is retrieved from the translated typedefs.
+    Get the Typescript type definition from the table of Typescript type definitions by its identifier.
 
-    Otherwise, it is translated on the spot to the corresponding typescript type.
+    If the type definition has no identifier, it is translated on the spot
+    to the corresponding Typescript type definition.
 
-    :param intermediate_typedef: to be translated
-    :param typedefs: translated type definitions
-    :return: translated type
+    :param intermediate_typedef: intermediate representation of the type definition
+    :param typedefs: table of type definitions in Typescript representation
+    :return: type definition in Typescript representation
     """
     if intermediate_typedef.identifier:
         if intermediate_typedef.identifier not in typedefs:
@@ -241,11 +236,11 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
-    Translates an intermediate parameter to a typescript parameter.
+    Translate an endpoint parameter from the intermediate to a Typescript representation.
 
-    :param intermediate_parameter: to be translated
-    :param typedefs: translated type definitions
-    :return: translated parameter
+    :param intermediate_parameter: intermediate representation of a parameter
+    :param typedefs: table of type definitions in Typescript representation
+    :return: Typescript representation of the parameter
     """
     param = Parameter()
     param.name = intermediate_parameter.name
@@ -257,11 +252,11 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
 def to_response(intermediate_response: swagger_to.intermediate.Response,
                 typedefs: MutableMapping[str, Typedef]) -> Response:
     """
-    Translates an intermediate response to a typescript response.
+    Translate an endpoint response from the intermediate to a Typescript representation.
 
-    :param intermediate_response: to be translated
-    :param typedefs: translated type definitions
-    :return: translated response
+    :param intermediate_response: intermediate representation of a response
+    :param typedefs: table of type definitions in Typescript representation
+    :return: Typescript representation of the response
     """
     resp = Response()
     resp.code = intermediate_response.code
@@ -273,14 +268,14 @@ def to_response(intermediate_response: swagger_to.intermediate.Response,
 
 def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
-    Translates an endpoint to a client request function.
+    Translate an endpoint from an intermediate representation to a Typescript client request function.
 
-    :param endpoint: to be translated
-    :param typedefs: translated type definitions
-    :return: request function
+    :param endpoint: intermediate representation of the endpoint
+    :param typedefs: table of type definitions in Typescript representation
+    :return: Typescript representation of the client request function
     """
     if endpoint.produces != ['application/json']:
-        raise ValueError("Can not translate an end point to typescript client "
+        raise ValueError("Can not translate an endpoint to Typescript client "
                          "which does not produces strictly application/json: {} {}".format(
                              endpoint.path, endpoint.method))
 
@@ -309,7 +304,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
 
         req.parameters.append(param)
 
-    # parameters are sorted so that first come the required ones; typescript requires the optional ones to come
+    # parameters are sorted so that first come the required ones; Typescript requires the optional ones to come
     # at the end.
     req.parameters.sort(key=lambda param: not param.required)
 
@@ -319,16 +314,19 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     return req
 
 
+@icontract.ensure(
+    lambda endpoints, result:
+    len(result) == len([endpoint for endpoint in endpoints if endpoint.produces == ['application/json']]))
 def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
                 typedefs: MutableMapping[str, Typedef]) -> List[Request]:
     """
-    Translates the endpoints to typescript request functions.
+    Translate endpoints from intermediate representation to Typescript client request functions.
 
     Endpoints which do not produce strictly 'application/json' are ignored.
 
-    :param endpoints: to be translated
-    :param typedefs: translated type definitions
-    :return: translated request functions
+    :param endpoints: intermediate representation of the endpoints
+    :param typedefs: table of type definitions in Typescript representation
+    :return: Typescript representation of client's request functions corresponding to the endpoints
     """
     requests = []  # type: List[Request]
     for endpoint in endpoints:
@@ -342,7 +340,7 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
 
 def write_header(fid: TextIO) -> None:
     """
-    Writes the header (same for all the typescript clients).
+    Write the header of the client file.
 
     :param fid: target
     :return:
@@ -358,22 +356,21 @@ def write_header(fid: TextIO) -> None:
 
 def write_footer(fid: TextIO) -> None:
     """
-    Writes the footer (same for all the typescript clients).
+    Write the footer of the client file.
 
     :param fid: target
     :return:
     """
-
     fid.write("\n\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
 def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to a type expression.
+    Translate the type definition in Typescript representation to a type expression as Typescript code.
 
-    :param typedef: to be translated
-    :param path: path in the intermediate representation
-    :return: type expression
+    :param typedef: Typescript representation of the type definition
+    :param path: path in the Swagger spec
+    :return: Typescript code
     """
     if isinstance(typedef, Booleandef):
         return 'boolean'
@@ -398,7 +395,8 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
 
 def write_description(description: str, indent: str, fid: TextIO) -> None:
     """
-    Writes a description as // comment block.
+    Write a description as // comment block.
+
     :param description: to be written
     :param indent: indention as prefix to each line
     :param fid: target
@@ -418,7 +416,7 @@ def write_description(description: str, indent: str, fid: TextIO) -> None:
 
 def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
     """
-    Writes the type definition in the Typescript code.
+    Write the type definition in the Typescript code.
 
     :param typedef: to be declared
     :param fid: target
@@ -455,7 +453,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
 
 def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
-    Writes all type definitions as Typescript code.
+    Write all type definitions as Typescript code.
 
     :param typedefs: type definitions to be declared
     :param fid: target
@@ -470,11 +468,11 @@ def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) 
 
 def to_string_expression(typedef: Typedef, variable: str) -> str:
     """
-    Wraps the variable with .toString() if necessary.
+    Wrap the variable with .toString() if necessary.
 
-    :param typedef: type definition of the variable
-    :param variable: to be converted to string in the generated code
-    :return: typescript expression
+    :param typedef: type definition of the variable in Typescript representation
+    :param variable: variable to be converted to string in the generated code
+    :return: Typescript code
     """
     if isinstance(typedef, Stringdef):
         return variable
@@ -484,7 +482,7 @@ def to_string_expression(typedef: Typedef, variable: str) -> str:
 
 def write_request(request: Request, fid: TextIO) -> None:
     """
-    Generates the code of the request function.
+    Generate the code of the request function.
 
     :param request: function definition
     :param fid: target
@@ -622,7 +620,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 
 def write_client(requests: List[Request], fid: TextIO) -> None:
     """
-    Generates the client.
+    Generate the client.
 
     :param requests: translated request functions
     :param fid: target
@@ -654,10 +652,10 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
 
 def write_client_ts(typedefs: MutableMapping[str, Typedef], requests: List[Request], fid: TextIO) -> None:
     """
-    Generates the file with the client code.
+    Generate the file with the client code.
 
-    :param typedefs: translated type definitions
-    :param requests: translated request functions
+    :param typedefs: table of type definitions in Typescript representation
+    :param requests: request functions in Typescript representation
     :param fid: target
     :return:
     """

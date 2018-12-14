@@ -1,15 +1,19 @@
 """
-Parses the Swagger specification to an intermediate representation. This intermediate representation should be easier
-to translate to code than a direct Swagger spec translation.
-For example, references are resolved and do not figure as strings.
+Parse the Swagger specification to an intermediate representation.
+
+This intermediate representation is meant to be easier to translate to code than
+to translate directly from a Swagger spec. For example, references are resolved to the actual type definitions and
+do not figure as strings.
 """
 
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements
 
-import collections
 import json
 from typing import List, MutableMapping, Union, Any, Optional  # pylint: disable=unused-import
+
+import collections
+import icontract
 
 import swagger_to.swagger
 
@@ -18,7 +22,10 @@ PRIMITIVE_SWAGGER_TYPES = ['string', 'number', 'integer', 'boolean', 'file']
 
 
 class Typedef:
+    """Represent an intermediate type definition."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.identifier = ''
         self.description = ''
         self.json_schema = JsonSchema()
@@ -26,7 +33,10 @@ class Typedef:
 
 
 class Propertydef:
+    """Represent a property of an object."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.name = ''
         self.typedef = Typedef()
         self.description = ''
@@ -35,7 +45,10 @@ class Propertydef:
 
 
 class Objectdef(Typedef):
+    """Represent an object definition."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.properties = collections.OrderedDict()  # type: MutableMapping[str, Propertydef]
@@ -43,21 +56,30 @@ class Objectdef(Typedef):
 
 
 class Arraydef(Typedef):
+    """Represent an array."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.items = Typedef()
 
 
 class Mapdef(Typedef):
+    """Represent a map (i.e. a dictionary)."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.values = Typedef()
 
 
 class Primitivedef(Typedef):
+    """Represent a primitive type (such as integer, floating-point number or a string)."""
+
     def __init__(self):
+        """Initialize with default values."""
         super().__init__()
 
         self.type = ''
@@ -66,13 +88,19 @@ class Primitivedef(Typedef):
 
 
 class JsonSchema:
+    """Represent a schema for validation of JSON."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.identifier = ''
         self.text = ''
 
 
 class Parameter:
+    """Represent a parameter of an endpoint."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.name = ''
         self.in_what = ''
         self.typedef = Typedef()
@@ -83,7 +111,10 @@ class Parameter:
 
 
 class Response:
+    """Represent a response from an endpoint."""
+
     def __init__(self) -> None:
+        """Initialize with default values."""
         self.code = ''
         self.description = ''
         self.typedef = None  # type: Optional[Typedef]
@@ -91,7 +122,10 @@ class Response:
 
 
 class Endpoint:
+    """Represent an endpoint of a service."""
+
     def __init__(self):
+        """Initialize with default values."""
         self.path = ''
         self.method = ''
         self.operation_id = ''
@@ -106,7 +140,7 @@ class Endpoint:
 def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
                                typedefs: MutableMapping[str, Typedef]) -> None:
     """
-    Adds an entry in `typedefs` with the correct instance of the type definition.
+    Add an entry in `typedefs` with the correct instance of the type definition.
 
     :param definition: original representation of the definition
     :param typedefs: named intermediate representations of type definitions
@@ -141,7 +175,7 @@ def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
 
 def resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: MutableMapping[str, Typedef]) -> None:
     """
-    Resolves substructures (such as property typedefs, item typedefs etc.) of a pre-allocated definition typedef.
+    Resolve substructures (such as property typedefs, item typedefs etc.) of a pre-allocated definition typedef.
 
     :param definition: original representation of the definition
     :param typedefs: named intermediate representations of type definitions
@@ -178,7 +212,7 @@ def resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: M
 def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
-    Creates an anonymous (unnamed) intermediate type definition or resolves to an object pointed by the 'ref' property.
+    Create an anonymous (unnamed) intermediate type definition or resolve to an object pointed by the 'ref' property.
 
     :param original_typedef: original (Swagger) type definition
     :param typedefs: named intermediate type definitions
@@ -239,7 +273,7 @@ def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
 
 def to_typedefs(swagger: swagger_to.swagger.Swagger) -> MutableMapping[str, Typedef]:
     """
-    Translates all original (Swagger) definitions into intermediate type definitions.
+    Translate all original (Swagger) definitions into intermediate type definitions.
 
     :param swagger: Swagger specification
     :return: intermediate type definitions
@@ -266,8 +300,16 @@ def to_typedefs(swagger: swagger_to.swagger.Swagger) -> MutableMapping[str, Type
     return typedefs
 
 
+@icontract.ensure(lambda definitions, result: all(name in definitions for name in result), enabled=icontract.SLOW)
 def collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
                                    definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> List[str]:
+    """
+    Inspect the intermediate representation of a type definition and collect other type definitions referenced by it.
+
+    :param typedef: type definition in the original Swagger spec
+    :param definitions: table of type definitions in intermediate representation
+    :return: referenced type definitions given as a list of their identifiers
+    """
     if typedef.ref != '':
         definition_name = swagger_to.parse_definition_ref(typedef.ref)
         definition = definitions[definition_name]
@@ -291,10 +333,10 @@ def collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
 
 def recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
     """
-    Strips the value if the key is "description" in-place.
+    Walk the dictionary and strip the value if the key is "description".
 
     :param schema_dict: JSON schema as a python dictionary.
-    :return:
+    :return: modified ``schema_dict`` with all the descriptions stripped.
     """
     new_schema_dict = collections.OrderedDict()  # type: MutableMapping[str, Any]
 
@@ -326,6 +368,14 @@ def recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> Mut
 
 def to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef,
                    definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> JsonSchema:
+    """
+    Convert the JSON validation schema to an intermediate representation.
+
+    :param identifier: identifier of the JSON validation schema
+    :param original_typedef: original type definition from a Swagger spec
+    :param definitions: table of original type definitions in the Swagger spec
+    :return:
+    """
     json_schema = JsonSchema()
     json_schema.identifier = identifier
 
@@ -361,7 +411,7 @@ def to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef
 
 def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
-    Translates an original parameter to an intermediate parameter representation.
+    Translate an original parameter from a Swagger spec to an intermediate parameter representation.
 
     :param original_param: parameter in the original (Swagger) representation
     :param typedefs: intermediate type definitions
@@ -398,6 +448,13 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
 
 def to_parameters(swagger: swagger_to.swagger.Swagger,
                   typedefs: MutableMapping[str, Typedef]) -> MutableMapping[str, Parameter]:
+    """
+    Translate all the parameter _definitions_ in the Swagger spec to their intermediate representation.
+
+    :param swagger: original Swagger spec
+    :param typedefs: table of type definitions in intermediate representation
+    :return: table of intermediate representation of parameter definitions
+    """
     params = collections.OrderedDict()  # type: MutableMapping[str, Parameter]
 
     for original_param in swagger.parameters.values():
@@ -413,6 +470,14 @@ def to_parameters(swagger: swagger_to.swagger.Swagger,
 
 def anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typedefs: MutableMapping[str, Typedef],
                                params: MutableMapping[str, Parameter]) -> Parameter:
+    """
+    Retrieve a parameter from the table if it's been defined or otherwise create a new parameter definition.
+
+    :param original_param: parameter definition in the original Swagger spec
+    :param typedefs: table of type definitions in intermediate representation
+    :param params: table of parameter definitions in intermediate representation
+    :return: parameter definition in intermediate representation
+    """
     if original_param.ref != '':
         param_ref_name = swagger_to.parse_parameter_ref(ref=original_param.ref)
         if param_ref_name not in params:
@@ -425,6 +490,13 @@ def anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typ
 
 
 def to_response(swagger_response: swagger_to.swagger.Response, typedefs: MutableMapping[str, Typedef]) -> Response:
+    """
+    Translate the endpoint response from the original Swagger spec to an intermediate representation.
+
+    :param swagger_response: endpoint response in the original Swagger spec
+    :param typedefs: table of type definitions in intermediate representation
+    :return: intermediate representation of an endpoint response
+    """
     resp = Response()
     resp.description = swagger_response.description
     resp.code = swagger_response.code
@@ -456,6 +528,14 @@ def to_response(swagger_response: swagger_to.swagger.Response, typedefs: Mutable
 
 def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str, Typedef],
                 params: MutableMapping[str, Parameter]) -> Endpoint:
+    """
+    Translate the endpoint from the original Swagger spec to an intermediate representation.
+
+    :param method: the method specification in the original Swagger spec
+    :param typedefs: table of type definitions in intermediate representation
+    :param params: table of parameter definitions in intermediate representation
+    :return: intermediate representation of an endpoint
+    """
     base_path = method.path.swagger.base_path
     if base_path != '':
         pth = '{}/{}'.format(base_path.rstrip('/'), method.path.identifier.lstrip('/'))
@@ -495,6 +575,14 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
 
 def to_endpoints(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[str, Typedef],
                  params: MutableMapping[str, Parameter]) -> List[Endpoint]:
+    """
+    Translate endpoints from the original Swagger spec to their intermediate representation.
+
+    :param swagger: original Swagger spec
+    :param typedefs: table of type definitions in intermediate representation
+    :param params: table of parameter definitions in intermediate representation
+    :return: intermediate representation of endpoints
+    """
     endpoints = []  # type: List[Endpoint]
     for path in swagger.paths.values():
         for method in path.methods:

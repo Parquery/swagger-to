@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""
-Generates python client from Swagger specification.
-"""
+"""Generate a Python client from Swagger specification."""
 
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements,too-many-lines
 
+import collections
 from typing import MutableMapping, Union, Set, List, TextIO, Optional  # pylint: disable=unused-import
 
-import collections
+import icontract
 
 import swagger_to
 import swagger_to.intermediate
@@ -16,47 +15,59 @@ import swagger_to.swagger
 
 
 class Typedef:
-    """
-    Represents a python type.
-    """
+    """Represent a type definition in Python."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.description = ''
         self.identifier = ''
 
     def __str__(self) -> str:
+        """Represent the type definition as its class name and the identifier."""
         return '{}({})'.format(self.__class__.__name__, self.identifier)
 
 
 class Booldef(Typedef):
+    """Represent a Python boolean."""
+
     pass
 
 
 class Intdef(Typedef):
+    """Represent a Python integer."""
+
     pass
 
 
 class Floatdef(Typedef):
+    """Represent a Python floating-point number."""
+
     pass
 
 
 class Strdef(Typedef):
+    """Represent a Python string."""
+
     pass
 
 
 class Bytesdef(Typedef):
+    """Represent a Python immutable bytes object."""
+
     pass
 
 
 class Filedef(Typedef):
-    """
-    Represents a file type in form-data parameters.
-    """
+    """Represents a Python file type in form-data parameters."""
+
     pass
 
 
 class Attribute:
+    """Represent an instance attribute of a Python class."""
+
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.typedef = None  # type: Optional[Typedef]
         self.description = ''
         self.name = ''
@@ -66,31 +77,39 @@ class Attribute:
 
 
 class Classdef(Typedef):
+    """Represent a definition of a Python class."""
+
     def __init__(self) -> None:
+        """Initialize with defaults."""
         super().__init__()
         self.attributes = collections.OrderedDict()  # type: MutableMapping[str, Attribute]
 
 
 class Listdef(Typedef):
+    """Represent a definition of a Python list."""
+
     def __init__(self) -> None:
+        """Initialize with defaults."""
         super().__init__()
 
         self.items = None  # type: Union[None, Typedef]
 
 
 class Dictdef(Typedef):
+    """Represent a definition of a Python dictionary."""
+
     def __init__(self) -> None:
+        """Initialize with defaults."""
         super().__init__()
 
         self.values = None  # type: Union[None, Typedef]
 
 
 class Parameter:
-    """
-    Represents a parameter of a request.
-    """
+    """Represent a parameter of a request in Python."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.name = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
@@ -98,18 +117,20 @@ class Parameter:
 
 
 class Response:
+    """Represent a response from the server in Python."""
+
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.code = ''
         self.typedef = None  # type: Optional[Typedef]
         self.description = ''
 
 
 class Request:
-    """
-    Represents a request function of the client.
-    """
+    """Represent a request function of the client in Python."""
 
     def __init__(self) -> None:
+        """Initialize with defaults."""
         self.operation_id = ''
         self.path = ''
         self.method = ''
@@ -132,13 +153,13 @@ class Request:
 def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
-    If the type has an identifier, it is retrieved from the translated typedefs.
+    Get the Python representation of the type definition from the table of Python type definitions by its identifier.
 
-    Otherwise, it is translated on the spot to the corresponding python type.
+    If the type definition has no identifier, it is translated on the spot to the corresponding Python type definition.
 
-    :param intermediate_typedef: to be translated
-    :param typedefs: translated type definitions
-    :return: translated type
+    :param intermediate_typedef: intermediate representation of the type definition
+    :param typedefs: table of type definitions in Python representation
+    :return: type definition in Python representation
     """
     if intermediate_typedef.identifier:
         if intermediate_typedef.identifier not in typedefs:
@@ -151,6 +172,12 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 
 
 def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+    """
+    Translate the type definition in intermediate representation to Python.
+
+    :param intermediate_typedef: type definition in intermediate representation
+    :return: type definition in Python representation
+    """
     typedef = None  # type: Optional[Typedef]
 
     if isinstance(intermediate_typedef, swagger_to.intermediate.Primitivedef):
@@ -205,6 +232,12 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
 def to_typedefs(
         intermediate_typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> MutableMapping[str, Typedef]:
+    """
+    Translate type definitions from intermediate representation to Python.
+
+    :param intermediate_typedefs: table of type definitions in intermediate representation
+    :return: table of type definitions in Python representation
+    """
     typedefs = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
 
     for intermediate_typedef in intermediate_typedefs.values():
@@ -219,11 +252,11 @@ def to_typedefs(
 def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
-    Translates an intermediate parameter to a python parameter.
+    Translate an endpoint parameter from the intermediate to a Python representation.
 
-    :param intermediate_parameter: to be translated
-    :param typedefs: translated type definitions
-    :return: translated parameter
+    :param intermediate_parameter: intermediate representation of a parameter
+    :param typedefs: table of type definitions in Python representation
+    :return: Python representation of the parameter
     """
     param = Parameter()
     param.name = intermediate_parameter.name
@@ -236,11 +269,11 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
 def to_response(intermediate_response: swagger_to.intermediate.Response,
                 typedefs: MutableMapping[str, Typedef]) -> Response:
     """
-    Translates an intermediate response to a python response.
+    Translate an endpoint response from the intermediate to a Python representation.
 
-    :param intermediate_response: to be translated
-    :param typedefs: translated type definitions
-    :return: translated response
+    :param intermediate_response: intermediate representation of a response
+    :param typedefs: table of type definitions in Python representation
+    :return: Python representation of the response
     """
     resp = Response()
     resp.code = intermediate_response.code
@@ -252,13 +285,12 @@ def to_response(intermediate_response: swagger_to.intermediate.Response,
 
 def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
-    Translates an endpoint to a client request function.
+    Translate an endpoint from an intermediate representation to a Python client request function.
 
-    :param endpoint: to be translated
-    :param typedefs: translated type definitions
-    :return: request function
+    :param endpoint: intermediate representation of the endpoint
+    :param typedefs: table of type definitions in Python representation
+    :return: Python representation of the client request function
     """
-
     req = Request()
     req.description = endpoint.description
     req.method = endpoint.method
@@ -300,14 +332,15 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     return req
 
 
+@icontract.ensure(lambda endpoints, result: len(endpoints) == len(result))
 def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
                 typedefs: MutableMapping[str, Typedef]) -> List[Request]:
     """
-    Translates the endpoints to python request functions.
+    Translate endpoints from intermediate representation to Python client request functions.
 
-    :param endpoints: to be translated
-    :param typedefs: translated type definitions
-    :return: translated request functions
+    :param endpoints: intermediate representation of the endpoints
+    :param typedefs: table of type definitions in Python representation
+    :return: Python representation of client's request functions corresponding to the endpoints
     """
     requests = []  # type: List[Request]
     for endpoint in endpoints:
@@ -320,6 +353,7 @@ INDENT = ' ' * 4
 
 
 def write_imports(import_set: Set[str], fid: TextIO) -> None:
+    """Write import statements."""
     import_lst = sorted(list(import_set))
     for import_stmt in sorted(import_lst):
         fid.write('import ' + '{}\n'.format(import_stmt))
@@ -329,11 +363,11 @@ def write_imports(import_set: Set[str], fid: TextIO) -> None:
 
 def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
-    Translates the typedef to a type expression.
+    Translate the type definition in Python representation to a type expression as Python code.
 
-    :param typedef: to be translated
-    :param path: path in the intermediate representation
-    :return: type expression
+    :param typedef: Python representation of the type definition
+    :param path: path in the Swagger spec
+    :return: Python code
     """
     # pylint: disable=too-many-return-statements
     if isinstance(typedef, Booldef):
@@ -364,6 +398,12 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
 
 
 def attribute_as_argument(attribute: Attribute) -> str:
+    """
+    Represent the instance attribute of a class as an argument to a function (e.g., ``__init__``).
+
+    :param attribute: Python representation of the instance attribute of a class
+    :return: Python code
+    """
     argtype = type_expression(typedef=attribute.typedef, path=attribute.classdef.identifier + "." + attribute.name)
 
     if not attribute.required:
@@ -373,6 +413,7 @@ def attribute_as_argument(attribute: Attribute) -> str:
 
 
 def write_header(service_name: str, fid: TextIO) -> None:
+    """Write the header of the client module."""
     fid.write('#!bin/bash/python3\n')
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n')
     fid.write('"""Implements the client for {}."""\n\n'.format(service_name))
@@ -386,10 +427,12 @@ def write_header(service_name: str, fid: TextIO) -> None:
 
 
 def write_footer(fid: TextIO) -> None:
+    """Write the footer of the client module."""
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!')
 
 
 def write_comment(comment: str, indent: str, fid: TextIO) -> None:
+    """Write the comment at the given indention."""
     lines = comment.strip().splitlines()
     for i, line in enumerate(lines):
         rstripped = line.rstrip()
@@ -403,6 +446,7 @@ def write_comment(comment: str, indent: str, fid: TextIO) -> None:
 
 
 def write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
+    """Write the docstring at the given indention."""
     if not docstring:
         raise ValueError("Unexpected empty docstring")
 
@@ -425,6 +469,7 @@ def write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
 
 
 def write_class(classdef: Classdef, fid: TextIO) -> None:
+    """Write the class defintiion to the client module."""
     if classdef.identifier == '':
         raise ValueError("Expected a classdef with an identifier, but got a classdef with an empty identifier.")
 
@@ -480,6 +525,12 @@ def write_class(classdef: Classdef, fid: TextIO) -> None:
 
 
 def default_attribute_value(typedef: Typedef) -> str:
+    """
+    Determine the default value of the given type definition.
+
+    :param typedef: type definition in Python representation.
+    :return: Python code
+    """
     # pylint: disable=too-many-return-statements
     if isinstance(typedef, Booldef):
         return 'False'
@@ -502,6 +553,7 @@ def default_attribute_value(typedef: Typedef) -> str:
 
 
 def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
+    """Write the class factory method in the client module."""
     fid.write('def new_{}() -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
@@ -533,6 +585,7 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
 
 
 def write_from_obj(classdefs: List[Classdef], fid: TextIO):
+    """Write the code of the ``from_obj`` function."""
     # yapf: disable
     fid.write('''def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
     """
@@ -594,6 +647,12 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
 
 
 def expected_type_expression(typedef: Typedef) -> str:
+    """
+    Determine the type expression corresponding to the type definition.
+
+    :param typedef: type definition in Python representation
+    :return: Python code representing the type definition
+    """
     # pylint: disable=too-many-return-statements
     if isinstance(typedef, Booldef):
         return 'bool'
@@ -617,6 +676,7 @@ def expected_type_expression(typedef: Typedef) -> str:
 
 
 def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
+    """Write the code of ``{class}_from_obj`` function."""
     fid.write('def {}_from_obj(obj: Any, path: str = "") -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
@@ -701,6 +761,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
 
 
 def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
+    """Write ``to_jsonable`` function."""
     # yapf: disable
     fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
     """
@@ -769,6 +830,7 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
 
 def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
+    """Write ``{class}_to_jsonable`` function."""
     fid.write('def {0}_to_jsonable({0}: {1}, path: str = "") -> Dict[str, Any]:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
 
@@ -816,23 +878,24 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
 
 def to_string_expression(typedef: Typedef, expression: str) -> str:
     """
-    Wraps the expression in str() if necessary.
+    Wrap the expression in str() if necessary.
 
     :param typedef: type definition of the variable
-    :param expression: to be converted to string in the generated code
-    :return: python string expression
+    :param expression: Python expression to be converted to string in the generated code
+    :return: Python code
     """
     if isinstance(typedef, Strdef):
         return expression
 
     return 'str({})'.format(expression)
 
-
+@icontract.ensure(lambda result: not result.startswith('"""'))
+@icontract.ensure(lambda result: not result.endswith('"""'))
 def request_docstring(request: Request) -> str:
     """
-    Assembles the docstring of the given request function.
+    Assemble the docstring of the given client request function.
 
-    :param request: function to be documented
+    :param request: client request function to be documented
     :return: docstring of the request function
     """
     docstring_lines = []  # type: List[str]
@@ -857,6 +920,7 @@ def request_docstring(request: Request) -> str:
 
 
 def write_request(request: Request, fid: TextIO) -> None:
+    """Write the client request function."""
     resp = None  # type: Optional[Response]
     return_type = 'bytes'
     if request.produces == ['application/json']:
@@ -1022,6 +1086,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 
 def write_client(requests: List[Request],
                  fid: TextIO) -> None:
+    """Write the client class."""
     fid.write("class RemoteCaller:\n")
     fid.write(INDENT + '"""Executes the remote calls to the server."""\n')
     fid.write('\n')
@@ -1044,11 +1109,11 @@ def write_client_py(service_name: str,
                     requests: List[Request],
                     fid: TextIO) -> None:
     """
-    Generates the file with the client code.
+    Generate the file with the client code.
 
     :param service_name: used to designate the service that client connects to
-    :param typedefs: translated type definitions
-    :param requests: translated request functions
+    :param typedefs: table of type definitions in Python representation
+    :param requests: request functions in Python representation
     :param fid: target
     :return:
     """
