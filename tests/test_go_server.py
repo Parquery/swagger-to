@@ -2,16 +2,40 @@
 """
 Tests the Go server code generation.
 """
-import io
 import os
 import pathlib
-# pylint: disable=missing-docstring
+import subprocess
+import tempfile
 import unittest
-from typing import TextIO, cast
 
 import swagger_to.go_server
 import swagger_to.intermediate
 import swagger_to.swagger
+
+# pylint: disable=missing-docstring
+# pylint: disable=protected-access
+
+
+class TestEscapeStr(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual('""', swagger_to.go_server._escaped_str(''))
+
+    def test_that_it_works(self):
+        self.assertEqual('"some \\\\ \\" \\a \\f \\t \\n \\r \\v text"',
+                         swagger_to.go_server._escaped_str('some \\ " \a \f \t \n \r \v text'))
+
+
+def meld(expected: str, got: str) -> None:
+    """Calls meld to diff the two strings."""
+    with tempfile.NamedTemporaryFile() as tmp1, \
+            tempfile.NamedTemporaryFile() as tmp2:
+        tmp1.file.write(expected.encode())  # type: ignore
+        tmp1.file.flush()  # type: ignore
+
+        tmp2.file.write(got.encode())  # type: ignore
+        tmp2.file.flush()  # type: ignore
+
+        subprocess.check_call(['meld', tmp1.name, tmp2.name])
 
 
 class TestGoServer(unittest.TestCase):
@@ -35,51 +59,25 @@ class TestGoServer(unittest.TestCase):
 
         package = swagger.name
 
-        with io.StringIO() as buf:
-            buffid = cast(TextIO, buf)
-            swagger_to.go_server.write_types_go(package=package, typedefs=go_typedefs, fid=buffid)
+        got = swagger_to.go_server.generate_types_go(package=package, typedefs=go_typedefs)
+        expected = (script_dir / "expected" / "go" / "types.go").read_text()
+        self.assertEqual(expected, got)
 
-            got = buf.getvalue()
+        got = swagger_to.go_server.generate_routes_go(package=package, routes=go_routes)
+        expected = (script_dir / "expected" / "go" / "routes.go").read_text()
+        self.assertEqual(expected, got)
 
-            expected = (script_dir / "expected" / "go" / "types.go").read_text()
-            self.assertEqual(expected, got)
+        got = swagger_to.go_server.generate_handler_impl_go(package=package, routes=go_routes)
+        expected = (script_dir / "expected" / "go" / "handler_impl.go.sample").read_text()
+        self.assertEqual(expected, got)
 
-        with io.StringIO() as buf:
-            buffid = cast(TextIO, buf)
-            swagger_to.go_server.write_routes_go(package=package, routes=go_routes, fid=buffid)
+        got = swagger_to.go_server.generate_handler_go(package=package, routes=go_routes)
+        expected = (script_dir / "expected" / "go" / "handler.go").read_text()
+        self.assertEqual(expected, got)
 
-            got = buf.getvalue()
-
-            expected = (script_dir / "expected" / "go" / "routes.go").read_text()
-            self.assertEqual(expected, got)
-
-        with io.StringIO() as buf:
-            buffid = cast(TextIO, buf)
-            swagger_to.go_server.write_handler_go(package=package, routes=go_routes, fid=buffid)
-
-            got = buf.getvalue()
-
-            expected = (script_dir / "expected" / "go" / "handler.go").read_text()
-            self.assertEqual(expected, got)
-
-        with io.StringIO() as buf:
-            buffid = cast(TextIO, buf)
-            swagger_to.go_server.write_handler_impl_go(package=package, routes=go_routes, fid=buffid)
-
-            got = buf.getvalue()
-
-            expected = (script_dir / "expected" / "go" / "handler_impl.go.sample").read_text()
-            self.assertEqual(expected, got)
-
-        with io.StringIO() as buf:
-            buffid = cast(TextIO, buf)
-            swagger_to.go_server.write_json_schemas_go(
-                package=package, routes=go_routes, typedefs=go_typedefs, fid=buffid)
-
-            got = buf.getvalue()
-
-            expected = (script_dir / "expected" / "go" / "jsonschemas.go").read_text()
-            self.assertEqual(expected, got)
+        got = swagger_to.go_server.generate_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs)
+        expected = (script_dir / "expected" / "go" / "jsonschemas.go").read_text()
+        self.assertEqual(expected, got)
 
 
 if __name__ == '__main__':

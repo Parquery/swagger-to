@@ -5,7 +5,6 @@ Reads a correct swagger file and produces Go code
 import argparse
 import pathlib
 import sys
-from typing import cast, TextIO
 
 import swagger_to.go_server
 import swagger_to.intermediate
@@ -60,22 +59,18 @@ def main() -> None:
 
     package = swagger.name
 
-    with (outdir / 'types.go').open('wt') as fid:
-        swagger_to.go_server.write_types_go(package=package, typedefs=go_typedefs, fid=cast(TextIO, fid))
+    (outdir / 'types.go').write_text(swagger_to.go_server.generate_types_go(package=package, typedefs=go_typedefs))
 
-    with (outdir / 'routes.go').open('wt') as fid:
-        swagger_to.go_server.write_routes_go(package=package, routes=go_routes, fid=cast(TextIO, fid))
+    (outdir / 'routes.go').write_text(swagger_to.go_server.generate_routes_go(package=package, routes=go_routes))
 
-    with (outdir / 'handler.go').open('wt') as fid:
-        swagger_to.go_server.write_handler_go(package=package, routes=go_routes, fid=cast(TextIO, fid))
+    (outdir / 'handler.go').write_text(swagger_to.go_server.generate_handler_go(package=package, routes=go_routes))
 
     if not no_samples:
-        with (outdir / 'handler_impl.go.sample').open('wt') as fid:
-            swagger_to.go_server.write_handler_impl_go(package=package, routes=go_routes, fid=cast(TextIO, fid))
+        (outdir / 'handler_impl.go.sample').write_text(
+            swagger_to.go_server.generate_handler_impl_go(package=package, routes=go_routes))
 
-    with (outdir / 'jsonschemas.go').open('wt') as fid:
-        swagger_to.go_server.write_json_schemas_go(
-            package=package, routes=go_routes, typedefs=go_typedefs, fid=cast(TextIO, fid))
+    (outdir / 'jsonschemas.go').write_text(
+        swagger_to.go_server.generate_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs))
 
     print("Generated go server code in: {}".format(outdir))
 
