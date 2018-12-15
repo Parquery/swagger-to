@@ -19,7 +19,7 @@ class Complaint:
         self.line = line
 
 
-def check_header(swagger: swagger_to.swagger.Swagger) -> List[Complaint]:
+def _check_header(swagger: swagger_to.swagger.Swagger) -> List[Complaint]:
     """
     Check whether the swagger header conforms to our style guide.
 
@@ -55,7 +55,7 @@ def check_header(swagger: swagger_to.swagger.Swagger) -> List[Complaint]:
     return complaints
 
 
-def check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
+def _check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
     Check whether the typedefs conform to the casing conventions.
 
@@ -71,7 +71,7 @@ def check_casing_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.
     return complaints
 
 
-def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
+def _check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Check whether the endpoints conform to the casing conventions.
 
@@ -107,7 +107,7 @@ def check_casing_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) ->
     return complaints
 
 
-def check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
+def _check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> List[Complaint]:
     """
     Check whether the typedefs conform to the description conventions.
 
@@ -123,7 +123,7 @@ def check_descriptions_typedefs(typedefs: MutableMapping[str, swagger_to.interme
     return complaints
 
 
-def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
+def _check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Check whether the endpoints conform to the description conventions.
 
@@ -133,26 +133,26 @@ def check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoin
     complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
-        if check_description(endpoint.description):
+        if _check_description(endpoint.description):
             complaints.append(
                 Complaint(
-                    message=check_description(endpoint.description),
+                    message=_check_description(endpoint.description),
                     what=endpoint.description,
                     where="In endpoint {}".format(endpoint.operation_id),
                     line=endpoint.line))
         for param in endpoint.parameters:
-            if check_description(param.description):
+            if _check_description(param.description):
                 complaints.append(
                     Complaint(
-                        message=check_description(param.description),
+                        message=_check_description(param.description),
                         what=param.description,
                         where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
                         line=param.line))
         for _, resp in enumerate(endpoint.responses.values()):
-            if check_description(resp.description):
+            if _check_description(resp.description):
                 complaints.append(
                     Complaint(
-                        message=check_description(resp.description),
+                        message=_check_description(resp.description),
                         what=resp.description,
                         where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code),
                         line=resp.line))
@@ -240,40 +240,40 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
         pass
 
     elif isinstance(typedef, swagger_to.intermediate.Arraydef):
-        if check_description(typedef.description):
+        if _check_description(typedef.description):
             complaints.append(
                 Complaint(
-                    message=check_description(typedef.description),
+                    message=_check_description(typedef.description),
                     what=typedef.description,
                     where="In array {}".format(typedef.identifier),
                     line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
-        if check_description(typedef.description):
+        if _check_description(typedef.description):
             complaints.append(
                 Complaint(
                     what=typedef.description,
-                    message=check_description(typedef.description),
+                    message=_check_description(typedef.description),
                     where="In map {}".format(typedef.identifier),
                     line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
-        if check_description(typedef.description):
+        if _check_description(typedef.description):
             complaints.append(
                 Complaint(
                     what=typedef.description,
-                    message=check_description(typedef.description),
+                    message=_check_description(typedef.description),
                     where="In object {}".format(typedef.identifier),
                     line=typedef.line))
 
         for prop in typedef.properties.values():
-            if check_description(prop.description):
+            if _check_description(prop.description):
                 complaints.append(
                     Complaint(
                         what=prop.description,
-                        message=check_description(prop.description),
+                        message=_check_description(prop.description),
                         where="In object {}, property {}".format(typedef.identifier, prop.name),
                         line=typedef.line))
                 complaints.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
@@ -281,7 +281,7 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
     return complaints
 
 
-def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
+def _check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Check whether the endpoints conform to the conventions for responses.
 
@@ -309,7 +309,7 @@ def check_endpoint_responses(endpoints: List[swagger_to.intermediate.Endpoint]) 
     return complaints
 
 
-def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
+def _check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> List[Complaint]:
     """
     Check whether the endpoints conform to the conventions for paths.
 
@@ -330,7 +330,7 @@ def check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> Li
     return complaints
 
 
-def check_description(description: str) -> Optional[str]:
+def _check_description(description: str) -> Optional[str]:
     """
     Check whether a description is well-styled.
 
@@ -393,19 +393,19 @@ def perform(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[str, s
     """
     complaints = []  # type: List[Complaint]
 
-    complaints.extend(check_header(swagger=swagger))
+    complaints.extend(_check_header(swagger=swagger))
 
-    complaints.extend(check_casing_typedefs(typedefs=typedefs))
+    complaints.extend(_check_casing_typedefs(typedefs=typedefs))
 
-    complaints.extend(check_casing_endpoints(endpoints=endpoints))
+    complaints.extend(_check_casing_endpoints(endpoints=endpoints))
 
-    complaints.extend(check_descriptions_typedefs(typedefs=typedefs))
+    complaints.extend(_check_descriptions_typedefs(typedefs=typedefs))
 
-    complaints.extend(check_descriptions_endpoints(endpoints=endpoints))
+    complaints.extend(_check_descriptions_endpoints(endpoints=endpoints))
 
-    complaints.extend(check_endpoint_path(endpoints=endpoints))
+    complaints.extend(_check_endpoint_path(endpoints=endpoints))
 
-    complaints.extend(check_endpoint_responses(endpoints=endpoints))
+    complaints.extend(_check_endpoint_responses(endpoints=endpoints))
 
     complaints.sort(key=lambda complaint: complaint.where)
     return complaints

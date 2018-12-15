@@ -140,7 +140,7 @@ class Request:
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
 
 
-def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
     """Translate the intermediate type definition to a definition of an Elm type.
 
     :param intermediate_typedef: intermediate type definition
@@ -168,11 +168,11 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
         typedef = Listdef()
-        typedef.items = to_typedef(intermediate_typedef=intermediate_typedef.items)
+        typedef.items = _to_typedef(intermediate_typedef=intermediate_typedef.items)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
         typedef = Dictdef()
-        typedef.values = to_typedef(intermediate_typedef=intermediate_typedef.values)
+        typedef.values = _to_typedef(intermediate_typedef=intermediate_typedef.values)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
         typedef = Recorddef()
@@ -181,7 +181,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
             prop = Property()
             prop.description = intermediate_prop.description
             prop.name = intermediate_prop.name
-            prop.typedef = to_typedef(intermediate_typedef=intermediate_prop.typedef)
+            prop.typedef = _to_typedef(intermediate_typedef=intermediate_prop.typedef)
             prop.required = intermediate_prop.required
 
             typedef.properties[prop.name] = prop
@@ -210,14 +210,14 @@ def to_typedefs(
     for intermediate_typedef in intermediate_typedefs.values():
         assert intermediate_typedef is not None
 
-        typedef = to_typedef(intermediate_typedef=intermediate_typedef)
+        typedef = _to_typedef(intermediate_typedef=intermediate_typedef)
         typedefs[typedef.identifier] = typedef
 
     return typedefs
 
 
-def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
-                             typedefs: MutableMapping[str, Typedef]) -> Typedef:
+def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
+                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
     Create an anonyomus type definition or get the type definition from the table of Elm type definitions, if available.
 
@@ -232,11 +232,11 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 
         return typedefs[intermediate_typedef.identifier]
 
-    return to_typedef(intermediate_typedef=intermediate_typedef)
+    return _to_typedef(intermediate_typedef=intermediate_typedef)
 
 
-def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
-                 typedefs: MutableMapping[str, Typedef]) -> Parameter:
+def _to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
+                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
     Translate an intermediate representation of an endpoint parameter to an Elm parameter.
 
@@ -246,13 +246,13 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
     """
     param = Parameter()
     param.name = intermediate_parameter.name
-    param.typedef = anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
+    param.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
     param.required = intermediate_parameter.required
     return param
 
 
-def to_response(intermediate_response: swagger_to.intermediate.Response,
-                typedefs: MutableMapping[str, Typedef]) -> Response:
+def _to_response(intermediate_response: swagger_to.intermediate.Response,
+                 typedefs: MutableMapping[str, Typedef]) -> Response:
     """
     Translate an intermediate response to an Elm response.
 
@@ -263,12 +263,12 @@ def to_response(intermediate_response: swagger_to.intermediate.Response,
     resp = Response()
     resp.code = intermediate_response.code
     resp.typedef = None if intermediate_response.typedef is None else \
-        anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
+        _anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
     resp.description = intermediate_response.description
     return resp
 
 
-def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
+def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
     Translate an endpoint to a client request function.
 
@@ -283,7 +283,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     req.path = endpoint.path
 
     for intermediate_param in endpoint.parameters:
-        param = to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
+        param = _to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
 
         if intermediate_param.in_what == 'body':
             if req.body_parameter is not None:
@@ -306,7 +306,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     req.parameters.sort(key=lambda param: not param.required)
 
     for code, intermediate_resp in endpoint.responses.items():
-        req.responses[code] = to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
+        req.responses[code] = _to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
 
     return req
 
@@ -328,12 +328,12 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
                 has_form_data = True
 
         if not has_form_data:
-            requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
+            requests.append(_to_request(endpoint=endpoint, typedefs=typedefs))
 
     return requests
 
 
-def write_description(description: str, indent: str, fid: TextIO) -> None:
+def _write_description(description: str, indent: str, fid: TextIO) -> None:
     """
     Write a description as -- comment block.
 
@@ -354,7 +354,7 @@ def write_description(description: str, indent: str, fid: TextIO) -> None:
             fid.write('\n')
 
 
-def write_top_level_description(description: str, fid: TextIO) -> None:
+def _write_top_level_description(description: str, fid: TextIO) -> None:
     """
     Write a top level description as {|- -} comment block.
 
@@ -372,7 +372,7 @@ def write_top_level_description(description: str, fid: TextIO) -> None:
     fid.write('-}')
 
 
-def argument_expression(typedef: Typedef, path: Optional[str] = None) -> str:
+def _argument_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the typedef to an argument expression for an Elm function signature.
 
@@ -383,12 +383,12 @@ def argument_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     :return: type expression
     """
     if isinstance(typedef, BracketedTypedef):
-        return '(' + type_expression(typedef=typedef, path=path) + ')'
+        return '(' + _type_expression(typedef=typedef, path=path) + ')'
 
-    return type_expression(typedef=typedef, path=path)
+    return _type_expression(typedef=typedef, path=path)
 
 
-def argument_decoder_expression(typedef: Typedef, path: Optional[str] = None) -> str:
+def _argument_decoder_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the typedef to a argument decoder expression for an Elm function signature.
 
@@ -399,12 +399,12 @@ def argument_decoder_expression(typedef: Typedef, path: Optional[str] = None) ->
     :return: type expression
     """
     if isinstance(typedef, BracketedTypedef):
-        return '(' + type_decoder(typedef=typedef, path=path) + ')'
+        return '(' + _type_decoder(typedef=typedef, path=path) + ')'
 
-    return type_decoder(typedef=typedef, path=path)
+    return _type_decoder(typedef=typedef, path=path)
 
 
-def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
+def _write_type_definition(typedef: Typedef, fid: TextIO) -> None:
     """
     Write the type definition in the Elm code.
 
@@ -416,7 +416,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
         raise ValueError("Expected a typedef with an identifier, but got a typedef with an empty identifier.")
 
     if typedef.description:
-        write_top_level_description(description=typedef.description, fid=fid)
+        _write_top_level_description(description=typedef.description, fid=fid)
         fid.write('\n')
 
     if isinstance(typedef, Recorddef):
@@ -424,10 +424,10 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
         prefix = '{ '
         for prop in typedef.properties.values():
             if prop.description:
-                write_description(description=prop.description, indent=INDENT, fid=fid)
+                _write_description(description=prop.description, indent=INDENT, fid=fid)
                 fid.write("\n")
 
-            type_expr = type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
+            type_expr = _type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
             camel_case_name = swagger_to.camel_case(identifier=prop.name)
             if not prop.required:
                 fid.write(INDENT + prefix + '{} : Maybe ({})\n'.format(camel_case_name, type_expr))
@@ -438,10 +438,10 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
         fid.write(INDENT + "}")
     else:
         fid.write("type alias {} = \n".format(typedef.identifier))
-        fid.write(INDENT + "{}".format(type_expression(typedef=typedef, path=typedef.identifier)))
+        fid.write(INDENT + "{}".format(_type_expression(typedef=typedef, path=typedef.identifier)))
 
 
-def write_encoder(typedef: Typedef, fid: TextIO) -> None:
+def _write_encoder(typedef: Typedef, fid: TextIO) -> None:
     """
     Write the Encoder in the Elm code.
 
@@ -461,7 +461,7 @@ def write_encoder(typedef: Typedef, fid: TextIO) -> None:
         for prop in typedef.properties.values():
             fid.write(prefix + '( "{}", '.format(swagger_to.snake_case(identifier=prop.name)))
 
-            encoder = type_encoder(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
+            encoder = _type_encoder(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
             if not prop.required:
                 fid.write('Json.Encode.Extra.maybe ({}) '.format(encoder))
             else:
@@ -472,19 +472,19 @@ def write_encoder(typedef: Typedef, fid: TextIO) -> None:
         fid.write(2 * INDENT + "]")
 
     elif isinstance(typedef, (Booldef, Intdef, Floatdef, Stringdef, Listdef, Dictdef)):
-        bracketed_type_expression = argument_expression(typedef=typedef, path=typedef.identifier)
+        bracketed_type_expression = _argument_expression(typedef=typedef, path=typedef.identifier)
         var_name = 'a' + typedef.identifier
 
         fid.write("encode{} : {} -> Json.Encode.Value \n".format(typedef.identifier, bracketed_type_expression))
         fid.write("encode{} {} =\n".format(typedef.identifier, var_name))
-        fid.write(INDENT + "{}".format(type_encoder(typedef=typedef, path=typedef.identifier)))
+        fid.write(INDENT + "{}".format(_type_encoder(typedef=typedef, path=typedef.identifier)))
         fid.write(" <| {}".format(var_name))
 
     else:
         raise AssertionError("Unexpected type {}.".format(typedef.__class__))
 
 
-def write_decoder(typedef: Typedef, fid: TextIO) -> None:
+def _write_decoder(typedef: Typedef, fid: TextIO) -> None:
     """
     Write the Decoder in the Elm code.
 
@@ -504,7 +504,7 @@ def write_decoder(typedef: Typedef, fid: TextIO) -> None:
 
         for prop in typedef.properties.values():
             snake_case_name = swagger_to.snake_case(identifier=prop.name)
-            decoder = argument_decoder_expression(typedef=prop.typedef, path='{}.{}'.format(record_id, prop.name))
+            decoder = _argument_decoder_expression(typedef=prop.typedef, path='{}.{}'.format(record_id, prop.name))
             if prop.required:
                 fid.write(prefix + 'Json.Decode.Pipeline.required "{}" {}\n'.format(snake_case_name, decoder))
             else:
@@ -512,16 +512,16 @@ def write_decoder(typedef: Typedef, fid: TextIO) -> None:
                     snake_case_name, decoder))
 
     elif isinstance(typedef, (Booldef, Intdef, Floatdef, Stringdef, Listdef, Dictdef)):
-        bracketed_type_expression = argument_expression(typedef=typedef, path=typedef.identifier)
+        bracketed_type_expression = _argument_expression(typedef=typedef, path=typedef.identifier)
         fid.write("decode{} : Json.Decode.Decoder {}\n".format(typedef.identifier, bracketed_type_expression))
         fid.write("decode{} =\n".format(typedef.identifier))
-        fid.write(INDENT + "{}".format(type_decoder(typedef=typedef, path=typedef.identifier)))
+        fid.write(INDENT + "{}".format(_type_decoder(typedef=typedef, path=typedef.identifier)))
 
     else:
         raise AssertionError("Unexpected type {}.".format(typedef.__class__))
 
 
-def escape_string(text: str) -> str:
+def _escape_string(text: str) -> str:
     """
     Escape special characters in the given string.
 
@@ -538,7 +538,7 @@ def escape_string(text: str) -> str:
     return text
 
 
-def write_request(request: Request, fid: TextIO) -> None:
+def _write_request(request: Request, fid: TextIO) -> None:
     """
     Generate the code of the request function.
 
@@ -553,17 +553,17 @@ def write_request(request: Request, fid: TextIO) -> None:
         request.method, request.path)
     if request.description:
         description += '\n\n' + request.description
-    write_top_level_description(description=description, fid=fid)
+    _write_top_level_description(description=description, fid=fid)
     fid.write('\n')
 
     types = []  # type List[str]
     names = []  # type List[str]
     for param in request.parameters:
         if param.required:
-            types.append(type_expression(typedef=param.typedef))
+            types.append(_type_expression(typedef=param.typedef))
             names.append(swagger_to.camel_case(identifier=param.name))
         else:
-            types.append('Maybe {}'.format(type_expression(typedef=param.typedef)))
+            types.append('Maybe {}'.format(_type_expression(typedef=param.typedef)))
             names.append('maybe{}'.format(swagger_to.capital_camel_case(param.name)))
 
     return_type = None  # type: Optional[str]
@@ -571,8 +571,8 @@ def write_request(request: Request, fid: TextIO) -> None:
     if '200' in request.responses:
         resp = request.responses['200']
         if resp.typedef is not None:
-            return_type = argument_expression(typedef=resp.typedef)
-            return_type_decoder = argument_decoder_expression(typedef=resp.typedef)
+            return_type = _argument_expression(typedef=resp.typedef)
+            return_type_decoder = _argument_decoder_expression(typedef=resp.typedef)
 
     # function signature and arguments
     function_name = '{}Request'.format(swagger_to.camel_case(identifier=request.operation_id))
@@ -640,7 +640,7 @@ def write_request(request: Request, fid: TextIO) -> None:
                 fid.write(INDENT * (indent + 2) + '++ {}'.format(camel_case_name))
             else:
                 # escape special characters
-                fid.write(INDENT * (indent + 2) + '++ "{}"'.format(escape_string(text=tkn)))
+                fid.write(INDENT * (indent + 2) + '++ "{}"'.format(_escape_string(text=tkn)))
 
     if request.path_parameters and request.query_parameters:
         fid.write("\n")
@@ -701,8 +701,8 @@ def write_request(request: Request, fid: TextIO) -> None:
     fid.write(INDENT * (indent + 1) + '{ body = ')
     if request.body_parameter is not None:
         if not request.body_parameter.required:
-            fid.write('Json.Encode.Extra.maybe ({}'.format(type_encoder(request.body_parameter.typedef)))
-        fid.write('({}'.format(type_encoder(request.body_parameter.typedef)))
+            fid.write('Json.Encode.Extra.maybe ({}'.format(_type_encoder(request.body_parameter.typedef)))
+        fid.write('({}'.format(_type_encoder(request.body_parameter.typedef)))
 
         fid.write(' {}) |> Http.jsonBody'.format(swagger_to.camel_case(identifier=request.body_parameter.name)))
     else:
@@ -720,7 +720,7 @@ def write_request(request: Request, fid: TextIO) -> None:
     fid.write(INDENT * (indent + 1) + '}\n')
 
 
-def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+def _write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
     Write all type definitions as Elm code.
 
@@ -734,11 +734,11 @@ def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) 
         if i > 0:
             fid.write('\n\n\n')
 
-        write_type_definition(typedef=typedef, fid=fid)
+        _write_type_definition(typedef=typedef, fid=fid)
     fid.write('\n\n\n')
 
 
-def write_encoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+def _write_encoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
     Write all JSON encoders as Elm code.
 
@@ -752,12 +752,12 @@ def write_encoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
         if i > 0:
             fid.write('\n\n\n')
 
-        write_encoder(typedef=typedef, fid=fid)
+        _write_encoder(typedef=typedef, fid=fid)
 
     fid.write('\n\n\n')
 
 
-def write_decoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+def _write_decoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
     Write all JSON decoders as Elm code.
 
@@ -771,12 +771,12 @@ def write_decoders(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
         if i > 0:
             fid.write('\n\n\n')
 
-        write_decoder(typedef=typedef, fid=fid)
+        _write_decoder(typedef=typedef, fid=fid)
 
     fid.write('\n\n\n')
 
 
-def write_client(requests: List[Request], fid: TextIO) -> None:
+def _write_client(requests: List[Request], fid: TextIO) -> None:
     """
     Generate the client.
 
@@ -789,12 +789,12 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
 
     for request in requests:
         fid.write('\n\n')
-        write_request(request=request, fid=fid)
+        _write_request(request=request, fid=fid)
 
     fid.write("\n\n\n")
 
 
-def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: List[Request]) -> None:
+def _write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: List[Request]) -> None:
     """
     Write the header.
 
@@ -830,7 +830,7 @@ def write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests: 
               "import Time\n\n\n")
 
 
-def write_footer(fid: TextIO) -> None:
+def _write_footer(fid: TextIO) -> None:
     """
     Write the footer (same for all the Elm clients).
 
@@ -840,7 +840,7 @@ def write_footer(fid: TextIO) -> None:
     fid.write("-- Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
-def write_query_function(fid: TextIO) -> None:
+def _write_query_function(fid: TextIO) -> None:
     """
     Write the function needed to translate query parameters into a string.
 
@@ -873,7 +873,7 @@ def write_query_function(fid: TextIO) -> None:
     fid.write(INDENT * 4 + '"?" ++ str\n')
 
 
-def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
+def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the typedef to a type expression.
 
@@ -892,9 +892,9 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'String'
     elif isinstance(typedef, Listdef):
-        return 'List ' + type_expression(typedef=typedef.items, path=str(path) + '.items')
+        return 'List ' + _type_expression(typedef=typedef.items, path=str(path) + '.items')
     elif isinstance(typedef, Dictdef):
-        return 'Dict String ' + type_expression(typedef=typedef.values, path=str(path) + '.values')
+        return 'Dict String ' + _type_expression(typedef=typedef.values, path=str(path) + '.values')
     elif isinstance(typedef, Recorddef):
         if typedef.identifier == '':
             raise NotImplementedError(
@@ -906,7 +906,7 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
+def _type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the typedef to a type encoder.
 
@@ -925,9 +925,9 @@ def type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'Json.Encode.string'
     elif isinstance(typedef, Listdef):
-        return 'Json.Encode.list <| List.map ' + type_encoder(typedef=typedef.items, path=str(path) + '.items')
+        return 'Json.Encode.list <| List.map ' + _type_encoder(typedef=typedef.items, path=str(path) + '.items')
     elif isinstance(typedef, Dictdef):
-        return 'Json.Encode.Extra.dict identity ' + type_encoder(typedef=typedef.values, path=str(path) + '.values')
+        return 'Json.Encode.Extra.dict identity ' + _type_encoder(typedef=typedef.values, path=str(path) + '.values')
     elif isinstance(typedef, Recorddef):
         if typedef.identifier == '':
             raise NotImplementedError(
@@ -939,7 +939,7 @@ def type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
+def _type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the typedef to a type decoder.
 
@@ -958,9 +958,9 @@ def type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'Json.Decode.string'
     elif isinstance(typedef, Listdef):
-        return 'Json.Decode.list <| ' + type_decoder(typedef=typedef.items, path=str(path) + '.items')
+        return 'Json.Decode.list <| ' + _type_decoder(typedef=typedef.items, path=str(path) + '.items')
     elif isinstance(typedef, Dictdef):
-        return 'Json.Decode.dict <| ' + type_decoder(typedef=typedef.values, path=str(path) + '.values')
+        return 'Json.Decode.dict <| ' + _type_decoder(typedef=typedef.values, path=str(path) + '.values')
     elif isinstance(typedef, Recorddef):
         if typedef.identifier == '':
             raise NotImplementedError(
@@ -1007,21 +1007,21 @@ def write_client_elm(typedefs: MutableMapping[str, Typedef], requests: List[Requ
     :param fid: target
     :return:
     """
-    write_header(fid=fid, typedefs=typedefs, requests=requests)
+    _write_header(fid=fid, typedefs=typedefs, requests=requests)
 
     if typedefs:
-        write_type_definitions(typedefs=typedefs, fid=fid)
+        _write_type_definitions(typedefs=typedefs, fid=fid)
 
-        write_encoders(typedefs=typedefs, fid=fid)
+        _write_encoders(typedefs=typedefs, fid=fid)
 
-        write_decoders(typedefs=typedefs, fid=fid)
+        _write_decoders(typedefs=typedefs, fid=fid)
 
     if requests:
-        write_client(requests=requests, fid=fid)
+        _write_client(requests=requests, fid=fid)
 
         for request in requests:
             if request.query_parameters:
-                write_query_function(fid=fid)
+                _write_query_function(fid=fid)
                 break
 
-    write_footer(fid=fid)
+    _write_footer(fid=fid)

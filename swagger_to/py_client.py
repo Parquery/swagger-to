@@ -150,8 +150,8 @@ class Request:
         self.produces = []  # type: List[str]
 
 
-def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
-                             typedefs: MutableMapping[str, Typedef]) -> Typedef:
+def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
+                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
     Get the Python representation of the type definition from the table of Python type definitions by its identifier.
 
@@ -168,10 +168,10 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 
         return typedefs[intermediate_typedef.identifier]
 
-    return to_typedef(intermediate_typedef=intermediate_typedef)
+    return _to_typedef(intermediate_typedef=intermediate_typedef)
 
 
-def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
     """
     Translate the type definition in intermediate representation to Python.
 
@@ -197,11 +197,11 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
         typedef = Listdef()
-        typedef.items = to_typedef(intermediate_typedef=intermediate_typedef.items)
+        typedef.items = _to_typedef(intermediate_typedef=intermediate_typedef.items)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
         typedef = Dictdef()
-        typedef.values = to_typedef(intermediate_typedef=intermediate_typedef.values)
+        typedef.values = _to_typedef(intermediate_typedef=intermediate_typedef.values)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
         typedef = Classdef()
@@ -210,7 +210,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
             attr = Attribute()
             attr.description = intermediate_prop.description
             attr.name = intermediate_prop.name
-            attr.typedef = to_typedef(intermediate_typedef=intermediate_prop.typedef)
+            attr.typedef = _to_typedef(intermediate_typedef=intermediate_prop.typedef)
             attr.required = intermediate_prop.required
             attr.classdef = typedef
 
@@ -243,14 +243,14 @@ def to_typedefs(
     for intermediate_typedef in intermediate_typedefs.values():
         assert intermediate_typedef is not None
 
-        typedef = to_typedef(intermediate_typedef=intermediate_typedef)
+        typedef = _to_typedef(intermediate_typedef=intermediate_typedef)
         typedefs[typedef.identifier] = typedef
 
     return typedefs
 
 
-def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
-                 typedefs: MutableMapping[str, Typedef]) -> Parameter:
+def _to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
+                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
     Translate an endpoint parameter from the intermediate to a Python representation.
 
@@ -260,14 +260,14 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
     """
     param = Parameter()
     param.name = intermediate_parameter.name
-    param.typedef = anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
+    param.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
     param.required = intermediate_parameter.required
     param.description = intermediate_parameter.description
     return param
 
 
-def to_response(intermediate_response: swagger_to.intermediate.Response,
-                typedefs: MutableMapping[str, Typedef]) -> Response:
+def _to_response(intermediate_response: swagger_to.intermediate.Response,
+                 typedefs: MutableMapping[str, Typedef]) -> Response:
     """
     Translate an endpoint response from the intermediate to a Python representation.
 
@@ -278,12 +278,12 @@ def to_response(intermediate_response: swagger_to.intermediate.Response,
     resp = Response()
     resp.code = intermediate_response.code
     resp.typedef = None if intermediate_response.typedef is None else \
-        anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
+        _anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
     resp.description = intermediate_response.description
     return resp
 
 
-def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
+def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
     Translate an endpoint from an intermediate representation to a Python client request function.
 
@@ -298,7 +298,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     req.path = endpoint.path
 
     for intermediate_param in endpoint.parameters:
-        param = to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
+        param = _to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
 
         if isinstance(param.typedef, Filedef):
             req.file_parameters.append(param)
@@ -325,7 +325,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     req.parameters.sort(key=lambda param: not param.required)
 
     for code, intermediate_resp in endpoint.responses.items():
-        req.responses[code] = to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
+        req.responses[code] = _to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
 
     req.produces = endpoint.produces[:]
 
@@ -344,7 +344,7 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
     """
     requests = []  # type: List[Request]
     for endpoint in endpoints:
-        requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
+        requests.append(_to_request(endpoint=endpoint, typedefs=typedefs))
 
     return requests
 
@@ -352,7 +352,7 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
 INDENT = ' ' * 4
 
 
-def write_imports(import_set: Set[str], fid: TextIO) -> None:
+def _write_imports(import_set: Set[str], fid: TextIO) -> None:
     """Write import statements."""
     import_lst = sorted(list(import_set))
     for import_stmt in sorted(import_lst):
@@ -361,7 +361,7 @@ def write_imports(import_set: Set[str], fid: TextIO) -> None:
         fid.write("\n\n")
 
 
-def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
+def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the type definition in Python representation to a type expression as Python code.
 
@@ -383,9 +383,9 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Filedef):
         return 'BinaryIO'
     elif isinstance(typedef, Listdef):
-        return 'List[' + type_expression(typedef=typedef.items, path=str(path) + '.items') + "]"
+        return 'List[' + _type_expression(typedef=typedef.items, path=str(path) + '.items') + "]"
     elif isinstance(typedef, Dictdef):
-        return 'Dict[str, ' + type_expression(typedef=typedef.values, path=str(path) + '.values') + "]"
+        return 'Dict[str, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + "]"
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
             raise NotImplementedError(
@@ -397,14 +397,14 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def attribute_as_argument(attribute: Attribute) -> str:
+def _attribute_as_argument(attribute: Attribute) -> str:
     """
     Represent the instance attribute of a class as an argument to a function (e.g., ``__init__``).
 
     :param attribute: Python representation of the instance attribute of a class
     :return: Python code
     """
-    argtype = type_expression(typedef=attribute.typedef, path=attribute.classdef.identifier + "." + attribute.name)
+    argtype = _type_expression(typedef=attribute.typedef, path=attribute.classdef.identifier + "." + attribute.name)
 
     if not attribute.required:
         return '{}: Optional[{}] = None'.format(attribute.name, argtype)
@@ -412,7 +412,7 @@ def attribute_as_argument(attribute: Attribute) -> str:
     return '{}: {}'.format(attribute.name, argtype)
 
 
-def write_header(service_name: str, fid: TextIO) -> None:
+def _write_header(service_name: str, fid: TextIO) -> None:
     """Write the header of the client module."""
     fid.write('#!bin/bash/python3\n')
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n')
@@ -426,12 +426,12 @@ def write_header(service_name: str, fid: TextIO) -> None:
     fid.write("import requests.auth\n")
 
 
-def write_footer(fid: TextIO) -> None:
+def _write_footer(fid: TextIO) -> None:
     """Write the footer of the client module."""
     fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!')
 
 
-def write_comment(comment: str, indent: str, fid: TextIO) -> None:
+def _write_comment(comment: str, indent: str, fid: TextIO) -> None:
     """Write the comment at the given indention."""
     lines = comment.strip().splitlines()
     for i, line in enumerate(lines):
@@ -445,7 +445,7 @@ def write_comment(comment: str, indent: str, fid: TextIO) -> None:
             fid.write('\n')
 
 
-def write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
+def _write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
     """Write the docstring at the given indention."""
     if not docstring:
         raise ValueError("Unexpected empty docstring")
@@ -468,14 +468,14 @@ def write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
     fid.write(indent + '"""')
 
 
-def write_class(classdef: Classdef, fid: TextIO) -> None:
+def _write_class(classdef: Classdef, fid: TextIO) -> None:
     """Write the class defintiion to the client module."""
     if classdef.identifier == '':
         raise ValueError("Expected a classdef with an identifier, but got a classdef with an empty identifier.")
 
     fid.write("class {}:\n".format(classdef.identifier))
     if classdef.description:
-        write_docstring(docstring=classdef.description, indent=INDENT, fid=fid)
+        _write_docstring(docstring=classdef.description, indent=INDENT, fid=fid)
         fid.write('\n\n')
 
     if not classdef.attributes:
@@ -487,7 +487,7 @@ def write_class(classdef: Classdef, fid: TextIO) -> None:
 
     args = []  # type: List[str]
     for attr in classdef.attributes.values():
-        args.append(attribute_as_argument(attribute=attr))
+        args.append(_attribute_as_argument(attribute=attr))
 
     line = prefix + ', ' + ', '.join(args) + suffix
     if len(line) <= 80:
@@ -508,7 +508,7 @@ def write_class(classdef: Classdef, fid: TextIO) -> None:
             fid.write('\n\n')
 
         if attr.description:
-            write_comment(comment=attr.description, indent=INDENT * 2, fid=fid)
+            _write_comment(comment=attr.description, indent=INDENT * 2, fid=fid)
             fid.write('\n')
         fid.write(INDENT * 2 + 'self.{0} = {0}'.format(attr.name))
 
@@ -524,7 +524,7 @@ def write_class(classdef: Classdef, fid: TextIO) -> None:
     fid.write(INDENT * 2 + 'return {}_to_jsonable(self)'.format(swagger_to.snake_case(identifier=classdef.identifier)))
 
 
-def default_attribute_value(typedef: Typedef) -> str:
+def _default_attribute_value(typedef: Typedef) -> str:
     """
     Determine the default value of the given type definition.
 
@@ -552,7 +552,7 @@ def default_attribute_value(typedef: Typedef) -> str:
         raise NotImplementedError("Translating the typedef to a default value is not supported: {}".format(typedef))
 
 
-def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
+def _write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
     """Write the class factory method in the client module."""
     fid.write('def new_{}() -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
@@ -568,7 +568,7 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
     args = []  # type: List[str]
     for attr in classdef.attributes.values():
         if attr.required:
-            args.append('{}={}'.format(attr.name, default_attribute_value(typedef=attr.typedef)))
+            args.append('{}={}'.format(attr.name, _default_attribute_value(typedef=attr.typedef)))
 
     line = prefix + ', '.join(args) + suffix
     if len(line) <= 80:
@@ -584,7 +584,7 @@ def write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
         fid.write(suffix)
 
 
-def write_from_obj(classdefs: List[Classdef], fid: TextIO):
+def _write_from_obj(classdefs: List[Classdef], fid: TextIO):
     """Write the code of the ``from_obj`` function."""
     # yapf: disable
     fid.write('''def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
@@ -646,7 +646,7 @@ def write_from_obj(classdefs: List[Classdef], fid: TextIO):
     fid.write(INDENT + 'raise ValueError("Unexpected `expected` type: {}".format(exp))')
 
 
-def expected_type_expression(typedef: Typedef) -> str:
+def _expected_type_expression(typedef: Typedef) -> str:
     """
     Determine the type expression corresponding to the type definition.
 
@@ -665,9 +665,9 @@ def expected_type_expression(typedef: Typedef) -> str:
     elif isinstance(typedef, Bytesdef):
         return "bytes"
     elif isinstance(typedef, Listdef):
-        return "list, {}".format(expected_type_expression(typedef=typedef.items))
+        return "list, {}".format(_expected_type_expression(typedef=typedef.items))
     elif isinstance(typedef, Dictdef):
-        return "dict, {}".format(expected_type_expression(typedef=typedef.values))
+        return "dict, {}".format(_expected_type_expression(typedef=typedef.values))
     elif isinstance(typedef, Classdef):
         return typedef.identifier
     else:
@@ -675,7 +675,7 @@ def expected_type_expression(typedef: Typedef) -> str:
             "Translating the typedef to an expected type is not supported: {}".format(typedef))
 
 
-def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
+def _write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
     """Write the code of ``{class}_from_obj`` function."""
     fid.write('def {}_from_obj(obj: Any, path: str = "") -> {}:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
@@ -713,7 +713,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
         if i > 0:
             fid.write('\n\n')
 
-        attr_type_expr = type_expression(typedef=attr.typedef, path=attr.classdef.identifier + "." + attr.name)
+        attr_type_expr = _type_expression(typedef=attr.typedef, path=attr.classdef.identifier + "." + attr.name)
 
         if not attr.required:
             attr_type_expr = "Optional[{}]".format(attr_type_expr)
@@ -723,7 +723,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
             '{}_from_obj = from_obj('.format(attr.name),
             'obj["{0}"]'.format(attr.name),
             'expected=[{}]'.format(
-                expected_type_expression(typedef=attr.typedef)),
+                _expected_type_expression(typedef=attr.typedef)),
             'path=path + ".{}")'.format(attr.name),
             '  # type: {}'.format(attr_type_expr)
         ]
@@ -760,7 +760,7 @@ def write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
         fid.write(suffix)
 
 
-def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
+def _write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     """Write ``to_jsonable`` function."""
     # yapf: disable
     fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
@@ -829,7 +829,7 @@ def write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
     fid.write(INDENT + 'raise ValueError("Unexpected `expected` type: {}".format(exp))')
 
 
-def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
+def _write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
     """Write ``{class}_to_jsonable`` function."""
     fid.write('def {0}_to_jsonable({0}: {1}, path: str = "") -> Dict[str, Any]:\n'.format(
         swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
@@ -861,7 +861,7 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
         else:
             prefix = indent + 'res["{}"] = to_jsonable('.format(attr.name)
             value = '{}.{}'.format(variable, attr.name)
-            expected = '[{}]'.format(expected_type_expression(typedef=attr.typedef))
+            expected = '[{}]'.format(_expected_type_expression(typedef=attr.typedef))
             path = '"{{}}.{}".format(path))'.format(attr.name)
 
             line = prefix + ', '.join([value, expected, path])
@@ -876,7 +876,7 @@ def write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
     fid.write(INDENT + 'return res')
 
 
-def to_string_expression(typedef: Typedef, expression: str) -> str:
+def _to_string_expression(typedef: Typedef, expression: str) -> str:
     """
     Wrap the expression in str() if necessary.
 
@@ -891,7 +891,7 @@ def to_string_expression(typedef: Typedef, expression: str) -> str:
 
 @icontract.ensure(lambda result: not result.startswith('"""'))
 @icontract.ensure(lambda result: not result.endswith('"""'))
-def request_docstring(request: Request) -> str:
+def _request_docstring(request: Request) -> str:
     """
     Assemble the docstring of the given client request function.
 
@@ -919,7 +919,7 @@ def request_docstring(request: Request) -> str:
     return '\n'.join(docstring_lines)
 
 
-def write_request(request: Request, fid: TextIO) -> None:
+def _write_request(request: Request, fid: TextIO) -> None:
     """Write the client request function."""
     resp = None  # type: Optional[Response]
     return_type = 'bytes'
@@ -927,7 +927,7 @@ def write_request(request: Request, fid: TextIO) -> None:
         if '200' in request.responses:
             resp = request.responses['200']
             if resp.typedef is not None:
-                return_type = type_expression(typedef=resp.typedef, path=request.operation_id + '.' + str(resp.code))
+                return_type = _type_expression(typedef=resp.typedef, path=request.operation_id + '.' + str(resp.code))
             else:
                 # The schema for the response has not been defined. Hence we can not parse the response.
                 resp = None
@@ -938,7 +938,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 
     args = ['self']  # type: List[str]
     for param in request.parameters:
-        param_type = type_expression(typedef=param.typedef, path=request.operation_id + '.' + param.name)
+        param_type = _type_expression(typedef=param.typedef, path=request.operation_id + '.' + param.name)
 
         if not param.required:
             args.append('{}: Optional[{}] = None'.format(param.name, param_type))
@@ -960,8 +960,8 @@ def write_request(request: Request, fid: TextIO) -> None:
     fid.write('\n')
 
     # assemble the docstring
-    docstring = request_docstring(request=request)
-    write_docstring(docstring=docstring, indent=INDENT * 2, fid=fid)
+    docstring = _request_docstring(request=request)
+    _write_docstring(docstring=docstring, indent=INDENT * 2, fid=fid)
     fid.write('\n')
 
     # path parameters
@@ -982,7 +982,7 @@ def write_request(request: Request, fid: TextIO) -> None:
 
                 fid.write(
                     INDENT * 2 + 'url_parts.append({})'.format(
-                        to_string_expression(typedef=param.typedef, expression=param.name)))
+                        _to_string_expression(typedef=param.typedef, expression=param.name)))
             else:
                 fid.write(INDENT * 2 + 'url_parts.append("{}")'.format(
                     tkn.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')))
@@ -1001,7 +1001,7 @@ def write_request(request: Request, fid: TextIO) -> None:
                 fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
             else:
                 fid.write(INDENT * 3 + '"{0}": to_jsonable({0}, expected=[{1}])'.format(
-                    param.name, expected_type_expression(typedef=param.typedef)))
+                    param.name, _expected_type_expression(typedef=param.typedef)))
 
         fid.write('}')
 
@@ -1016,7 +1016,7 @@ def write_request(request: Request, fid: TextIO) -> None:
         else:
             fid.write(INDENT * 2 + 'data = to_jsonable({0}, expected=[{1}])'.format(
                 request.body_parameter.name,
-                expected_type_expression(typedef=request.body_parameter.typedef)))
+                _expected_type_expression(typedef=request.body_parameter.typedef)))
 
     if request.formdata_parameters:
         fid.write('\n\n')
@@ -1030,7 +1030,7 @@ def write_request(request: Request, fid: TextIO) -> None:
                 fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
             else:
                 fid.write(INDENT * 3 + '"{0}": to_jsonable({0}, expected=[{1}])'.format(
-                    param.name, expected_type_expression(typedef=param.typedef)))
+                    param.name, _expected_type_expression(typedef=param.typedef)))
 
         fid.write('}')
 
@@ -1081,11 +1081,11 @@ def write_request(request: Request, fid: TextIO) -> None:
                 request.path, request.method, return_type))
     else:
         fid.write(INDENT * 3 + 'return from_obj(obj=resp.json(), expected=[{}], path="")'.format(
-            expected_type_expression(typedef=resp.typedef)))
+            _expected_type_expression(typedef=resp.typedef)))
 
 
-def write_client(requests: List[Request],
-                 fid: TextIO) -> None:
+def _write_client(requests: List[Request],
+                  fid: TextIO) -> None:
     """Write the client class."""
     fid.write("class RemoteCaller:\n")
     fid.write(INDENT + '"""Executes the remote calls to the server."""\n')
@@ -1101,7 +1101,7 @@ def write_client(requests: List[Request],
     for i, request in enumerate(requests):
         if i > 0:
             fid.write('\n\n')
-        write_request(request=request, fid=fid)
+        _write_request(request=request, fid=fid)
 
 
 def write_client_py(service_name: str,
@@ -1117,36 +1117,36 @@ def write_client_py(service_name: str,
     :param fid: target
     :return:
     """
-    write_header(service_name=service_name, fid=fid)
+    _write_header(service_name=service_name, fid=fid)
 
     if typedefs:
         classdefs = [typedef for typedef in typedefs.values() if isinstance(typedef, Classdef)]
 
         if classdefs:
             fid.write('\n\n')
-            write_from_obj(classdefs=classdefs, fid=fid)
+            _write_from_obj(classdefs=classdefs, fid=fid)
             fid.write('\n\n\n')
-            write_to_jsonable(classdefs=classdefs, fid=fid)
+            _write_to_jsonable(classdefs=classdefs, fid=fid)
             fid.write('\n\n\n')
 
         for i, classdef in enumerate(classdefs):
             if i > 0:
                 fid.write('\n\n\n')
-            write_class(classdef=classdef, fid=fid)
+            _write_class(classdef=classdef, fid=fid)
             fid.write('\n\n\n')
-            write_class_factory_method(classdef=classdef, fid=fid)
+            _write_class_factory_method(classdef=classdef, fid=fid)
             fid.write('\n\n\n')
-            write_class_from_obj(classdef=classdef, fid=fid)
+            _write_class_from_obj(classdef=classdef, fid=fid)
             fid.write('\n\n\n')
-            write_class_to_jsonable(classdef=classdef, fid=fid)
+            _write_class_to_jsonable(classdef=classdef, fid=fid)
 
     if typedefs:
         fid.write('\n\n\n')
 
-    write_client(requests=requests, fid=fid)
+    _write_client(requests=requests, fid=fid)
 
     if requests and typedefs:
         fid.write('\n\n\n')
 
-    write_footer(fid=fid)
+    _write_footer(fid=fid)
     fid.write('\n')

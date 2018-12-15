@@ -9,10 +9,10 @@ do not figure as strings.
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements
 
+import collections
 import json
 from typing import List, MutableMapping, Union, Any, Optional  # pylint: disable=unused-import
 
-import collections
 import icontract
 
 import swagger_to.swagger
@@ -137,8 +137,8 @@ class Endpoint:
         self.line = 0
 
 
-def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
-                               typedefs: MutableMapping[str, Typedef]) -> None:
+def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
+                                typedefs: MutableMapping[str, Typedef]) -> None:
     """
     Add an entry in `typedefs` with the correct instance of the type definition.
 
@@ -173,7 +173,7 @@ def preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
     typedefs[typedef.identifier] = typedef
 
 
-def resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: MutableMapping[str, Typedef]) -> None:
+def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: MutableMapping[str, Typedef]) -> None:
     """
     Resolve substructures (such as property typedefs, item typedefs etc.) of a pre-allocated definition typedef.
 
@@ -190,17 +190,17 @@ def resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: M
         pass
 
     elif isinstance(typedef, Arraydef):
-        typedef.items = anonymous_or_get_typedef(original_typedef=definition.typedef.items, typedefs=typedefs)
+        typedef.items = _anonymous_or_get_typedef(original_typedef=definition.typedef.items, typedefs=typedefs)
 
     elif isinstance(typedef, Mapdef):
-        typedef.values = anonymous_or_get_typedef(
+        typedef.values = _anonymous_or_get_typedef(
             original_typedef=definition.typedef.additional_properties, typedefs=typedefs)
 
     elif isinstance(typedef, Objectdef):
         for prop_name, prop_typedef in definition.typedef.properties.items():
             propdef = Propertydef()
             propdef.name = prop_name
-            propdef.typedef = anonymous_or_get_typedef(original_typedef=prop_typedef, typedefs=typedefs)
+            propdef.typedef = _anonymous_or_get_typedef(original_typedef=prop_typedef, typedefs=typedefs)
             propdef.description = prop_typedef.description
             propdef.required = propdef.name in typedef.required
 
@@ -209,8 +209,8 @@ def resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: M
         raise ValueError("Unexpected type of the definition {!r}: {}".format(typedef.identifier, type(typedef)))
 
 
-def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
-                             typedefs: MutableMapping[str, Typedef]) -> Typedef:
+def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
+                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
     Create an anonymous (unnamed) intermediate type definition or resolve to an object pointed by the 'ref' property.
 
@@ -241,13 +241,13 @@ def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
         if original_typedef.items is None:
             raise ValueError("Unexpected None items: {!r}".format(original_typedef.raw_dict.adict))
 
-        typedef.items = anonymous_or_get_typedef(original_typedef=original_typedef.items, typedefs=typedefs)
+        typedef.items = _anonymous_or_get_typedef(original_typedef=original_typedef.items, typedefs=typedefs)
 
     elif original_typedef.type == 'object':
         if original_typedef.additional_properties is not None:
             typedef = Mapdef()
 
-            typedef.values = anonymous_or_get_typedef(
+            typedef.values = _anonymous_or_get_typedef(
                 original_typedef=original_typedef.additional_properties, typedefs=typedefs)
         else:
             typedef = Objectdef()
@@ -255,7 +255,7 @@ def anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
 
             for prop_name, prop_typedef in typedef.properties.items():
                 propdef = Propertydef()
-                propdef.typedef = anonymous_or_get_typedef(original_typedef=prop_typedef.typedef, typedefs=typedefs)
+                propdef.typedef = _anonymous_or_get_typedef(original_typedef=prop_typedef.typedef, typedefs=typedefs)
                 propdef.description = prop_typedef.description
                 propdef.name = prop_name
                 propdef.required = propdef.name in typedef.required
@@ -283,16 +283,16 @@ def to_typedefs(swagger: swagger_to.swagger.Swagger) -> MutableMapping[str, Type
     # pre-allocate type definitions in the first pass so that we can resolve
     # all the references to intermediate typedefs.
     for defi in swagger.definitions.values():
-        preallocate_named_typedefs(definition=defi, typedefs=typedefs)
+        _preallocate_named_typedefs(definition=defi, typedefs=typedefs)
 
     # resolve references given as URIs to object pointers to intermediate type definitions in a second pass.
     for defi in swagger.definitions.values():
-        resolve_substructures(definition=defi, typedefs=typedefs)
+        _resolve_substructures(definition=defi, typedefs=typedefs)
 
     for typedef in typedefs.values():
         json_schema_identifier = typedef.identifier
 
-        typedef.json_schema = to_json_schema(
+        typedef.json_schema = _to_json_schema(
             identifier=json_schema_identifier,
             original_typedef=swagger.definitions[typedef.identifier].typedef,
             definitions=swagger.definitions)
@@ -301,8 +301,8 @@ def to_typedefs(swagger: swagger_to.swagger.Swagger) -> MutableMapping[str, Type
 
 
 @icontract.ensure(lambda definitions, result: all(name in definitions for name in result), enabled=icontract.SLOW)
-def collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
-                                   definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> List[str]:
+def _collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
+                                    definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> List[str]:
     """
     Inspect the intermediate representation of a type definition and collect other type definitions referenced by it.
 
@@ -314,24 +314,24 @@ def collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
         definition_name = swagger_to.parse_definition_ref(typedef.ref)
         definition = definitions[definition_name]
 
-        return [definition_name] + collect_referenced_definitions(typedef=definition.typedef, definitions=definitions)
+        return [definition_name] + _collect_referenced_definitions(typedef=definition.typedef, definitions=definitions)
 
     referenced_definitions = []  # type: List[str]
 
     for prop in typedef.properties.values():
-        referenced_definitions.extend(collect_referenced_definitions(typedef=prop, definitions=definitions))
+        referenced_definitions.extend(_collect_referenced_definitions(typedef=prop, definitions=definitions))
 
     if typedef.items is not None:
-        referenced_definitions.extend(collect_referenced_definitions(typedef=typedef.items, definitions=definitions))
+        referenced_definitions.extend(_collect_referenced_definitions(typedef=typedef.items, definitions=definitions))
 
     if typedef.additional_properties is not None:
         referenced_definitions.extend(
-            collect_referenced_definitions(typedef=typedef.additional_properties, definitions=definitions))
+            _collect_referenced_definitions(typedef=typedef.additional_properties, definitions=definitions))
 
     return referenced_definitions
 
 
-def recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
+def _recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:
     """
     Walk the dictionary and strip the value if the key is "description".
 
@@ -350,24 +350,24 @@ def recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> Mut
             lst = []  # type: List[Any]
             for item in value:
                 if isinstance(item, (dict, collections.OrderedDict)):
-                    lst.append(recursively_strip_descriptions(schema_dict=item))
+                    lst.append(_recursively_strip_descriptions(schema_dict=item))
                 else:
                     lst.append(item)
 
             new_schema_dict[key] = lst
 
         elif isinstance(value, (dict, collections.OrderedDict)):
-            new_schema_dict[key] = recursively_strip_descriptions(schema_dict=value)
+            new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value)
         elif isinstance(value, swagger_to.swagger.RawDict):
-            new_schema_dict[key] = recursively_strip_descriptions(schema_dict=value.adict)
+            new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value.adict)
         else:
             new_schema_dict[key] = value
 
     return new_schema_dict
 
 
-def to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef,
-                   definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> JsonSchema:
+def _to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef,
+                    definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> JsonSchema:
     """
     Convert the JSON validation schema to an intermediate representation.
 
@@ -384,7 +384,7 @@ def to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef
     schema['title'] = json_schema.identifier
     schema['$schema'] = "http://json-schema.org/draft-04/schema#"
 
-    referenced_definitions = collect_referenced_definitions(
+    referenced_definitions = _collect_referenced_definitions(
         typedef=original_typedef, definitions=definitions)  # top-down
     referenced_definitions.reverse()  # bottom-up
 
@@ -402,14 +402,14 @@ def to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typedef
     for key, value in original_typedef.raw_dict.adict.items():
         schema[key] = value
 
-    schema = recursively_strip_descriptions(schema_dict=schema)
+    schema = _recursively_strip_descriptions(schema_dict=schema)
 
     json_schema.text = json.dumps(schema, indent=2)
 
     return json_schema
 
 
-def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: MutableMapping[str, Typedef]) -> Parameter:
+def _to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
     Translate an original parameter from a Swagger spec to an intermediate parameter representation.
 
@@ -433,7 +433,7 @@ def to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutable
             "Could not resolve the type of the parameter, neither 'type' nor 'schema' defined: {!r}".format(
                 original_param.raw_dict.adict))
 
-    typedef = anonymous_or_get_typedef(original_typedef=original_typedef, typedefs=typedefs)
+    typedef = _anonymous_or_get_typedef(original_typedef=original_typedef, typedefs=typedefs)
 
     param = Parameter()
     param.typedef = typedef
@@ -462,14 +462,14 @@ def to_parameters(swagger: swagger_to.swagger.Swagger,
             raise ValueError("Expected no 'ref' property in a parameter definition {!r}, but got: {!r}".format(
                 original_param.name, original_param.raw_dict.adict))
 
-        param = to_parameter(original_param=original_param, typedefs=typedefs)
+        param = _to_parameter(original_param=original_param, typedefs=typedefs)
         params[param.name] = param
 
     return params
 
 
-def anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typedefs: MutableMapping[str, Typedef],
-                               params: MutableMapping[str, Parameter]) -> Parameter:
+def _anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typedefs: MutableMapping[str, Typedef],
+                                params: MutableMapping[str, Parameter]) -> Parameter:
     """
     Retrieve a parameter from the table if it's been defined or otherwise create a new parameter definition.
 
@@ -486,10 +486,10 @@ def anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, typ
 
         return params[param_ref_name]
 
-    return to_parameter(original_param=original_param, typedefs=typedefs)
+    return _to_parameter(original_param=original_param, typedefs=typedefs)
 
 
-def to_response(swagger_response: swagger_to.swagger.Response, typedefs: MutableMapping[str, Typedef]) -> Response:
+def _to_response(swagger_response: swagger_to.swagger.Response, typedefs: MutableMapping[str, Typedef]) -> Response:
     """
     Translate the endpoint response from the original Swagger spec to an intermediate representation.
 
@@ -521,13 +521,13 @@ def to_response(swagger_response: swagger_to.swagger.Response, typedefs: Mutable
         pass
 
     if swagger_typedef is not None:
-        resp.typedef = anonymous_or_get_typedef(original_typedef=swagger_typedef, typedefs=typedefs)
+        resp.typedef = _anonymous_or_get_typedef(original_typedef=swagger_typedef, typedefs=typedefs)
 
     return resp
 
 
-def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str, Typedef],
-                params: MutableMapping[str, Parameter]) -> Endpoint:
+def _to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str, Typedef],
+                 params: MutableMapping[str, Parameter]) -> Endpoint:
     """
     Translate the endpoint from the original Swagger spec to an intermediate representation.
 
@@ -552,7 +552,7 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
     endpt.line = method.__lineno__
 
     for original_param in method.parameters:
-        param = anonymous_or_get_parameter(original_param=original_param, typedefs=typedefs, params=params)
+        param = _anonymous_or_get_parameter(original_param=original_param, typedefs=typedefs, params=params)
 
         if param.in_what == 'body':
             if param.typedef.identifier == '':
@@ -560,7 +560,7 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
             else:
                 json_schema_identifier = param.typedef.identifier
 
-            param.json_schema = to_json_schema(
+            param.json_schema = _to_json_schema(
                 identifier=json_schema_identifier,
                 original_typedef=original_param.schema,
                 definitions=method.path.swagger.definitions)
@@ -568,7 +568,7 @@ def to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str,
         endpt.parameters.append(param)
 
     for resp_code, swagger_resp in method.responses.items():
-        endpt.responses[resp_code] = to_response(swagger_response=swagger_resp, typedefs=typedefs)
+        endpt.responses[resp_code] = _to_response(swagger_response=swagger_resp, typedefs=typedefs)
 
     return endpt
 
@@ -587,7 +587,7 @@ def to_endpoints(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[s
     for path in swagger.paths.values():
         for method in path.methods:
             if not method.x_swagger_to_skip:
-                endpoint = to_endpoint(method=method, typedefs=typedefs, params=params)
+                endpoint = _to_endpoint(method=method, typedefs=typedefs, params=params)
                 endpoints.append(endpoint)
 
     return endpoints

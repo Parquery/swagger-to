@@ -5,7 +5,6 @@ Tests the Elm client code generation.
 import io
 import os
 import pathlib
-# pylint: disable=missing-docstring
 import unittest
 import json
 from typing import TextIO, cast
@@ -13,6 +12,8 @@ from typing import TextIO, cast
 import swagger_to.elm_client
 import swagger_to.intermediate
 import swagger_to.swagger
+
+# pylint: disable=missing-docstring,protected-access
 
 
 class TestElmClient(unittest.TestCase):
@@ -85,19 +86,19 @@ class TestElmPackage(unittest.TestCase):
 class TestEscapeElmString(unittest.TestCase):
     def test_that_it_works(self):
         expected = "some totally normal string"
-        self.assertEqual(swagger_to.elm_client.escape_string(r"some totally normal string"), expected)
+        self.assertEqual(swagger_to.elm_client._escape_string(r"some totally normal string"), expected)
 
         expected = 'some totally \\t \\t \\"normal\\" string'
-        self.assertEqual(swagger_to.elm_client.escape_string(r'some totally \t \t \"normal\" string'), expected)
+        self.assertEqual(swagger_to.elm_client._escape_string(r'some totally \t \t \"normal\" string'), expected)
 
         expected = "some totally\\n normal string\\t"
-        self.assertEqual(swagger_to.elm_client.escape_string(r"some totally\n normal string\t"), expected)
+        self.assertEqual(swagger_to.elm_client._escape_string(r"some totally\n normal string\t"), expected)
 
         expected = "\\nsome\\r\\r totally normal string"
-        self.assertEqual(swagger_to.elm_client.escape_string(r"\nsome\r\r totally normal string"), expected)
+        self.assertEqual(swagger_to.elm_client._escape_string(r"\nsome\r\r totally normal string"), expected)
 
         expected = "\\\\\\\\\\\\some \\'totally normal\\' string"
-        self.assertEqual(swagger_to.elm_client.escape_string(r"\\\\\\some \'totally normal\' string"), expected)
+        self.assertEqual(swagger_to.elm_client._escape_string(r"\\\\\\some \'totally normal\' string"), expected)
 
 
 if __name__ == '__main__':
