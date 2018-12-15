@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Reads a correct swagger file and produces Go code
-"""
+"""Read a correct swagger file and produce Go server code."""
 import argparse
 import pathlib
 import sys
@@ -12,7 +10,7 @@ import swagger_to.swagger
 
 
 def main() -> None:
-    """Executes the main routine."""
+    """Execute the main routine."""
     # pylint: disable=too-many-locals
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces Go code")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)

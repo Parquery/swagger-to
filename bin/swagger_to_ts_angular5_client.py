@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Reads a correct swagger file and produces Typescript client code.
-"""
+"""Read a correct swagger file and produce Typescript client code."""
 import argparse
 import os
 
@@ -11,9 +9,7 @@ import swagger_to.ts_angular5_client
 
 
 def main() -> None:
-    """"
-    Main routine
-    """
+    """Execute the main routine."""
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces Typescript client code")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
     parser.add_argument("--outpath", help="path to the output file", required=True)

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Reads a correct swagger file and produces Go code
-"""
+"""Read a correct swagger file and produce Python client code."""
 import argparse
 import os
 
@@ -12,9 +10,7 @@ import swagger_to.swagger
 
 
 def main() -> None:
-    """"
-    Main routine
-    """
+    """Execute the main routine."""
     parser = argparse.ArgumentParser("Reads a correct swagger file and produces python client code")
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
     parser.add_argument("--outpath", help="path to the output file", required=True)

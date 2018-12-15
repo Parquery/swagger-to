@@ -1,4 +1,4 @@
-"""Re-indents the code."""
+"""Re-indent the code."""
 import re
 import textwrap
 from typing import List  # pylint: disable=unused-import
@@ -8,7 +8,7 @@ _SPACE4_RE = re.compile('^([ ]{4})+')
 
 def reindent(text: str, level: int = 0, indention: str = ' ' * 4) -> str:
     r"""
-    Strips the prefix indentation, parse indention as 4 spaces and re-indent according to ``level``.
+    Strip the prefix indentation, parse indention as 4 spaces and re-indent according to ``level``.
 
     >>> result = reindent(text='''\
     ...     test me:

@@ -1,15 +1,19 @@
-"""
-Parses Swagger specification and generates server and client stubs.
-"""
+"""Parse Swagger specification and generates server and client stubs."""
 import collections
 import re
 import string
 from typing import List, MutableMapping
 
+import icontract
+
 # pylint: disable=missing-docstring
 
+VARIABLE_RE = re.compile(r'^[a-zA-Z0-9_]+$')
 
+
+@icontract.ensure(lambda result: VARIABLE_RE.match(result))
 def parse_definition_ref(ref: str) -> str:
+    """Parse a reference to a definition and return the definition name."""
     prefix = '#/definitions/'
     if not ref.startswith(prefix):
         raise ValueError("Expected a ref with prefix {!r}, but got: {!r}".format(prefix, ref))
@@ -17,7 +21,9 @@ def parse_definition_ref(ref: str) -> str:
     return ref[len(prefix):]
 
 
+@icontract.ensure(lambda result: VARIABLE_RE.match(result))
 def parse_parameter_ref(ref: str) -> str:
+    """Parse a reference to a parameter and return the parameter name."""
     prefix = '#/parameters/'
     if not ref.startswith(prefix):
         raise ValueError("Expected a ref with prefix {!r}, but got: {!r}".format(prefix, ref))
@@ -25,11 +31,20 @@ def parse_parameter_ref(ref: str) -> str:
     return ref[len(prefix):]
 
 
-# abbreviations to be treaded specially in snake_case and camelCase conversions
+# Abbreviations to be treated specially in snake_case and camelCase conversions
 SPECIALS = ['URLs', 'IDs', 'URL', 'ID', 'HTTP', 'HTTPS']
 
 
 def camel_case_split(identifier: str) -> List[str]:
+    """
+    Split the identifier given in camel case into parts.
+
+    >>> camel_case_split(identifier='CamelCase')
+    ['Camel', 'Case']
+
+    >>> camel_case_split(identifier='CamelURLs')
+    ['Camel', 'URLs']
+    """
     if identifier == '':
         raise ValueError("Unexpected empty identifier")
 
@@ -61,7 +76,13 @@ def camel_case_split(identifier: str) -> List[str]:
 
 def capital_camel_case(identifier: str) -> str:
     """
-    Translates an arbitrary identifier to a CamelCase.
+    Translate an arbitrary identifier to a CamelCase.
+
+    >>> capital_camel_case(identifier='camelCase')
+    'CamelCase'
+
+    >>> capital_camel_case(identifier='snake_case')
+    'SnakeCase'
 
     :param identifier: arbitrary identifier
     :return: identifier as CamelCase
@@ -93,7 +114,16 @@ def capital_camel_case(identifier: str) -> str:
 
 def camel_case(identifier: str) -> str:
     """
-    Translates an arbitrary identifier to a camelCase.
+    Translate an arbitrary identifier to a camelCase.
+
+    >>> camel_case(identifier='CamelCase')
+    'camelCase'
+
+    >>> camel_case(identifier='snake_case')
+    'snakeCase'
+
+    >>> camel_case(identifier='Snake_case')
+    'snakeCase'
 
     :param identifier: arbitrary identifier
     :return: identifier as camelCase
@@ -126,7 +156,19 @@ def camel_case(identifier: str) -> str:
 
 def snake_case(identifier: str) -> str:
     """
-    Converts an indentifier to a lowercase snake case.
+    Convert an indentifier to a lowercase snake case.
+
+    >>> snake_case(identifier='CamelCase')
+    'camel_case'
+
+    >>> snake_case(identifier='camelCase')
+    'camel_case'
+
+    >>> snake_case(identifier='snake_case')
+    'snake_case'
+
+    >>> snake_case(identifier='Snake_case')
+    'snake_case'
 
     :param identifier: to be converted
     :return: lowercase snake_case identifier
@@ -141,7 +183,10 @@ def snake_case(identifier: str) -> str:
 
 
 class TokenizedPath:
+    """Represent a tokenization of a Swagger path to an endpoint."""
+
     def __init__(self):
+        """Initialize with defaults."""
         self.tokens = []  # type: List[str]
         self.parameter_to_token_indices = collections.OrderedDict()  # type: MutableMapping[str, List[int]]
         self.token_index_to_parameter = collections.OrderedDict()  # type: MutableMapping[int, str]
@@ -152,8 +197,7 @@ PATH_TOKENIZATION_RE = re.compile(r'\{(?P<name>[a-zA-Z0-9_]*)\}|[^{]+|.')
 
 def tokenize_path(path: str) -> TokenizedPath:
     """
-    Tokenizes the path coming from a Swagger spec to a dictionary such that you can modify the path parameters
-    easily.
+    Tokenize the path coming from a Swagger spec to a dictionary such that you can modify the path parameters easily.
 
     :param path: original path
     :return: tokenized path with the dictionary
