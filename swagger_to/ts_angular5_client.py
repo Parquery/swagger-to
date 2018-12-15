@@ -141,7 +141,7 @@ class Request:
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
 
 
-def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
     """
     Translate the type definition in intermediate representation to Typescript.
 
@@ -163,11 +163,11 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
         typedef = Arraydef()
-        typedef.items = to_typedef(intermediate_typedef=intermediate_typedef.items)
+        typedef.items = _to_typedef(intermediate_typedef=intermediate_typedef.items)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
         typedef = Mapdef()
-        typedef.values = to_typedef(intermediate_typedef=intermediate_typedef.values)
+        typedef.values = _to_typedef(intermediate_typedef=intermediate_typedef.values)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
         typedef = Classdef()
@@ -176,7 +176,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
             prop = Property()
             prop.description = intermediate_prop.description
             prop.name = intermediate_prop.name
-            prop.typedef = to_typedef(intermediate_typedef=intermediate_prop.typedef)
+            prop.typedef = _to_typedef(intermediate_typedef=intermediate_prop.typedef)
             prop.required = intermediate_prop.required
 
             typedef.properties[prop.name] = prop
@@ -205,14 +205,14 @@ def to_typedefs(
     for intermediate_typedef in intermediate_typedefs.values():
         assert intermediate_typedef is not None
 
-        typedef = to_typedef(intermediate_typedef=intermediate_typedef)
+        typedef = _to_typedef(intermediate_typedef=intermediate_typedef)
         typedefs[typedef.identifier] = typedef
 
     return typedefs
 
 
-def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
-                             typedefs: MutableMapping[str, Typedef]) -> Typedef:
+def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
+                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """
     Get the Typescript type definition from the table of Typescript type definitions by its identifier.
 
@@ -230,11 +230,11 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 
         return typedefs[intermediate_typedef.identifier]
 
-    return to_typedef(intermediate_typedef=intermediate_typedef)
+    return _to_typedef(intermediate_typedef=intermediate_typedef)
 
 
-def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
-                 typedefs: MutableMapping[str, Typedef]) -> Parameter:
+def _to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
+                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
     """
     Translate an endpoint parameter from the intermediate to a Typescript representation.
 
@@ -244,13 +244,13 @@ def to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
     """
     param = Parameter()
     param.name = intermediate_parameter.name
-    param.typedef = anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
+    param.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
     param.required = intermediate_parameter.required
     return param
 
 
-def to_response(intermediate_response: swagger_to.intermediate.Response,
-                typedefs: MutableMapping[str, Typedef]) -> Response:
+def _to_response(intermediate_response: swagger_to.intermediate.Response,
+                 typedefs: MutableMapping[str, Typedef]) -> Response:
     """
     Translate an endpoint response from the intermediate to a Typescript representation.
 
@@ -261,12 +261,12 @@ def to_response(intermediate_response: swagger_to.intermediate.Response,
     resp = Response()
     resp.code = intermediate_response.code
     resp.typedef = None if intermediate_response.typedef is None else \
-        anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
+        _anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
     resp.description = intermediate_response.description
     return resp
 
 
-def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
+def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
     Translate an endpoint from an intermediate representation to a Typescript client request function.
 
@@ -286,7 +286,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     req.path = endpoint.path
 
     for intermediate_param in endpoint.parameters:
-        param = to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
+        param = _to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
 
         if intermediate_param.in_what == 'body':
             if req.body_parameter is not None:
@@ -309,7 +309,7 @@ def to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapp
     req.parameters.sort(key=lambda param: not param.required)
 
     for code, intermediate_resp in endpoint.responses.items():
-        req.responses[code] = to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
+        req.responses[code] = _to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
 
     return req
 
@@ -333,12 +333,12 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
         if endpoint.produces != ['application/json']:
             continue
 
-        requests.append(to_request(endpoint=endpoint, typedefs=typedefs))
+        requests.append(_to_request(endpoint=endpoint, typedefs=typedefs))
 
     return requests
 
 
-def write_header(fid: TextIO) -> None:
+def _write_header(fid: TextIO) -> None:
     """
     Write the header of the client file.
 
@@ -354,7 +354,7 @@ def write_header(fid: TextIO) -> None:
               "import { RequestOptions } from '@angular/http';\n\n")
 
 
-def write_footer(fid: TextIO) -> None:
+def _write_footer(fid: TextIO) -> None:
     """
     Write the footer of the client file.
 
@@ -364,7 +364,7 @@ def write_footer(fid: TextIO) -> None:
     fid.write("\n\n// Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n")
 
 
-def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
+def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     """
     Translate the type definition in Typescript representation to a type expression as Typescript code.
 
@@ -379,9 +379,9 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'string'
     elif isinstance(typedef, Arraydef):
-        return 'Array<' + type_expression(typedef=typedef.items, path=str(path) + '.items') + ">"
+        return 'Array<' + _type_expression(typedef=typedef.items, path=str(path) + '.items') + ">"
     elif isinstance(typedef, Mapdef):
-        return 'Map<string, ' + type_expression(typedef=typedef.values, path=str(path) + '.values') + ">"
+        return 'Map<string, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + ">"
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
             raise NotImplementedError(
@@ -393,7 +393,7 @@ def type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
             type(typedef), path))
 
 
-def write_description(description: str, indent: str, fid: TextIO) -> None:
+def _write_description(description: str, indent: str, fid: TextIO) -> None:
     """
     Write a description as // comment block.
 
@@ -414,7 +414,7 @@ def write_description(description: str, indent: str, fid: TextIO) -> None:
             fid.write('\n')
 
 
-def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
+def _write_type_definition(typedef: Typedef, fid: TextIO) -> None:
     """
     Write the type definition in the Typescript code.
 
@@ -426,7 +426,7 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
         raise ValueError("Expected a typedef with an identifier, but got a typedef with an empty identifier.")
 
     if typedef.description:
-        write_description(description=typedef.description, indent='', fid=fid)
+        _write_description(description=typedef.description, indent='', fid=fid)
         fid.write('\n')
 
     if isinstance(typedef, Classdef):
@@ -436,10 +436,10 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
                 fid.write('\n')
 
             if prop.description:
-                write_description(description=prop.description, indent=INDENT, fid=fid)
+                _write_description(description=prop.description, indent=INDENT, fid=fid)
                 fid.write("\n")
 
-            type_expr = type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
+            type_expr = _type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
 
             if not prop.required:
                 fid.write(INDENT + '{}?: {};\n'.format(prop.name, type_expr))
@@ -448,10 +448,11 @@ def write_type_definition(typedef: Typedef, fid: TextIO) -> None:
 
         fid.write("}")
     else:
-        fid.write("type {} = {};".format(typedef.identifier, type_expression(typedef=typedef, path=typedef.identifier)))
+        fid.write("type {} = {};".format(typedef.identifier, _type_expression(typedef=typedef,
+                                                                              path=typedef.identifier)))
 
 
-def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
+def _write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) -> None:
     """
     Write all type definitions as Typescript code.
 
@@ -463,10 +464,10 @@ def write_type_definitions(typedefs: MutableMapping[str, Typedef], fid: TextIO) 
         if i > 0:
             fid.write('\n\n')
 
-        write_type_definition(typedef=typedef, fid=fid)
+        _write_type_definition(typedef=typedef, fid=fid)
 
 
-def to_string_expression(typedef: Typedef, variable: str) -> str:
+def _to_string_expression(typedef: Typedef, variable: str) -> str:
     """
     Wrap the variable with .toString() if necessary.
 
@@ -480,7 +481,7 @@ def to_string_expression(typedef: Typedef, variable: str) -> str:
     return '{}.toString()'.format(variable)
 
 
-def write_request(request: Request, fid: TextIO) -> None:
+def _write_request(request: Request, fid: TextIO) -> None:
     """
     Generate the code of the request function.
 
@@ -494,7 +495,7 @@ def write_request(request: Request, fid: TextIO) -> None:
     description = 'Sends a request to the endpoint: {} {}'.format(request.path, request.method)
     if request.description:
         description += '\n\n' + request.description
-    write_description(description, INDENT, fid)
+    _write_description(description, INDENT, fid)
     fid.write('\n')
 
     prefix = INDENT + 'public {}('.format(request.operation_id)
@@ -502,13 +503,13 @@ def write_request(request: Request, fid: TextIO) -> None:
     args = []  # type: List[str]
     for param in request.parameters:
         args.append('{}{}: {}'.format(
-            param.name, '?' if not param.required else '', type_expression(typedef=param.typedef)))
+            param.name, '?' if not param.required else '', _type_expression(typedef=param.typedef)))
 
     return_type = ''
     if '200' in request.responses:
         resp = request.responses['200']
         if resp.typedef is not None:
-            return_type = type_expression(typedef=resp.typedef)
+            return_type = _type_expression(typedef=resp.typedef)
 
     if not return_type:
         return_type = 'any'
@@ -553,7 +554,7 @@ def write_request(request: Request, fid: TextIO) -> None:
                     param = name_to_parameters[param_name]
 
                     fid.write(INDENT * 2 + 'url += encodeURIComponent({});'.format(
-                        to_string_expression(typedef=param.typedef, variable=param.name)))
+                        _to_string_expression(typedef=param.typedef, variable=param.name)))
                 else:
                     fid.write(INDENT * 2 + 'url += encodeURIComponent("{}");'.format(
                         tkn.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')))
@@ -574,11 +575,11 @@ def write_request(request: Request, fid: TextIO) -> None:
 
             if param.required:
                 fid.write(INDENT * 2 + 'url += "{}{}=" + encodeURIComponent({});'.format(
-                    amp, param.name, to_string_expression(typedef=param.typedef, variable=param.name)))
+                    amp, param.name, _to_string_expression(typedef=param.typedef, variable=param.name)))
             else:
                 fid.write(INDENT * 2 + 'if ({}) {{\n'.format(param.name))
                 fid.write(INDENT * 3 + 'url += "{}{}=" + encodeURIComponent({});\n'.format(
-                    amp, param.name, to_string_expression(typedef=param.typedef, variable=param.name)))
+                    amp, param.name, _to_string_expression(typedef=param.typedef, variable=param.name)))
                 fid.write(INDENT * 2 + '}')
 
         fid.write('\n')
@@ -618,7 +619,7 @@ def write_request(request: Request, fid: TextIO) -> None:
     fid.write(INDENT + '}')
 
 
-def write_client(requests: List[Request], fid: TextIO) -> None:
+def _write_client(requests: List[Request], fid: TextIO) -> None:
     """
     Generate the client.
 
@@ -645,7 +646,7 @@ def write_client(requests: List[Request], fid: TextIO) -> None:
 
     for request in requests:
         fid.write('\n\n')
-        write_request(request=request, fid=fid)
+        _write_request(request=request, fid=fid)
 
     fid.write("\n}")
 
@@ -659,14 +660,14 @@ def write_client_ts(typedefs: MutableMapping[str, Typedef], requests: List[Reque
     :param fid: target
     :return:
     """
-    write_header(fid=fid)
+    _write_header(fid=fid)
 
     if typedefs:
-        write_type_definitions(typedefs=typedefs, fid=fid)
+        _write_type_definitions(typedefs=typedefs, fid=fid)
 
     if requests and typedefs:
         fid.write('\n\n')
 
     if requests:
-        write_client(requests=requests, fid=fid)
-        write_footer(fid=fid)
+        _write_client(requests=requests, fid=fid)
+        _write_footer(fid=fid)

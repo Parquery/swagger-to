@@ -143,7 +143,7 @@ class Swagger:
         self.raw_dict = None  # type: Optional[RawDict]
 
 
-def parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
+def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
     """
     Parse the type definition from the raw dictionary in the Swagger spec.
 
@@ -163,7 +163,7 @@ def parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
     errors = []  # type: List[str]
 
     for prop_name, prop_dict in adict.get('properties', RawDict()).adict.items():
-        prop_typedef, prop_errors = parse_typedef(raw_dict=prop_dict)
+        prop_typedef, prop_errors = _parse_typedef(raw_dict=prop_dict)
 
         errors.extend(['in property {!r}: {}'.format(prop_name, error) for error in prop_errors])
         typedef.properties[prop_name] = prop_typedef
@@ -177,14 +177,14 @@ def parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
 
     if 'additionalProperties' in adict:
         add_prop_dict = adict['additionalProperties']
-        add_prop_typedef, add_prop_errors = parse_typedef(raw_dict=add_prop_dict)
+        add_prop_typedef, add_prop_errors = _parse_typedef(raw_dict=add_prop_dict)
 
         errors.extend(['in additionalProperties: {}'.format(error) for error in add_prop_errors])
         typedef.additional_properties = add_prop_typedef
 
     if 'items' in adict:
         items_dict = adict['items']
-        items_typedef, items_errors = parse_typedef(raw_dict=items_dict)
+        items_typedef, items_errors = _parse_typedef(raw_dict=items_dict)
 
         errors.extend(['in items: {}'.format(error) for error in items_errors])
         typedef.items = items_typedef
@@ -202,7 +202,7 @@ def parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
     return typedef, errors
 
 
-def parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
+def _parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
     """
     Parse a parameter from the raw dictionary of the Swagger spec.
 
@@ -227,7 +227,7 @@ def parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
     if 'schema' in adict:
         schema_dict = adict['schema']
 
-        typedef, schema_errors = parse_typedef(raw_dict=schema_dict)
+        typedef, schema_errors = _parse_typedef(raw_dict=schema_dict)
         param.schema = typedef
         errors.extend(['in schema: {}'.format(error) for error in schema_errors])
 
@@ -242,7 +242,7 @@ def parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
     return param, errors
 
 
-def parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
+def _parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
     """
     Parse an endpoint response from the raw dictionary of the Swagger spec.
 
@@ -263,7 +263,7 @@ def parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
     if 'schema' in adict:
         schema_dict = adict['schema']
 
-        typedef, schema_errors = parse_typedef(raw_dict=schema_dict)
+        typedef, schema_errors = _parse_typedef(raw_dict=schema_dict)
         resp.schema = typedef
         errors.extend(['in schema: {}'.format(error) for error in schema_errors])
 
@@ -272,7 +272,7 @@ def parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
     return resp, errors
 
 
-def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
+def _parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     """
     Parse an endpoint method from the raw dictionary of the Swagger spec.
 
@@ -296,7 +296,7 @@ def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     mth.__lineno__ = raw_dict.lineno
 
     for i, param_dict in enumerate(adict.get('parameters', [])):
-        param, param_errors = parse_parameter(raw_dict=param_dict)
+        param, param_errors = _parse_parameter(raw_dict=param_dict)
         errors.extend(['in parameter {} (name: {!r}): {}'.format(i, param.name, error) for error in param_errors])
 
         param.method = mth
@@ -304,7 +304,7 @@ def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
         mth.parameters.append(param)
 
     for resp_code, resp_dict in adict.get('responses', RawDict()).adict.items():
-        resp, resp_errors = parse_response(raw_dict=resp_dict)
+        resp, resp_errors = _parse_response(raw_dict=resp_dict)
         errors.extend(['in response {!r}: {}'.format(resp_code, error) for error in resp_errors])
 
         resp.code = resp_code
@@ -315,7 +315,7 @@ def parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     return mth, errors
 
 
-def parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
+def _parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
     """
     Parse an endpoint path from the dictionary.
 
@@ -327,7 +327,7 @@ def parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
     errors = []  # type: List[str]
 
     for method_id, method_dict in raw_dict.adict.items():
-        method, method_errors = parse_method(raw_dict=method_dict)
+        method, method_errors = _parse_method(raw_dict=method_dict)
         method.identifier = method_id
         method.path = pth
         errors.extend(['in method {!r}: {}'.format(method_id, error) for error in method_errors])
@@ -392,7 +392,7 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     swagger.base_path = adict.get('basePath', '')
 
     for path_id, path_dict in adict.get('paths', RawDict()).adict.items():
-        path, path_errors = parse_path(raw_dict=path_dict)
+        path, path_errors = _parse_path(raw_dict=path_dict)
         path.identifier = path_id
         path.swagger = swagger
 
@@ -402,7 +402,7 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
             swagger.paths[path_id] = path
 
     for def_id, def_dict in adict.get('definitions', RawDict()).adict.items():
-        typedef, def_errors = parse_typedef(raw_dict=def_dict)
+        typedef, def_errors = _parse_typedef(raw_dict=def_dict)
 
         errors.extend(['in definition {!r}: {}'.format(def_id, error) for error in def_errors])
 
@@ -415,7 +415,7 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
             swagger.definitions[def_id] = adef
 
     for param_id, param_dict in adict.get('parameters', RawDict()).adict.items():
-        param, param_errors = parse_parameter(raw_dict=param_dict)
+        param, param_errors = _parse_parameter(raw_dict=param_dict)
 
         errors.extend(['in parameter {!r}: {}'.format(param_id, error) for error in param_errors])
 

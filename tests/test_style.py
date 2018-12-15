@@ -4,13 +4,14 @@ Tests the Swagger style check.
 """
 import os
 import pathlib
-# pylint: disable=missing-docstring
 import unittest
 
 import swagger_to.elm_client
 import swagger_to.intermediate
 import swagger_to.swagger
 import swagger_to.style
+
+# pylint: disable=missing-docstring,protected-access
 
 
 class TestStyleCheck(unittest.TestCase):
@@ -68,28 +69,28 @@ class TestStyleCheck(unittest.TestCase):
 class TestDescription(unittest.TestCase):
     def test_that_it_works(self):
         # Good: empty string
-        self.assertEqual(swagger_to.style.check_description(""), None)
+        self.assertEqual(swagger_to.style._check_description(""), None)
         # Good: lower case first letter and ends with period
-        self.assertEqual(swagger_to.style.check_description("is a well-formatted description."), None)
+        self.assertEqual(swagger_to.style._check_description("is a well-formatted description."), None)
         # Good: description and paragraph
         self.assertEqual(
-            swagger_to.style.check_description("is a well-formatted description.\n\nit really is a "
-                                               "well-formatted thing"), None)
+            swagger_to.style._check_description("is a well-formatted description.\n\nit really is a "
+                                                "well-formatted thing"), None)
         # Good: description and paragraphs
         self.assertEqual(
-            swagger_to.style.check_description("is a well-formatted description.\n\nit really is a "
-                                               "well-formatted thing\n\nit really is"), None)
+            swagger_to.style._check_description("is a well-formatted description.\n\nit really is a "
+                                                "well-formatted thing\n\nit really is"), None)
 
         # Bad: everything else
-        self.assertNotEqual(swagger_to.style.check_description("isnt a not-so-well-formatted description"), None)
-        self.assertNotEqual(swagger_to.style.check_description("Has a not-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style.check_description("has a not-so-well-formatted description"), None)
-        self.assertNotEqual(swagger_to.style.check_description("123e1dt-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style.check_description("    is not-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style.check_description("\tis not-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style.check_description("\nis not-so-well-formatted description."), None)
+        self.assertNotEqual(swagger_to.style._check_description("isnt a not-so-well-formatted description"), None)
+        self.assertNotEqual(swagger_to.style._check_description("Has a not-so-well-formatted description."), None)
+        self.assertNotEqual(swagger_to.style._check_description("has a not-so-well-formatted description"), None)
+        self.assertNotEqual(swagger_to.style._check_description("123e1dt-so-well-formatted description."), None)
+        self.assertNotEqual(swagger_to.style._check_description("    is not-so-well-formatted description."), None)
+        self.assertNotEqual(swagger_to.style._check_description("\tis not-so-well-formatted description."), None)
+        self.assertNotEqual(swagger_to.style._check_description("\nis not-so-well-formatted description."), None)
         self.assertNotEqual(
-            swagger_to.style.check_description("is not-so-well-formatted description.\nnot at all."), None)
+            swagger_to.style._check_description("is not-so-well-formatted description.\nnot at all."), None)
 
 
 if __name__ == '__main__':
