@@ -1,69 +1,66 @@
 #!/usr/bin/env python3
-"""
-Tests the Swagger style check.
-"""
+"""Test the Swagger style check."""
 import os
 import pathlib
+import subprocess
+import tempfile
 import unittest
+from typing import List  # pylint: disable=unused-import
 
 import swagger_to.elm_client
 import swagger_to.intermediate
-import swagger_to.swagger
 import swagger_to.style
+import swagger_to.swagger
 
 # pylint: disable=missing-docstring,protected-access
 
 
+def meld(expected: str, got: str) -> None:
+    """Calls meld to diff the two strings."""
+    with tempfile.NamedTemporaryFile() as tmp1, \
+            tempfile.NamedTemporaryFile() as tmp2:
+        tmp1.file.write(expected.encode())  # type: ignore
+        tmp1.file.flush()  # type: ignore
+
+        tmp2.file.write(got.encode())  # type: ignore
+        tmp2.file.flush()  # type: ignore
+
+        subprocess.check_call(['meld', tmp1.name, tmp2.name])
+
+
 class TestStyleCheck(unittest.TestCase):
     def test_that_it_works(self):
-        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-        swagger_path = script_dir / "swagger.yaml"
+        # pylint: disable=too-many-locals
+        tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
 
-        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
-        if errs:
-            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+        cases_dir = tests_dir / "cases" / "style"
 
-        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
-        intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
+        for case_dir in sorted(cases_dir.iterdir()):
+            swagger_path = case_dir / "swagger.yaml"
 
-        endpoints = swagger_to.intermediate.to_endpoints(
-            swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
+            swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
+            if errs:
+                raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
 
-        complaints = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
-        cmpl_strings = []
-        for cmpl in complaints:
-            cmpl_strings.append("{}: {}: \"{}\"".format(cmpl.where, cmpl.message, cmpl.what.replace('\n', ' ')))
-        expected = (script_dir / "expected" / "style" / "errors.txt").read_text()
+            intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
+            intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
 
-        self.assertEqual(expected, "\n".join(cmpl_strings))
+            endpoints = swagger_to.intermediate.to_endpoints(
+                swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
 
-    def test_with_line_numbers(self):
-        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-        swagger_path = script_dir / "swagger.yaml"
-        swagger_path_rel = "tests/swagger.yaml"
+            complaints = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
 
-        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
-        if errs:
-            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+            # Convert complaints so that they can be easily compared against a golden file
+            cmpl_lines = []  # type: List[str]
+            for cmpl in complaints:
+                cmpl_lines.append("Line {:4d}: {}: {}: {!r}".format(cmpl.line, cmpl.where, cmpl.message,
+                                                                    cmpl.what.replace('\n', ' ')))
 
-        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
-        intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
+            cmpl_lines.sort()
 
-        endpoints = swagger_to.intermediate.to_endpoints(
-            swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
-
-        complaints = swagger_to.style.perform(swagger=swagger, typedefs=intermediate_typedefs, endpoints=endpoints)
-        complaints.sort(key=lambda complaint: complaint.line)
-
-        cmpl_strings = []
-        for cmpl in complaints:
-            complaint_str = "{}:{} {} \"{}\"".format(swagger_path_rel, cmpl.line, cmpl.message,
-                                                     cmpl.what.replace('\n', ' '))
-
-            cmpl_strings.append(complaint_str)
-
-        expected = (script_dir / "expected" / "style" / "errors_line_numbers.txt").read_text()
-        self.assertEqual(expected, "\n".join(cmpl_strings))
+            got = "\n".join(cmpl_lines) + '\n'
+            expected = (case_dir / "errors.txt").read_text()
+            self.assertEqual(expected, got)
 
 
 class TestDescription(unittest.TestCase):

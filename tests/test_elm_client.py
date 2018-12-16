@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-Tests the Elm client code generation.
-"""
+"""Test the Elm client code generation."""
 import io
+import json
 import os
 import pathlib
 import unittest
-import json
 from typing import TextIO, cast
 
 import swagger_to.elm_client
@@ -18,69 +16,45 @@ import swagger_to.swagger
 
 class TestElmClient(unittest.TestCase):
     def test_that_it_works(self):
-        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-        swagger_path = script_dir / "swagger.yaml"
+        # pylint: disable=too-many-locals
+        tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
 
-        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
-        if errs:
-            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+        cases_dir = tests_dir / "cases" / "elm_client"
 
-        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
-        intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
+        for case_dir in sorted(cases_dir.iterdir()):
+            swagger_path = case_dir / "swagger.yaml"
 
-        endpoints = swagger_to.intermediate.to_endpoints(
-            swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
+            swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
+            if errs:
+                raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
 
-        elm_typedefs = swagger_to.elm_client.to_typedefs(intermediate_typedefs=intermediate_typedefs)
-        elm_requests = swagger_to.elm_client.to_requests(endpoints=endpoints, typedefs=elm_typedefs)
+            intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
+            intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
 
-        buf = io.StringIO()
-        buffid = cast(TextIO, buf)
-        swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=buffid)
+            endpoints = swagger_to.intermediate.to_endpoints(
+                swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
 
-        got = buf.getvalue()
+            elm_typedefs = swagger_to.elm_client.to_typedefs(intermediate_typedefs=intermediate_typedefs)
+            elm_requests = swagger_to.elm_client.to_requests(endpoints=endpoints, typedefs=elm_typedefs)
 
-        expected = (script_dir / "expected" / "elm" / "Client.elm").read_text()
-        self.assertEqual(expected, got)
+            buf = io.StringIO()
+            buffid = cast(TextIO, buf)
+            swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=buffid)
 
-    def test_with_no_json(self):
-        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-        swagger_path = script_dir / "swagger-no-json.yaml"
+            got = buf.getvalue()
 
-        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
-        if errs:
-            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+            expected = (case_dir / "Client.elm").read_text()
+            self.assertEqual(expected, got)
 
-        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
-        intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
+            # Check elm-package.json
+            buf = io.StringIO()
+            buffid = cast(TextIO, buf)
+            elm_package_json = swagger_to.elm_client.elm_package_json()
+            json.dump(elm_package_json, fp=buffid, indent=2, sort_keys=False)
 
-        endpoints = swagger_to.intermediate.to_endpoints(
-            swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
-
-        elm_typedefs = swagger_to.elm_client.to_typedefs(intermediate_typedefs=intermediate_typedefs)
-        elm_requests = swagger_to.elm_client.to_requests(endpoints=endpoints, typedefs=elm_typedefs)
-
-        buf = io.StringIO()
-        buffid = cast(TextIO, buf)
-        swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=buffid)
-
-        got = buf.getvalue()
-        expected = (script_dir / "expected" / "elm" / "Client-no-json.elm").read_text()
-        self.assertEqual(expected, got)
-
-
-class TestElmPackage(unittest.TestCase):
-    def test_that_it_works(self):
-        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-
-        buf = io.StringIO()
-        buffid = cast(TextIO, buf)
-        elm_package_json = swagger_to.elm_client.elm_package_json()
-        json.dump(elm_package_json, fp=buffid, indent=2, sort_keys=False)
-
-        got = buf.getvalue()
-        expected = (script_dir / "expected" / "elm" / "elm-package.json").read_text()
-        self.assertEqual(expected, got)
+            got = buf.getvalue()
+            expected = (case_dir / "elm-package.json").read_text()
+            self.assertEqual(expected, got)
 
 
 class TestEscapeElmString(unittest.TestCase):
