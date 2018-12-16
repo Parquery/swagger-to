@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Tests the Go server code generation.
-"""
+"""Test the Go server code generation."""
 import os
 import pathlib
 import subprocess
@@ -41,43 +39,47 @@ def meld(expected: str, got: str) -> None:
 class TestGoServer(unittest.TestCase):
     def test_that_it_works(self):
         # pylint: disable=too-many-locals
-        script_dir = pathlib.Path(os.path.realpath(__file__)).parent
-        swagger_path = script_dir / "swagger.yaml"
+        tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
 
-        swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
-        if errs:
-            raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
+        cases_dir = tests_dir / "cases" / "go_server"
 
-        intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
-        intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
+        for case_dir in sorted(cases_dir.iterdir()):
+            swagger_path = case_dir / "swagger.yaml"
 
-        endpoints = swagger_to.intermediate.to_endpoints(
-            swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
+            swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
+            if errs:
+                raise ValueError("Failed to parse Swagger file {}:\n{}".format(swagger_path, "\n".join(errs)))
 
-        go_typedefs = swagger_to.go_server.to_typedefs(intermediate_typedefs=intermediate_typedefs)
-        go_routes = swagger_to.go_server.to_routes(endpoints=endpoints, typedefs=go_typedefs)
+            intermediate_typedefs = swagger_to.intermediate.to_typedefs(swagger=swagger)
+            intermediate_params = swagger_to.intermediate.to_parameters(swagger=swagger, typedefs=intermediate_typedefs)
 
-        package = swagger.name
+            endpoints = swagger_to.intermediate.to_endpoints(
+                swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
 
-        got = swagger_to.go_server.generate_types_go(package=package, typedefs=go_typedefs)
-        expected = (script_dir / "expected" / "go" / "types.go").read_text()
-        self.assertEqual(expected, got)
+            go_typedefs = swagger_to.go_server.to_typedefs(intermediate_typedefs=intermediate_typedefs)
+            go_routes = swagger_to.go_server.to_routes(endpoints=endpoints, typedefs=go_typedefs)
 
-        got = swagger_to.go_server.generate_routes_go(package=package, routes=go_routes)
-        expected = (script_dir / "expected" / "go" / "routes.go").read_text()
-        self.assertEqual(expected, got)
+            package = swagger.name
 
-        got = swagger_to.go_server.generate_handler_impl_go(package=package, routes=go_routes)
-        expected = (script_dir / "expected" / "go" / "handler_impl.go.sample").read_text()
-        self.assertEqual(expected, got)
+            got = swagger_to.go_server.generate_types_go(package=package, typedefs=go_typedefs)
+            expected = (case_dir / "types.go").read_text()
+            self.assertEqual(expected, got)
 
-        got = swagger_to.go_server.generate_handler_go(package=package, routes=go_routes)
-        expected = (script_dir / "expected" / "go" / "handler.go").read_text()
-        self.assertEqual(expected, got)
+            got = swagger_to.go_server.generate_routes_go(package=package, routes=go_routes)
+            expected = (case_dir / "routes.go").read_text()
+            self.assertEqual(expected, got)
 
-        got = swagger_to.go_server.generate_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs)
-        expected = (script_dir / "expected" / "go" / "jsonschemas.go").read_text()
-        self.assertEqual(expected, got)
+            got = swagger_to.go_server.generate_handler_impl_go(package=package, routes=go_routes)
+            expected = (case_dir / "handler_impl.go.sample").read_text()
+            self.assertEqual(expected, got)
+
+            got = swagger_to.go_server.generate_handler_go(package=package, routes=go_routes)
+            expected = (case_dir / "handler.go").read_text()
+            self.assertEqual(expected, got)
+
+            got = swagger_to.go_server.generate_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs)
+            expected = (case_dir / "jsonschemas.go").read_text()
+            self.assertEqual(expected, got)
 
 
 if __name__ == '__main__':
