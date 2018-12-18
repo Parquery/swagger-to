@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read a correct swagger file and produce Python client code."""
 import argparse
-import os
+import pathlib
 
 import swagger_to.go_server
 import swagger_to.intermediate
@@ -17,16 +17,16 @@ def main() -> None:
     parser.add_argument("--force", help="overwrite existing files", action="store_true")
     args = parser.parse_args()
 
-    swagger_path = str(args.swagger_path)
-    out_path = str(args.outpath)
+    swagger_path = pathlib.Path(args.swagger_path)
+    out_path = pathlib.Path(args.outpath)
     force = bool(args.force)
 
-    if not os.path.exists(args.swagger_path):
+    if not swagger_path.exists():
         raise FileNotFoundError("Swagger file does not exist: {}".format(swagger_path))
 
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    out_path.parent.mkdir(exist_ok=True, parents=True)
 
-    if not force and os.path.exists(out_path):
+    if not force and out_path.exists():
         raise FileExistsError("Output path already exists and --force was not specified: {}".format(out_path))
 
     swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
@@ -47,9 +47,8 @@ def main() -> None:
 
     py_requests = swagger_to.py_client.to_requests(endpoints=endpoints, typedefs=py_typedefs)
 
-    with open(out_path, 'wt') as fid:
-        swagger_to.py_client.write_client_py(
-            service_name=swagger.name, typedefs=py_typedefs, requests=py_requests, fid=fid)
+    out_path.write_text(
+        swagger_to.py_client.generate_client_py(service_name=swagger.name, typedefs=py_typedefs, requests=py_requests))
 
     print("Generated python client code in: {}".format(out_path))
 
