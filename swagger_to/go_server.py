@@ -443,7 +443,7 @@ def to_routes(endpoints: List[swagger_to.intermediate.Endpoint], typedefs: Mutab
 @icontract.ensure(lambda result: not result.endswith('\n'))
 def _comment(text: str) -> str:
     r"""
-    Geneartes a (possibly multi-line) comment from the text.
+    Genearates a (possibly multi-line) comment from the text.
 
     >>> cmt = _comment("  testme\n  \nagain\n")
     >>> assert cmt == '//   testme\n//\n// again\n//'
