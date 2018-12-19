@@ -25,7 +25,7 @@ class JsonSchema:
         self.text = ''
 
 
-def to_json_schema(intermediate_schema: swagger_to.intermediate.JsonSchema) -> JsonSchema:
+def _to_json_schema(intermediate_schema: swagger_to.intermediate.JsonSchema) -> JsonSchema:
     """
     Convert the intermediate schema to a representation that we can use to easily generate go code.
 
@@ -111,7 +111,7 @@ class Primitivedef(Typedef):
         self.type = ''
 
 
-def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
     """Convert intermediate type definition into a type definition suitable for Go code generation."""
     typedef = None  # type: Union[None, Typedef]
 
@@ -159,11 +159,11 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
                 intermediate_typedef.identifier))
 
         typedef = Arraydef()
-        typedef.items = to_typedef(intermediate_typedef=intermediate_typedef.items)
+        typedef.items = _to_typedef(intermediate_typedef=intermediate_typedef.items)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
         typedef = Mapdef()
-        typedef.values = to_typedef(intermediate_typedef=intermediate_typedef.values)
+        typedef.values = _to_typedef(intermediate_typedef=intermediate_typedef.values)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
         typedef = Structdef()
@@ -171,7 +171,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
         for propdef in intermediate_typedef.properties.values():
             field = Fielddef()
 
-            field_typedef = to_typedef(intermediate_typedef=propdef.typedef)
+            field_typedef = _to_typedef(intermediate_typedef=propdef.typedef)
             if not propdef.name in intermediate_typedef.required and isinstance(field_typedef, Primitivedef):
                 optional_field_typedef = Pointerdef()
                 optional_field_typedef.pointed = field_typedef
@@ -198,7 +198,7 @@ def to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef
 
     typedef.description = intermediate_typedef.description
 
-    typedef.json_schema = to_json_schema(intermediate_schema=intermediate_typedef.json_schema)
+    typedef.json_schema = _to_json_schema(intermediate_schema=intermediate_typedef.json_schema)
 
     return typedef
 
@@ -212,7 +212,7 @@ def to_typedefs(
     for intermediate_typedef in intermediate_typedefs.values():
         assert intermediate_typedef is not None
 
-        typedef = to_typedef(intermediate_typedef=intermediate_typedef)
+        typedef = _to_typedef(intermediate_typedef=intermediate_typedef)
         typedefs[typedef.identifier] = typedef
 
     return typedefs
@@ -226,8 +226,8 @@ def to_typedefs(
     lambda intermediate_typedef, result:
     intermediate_typedef.identifier != '' or result.identifier == '')
 # yapf: enable
-def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
-                             typedefs: MutableMapping[str, Typedef]) -> Typedef:
+def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
+                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
     """Create an anonymous type definition or retrieve the type definition from the existing definition table."""
     if intermediate_typedef.identifier != '':
         identifier = swagger_to.capital_camel_case(identifier=intermediate_typedef.identifier)
@@ -238,7 +238,7 @@ def anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typed
 
         return typedefs[identifier]
 
-    return to_typedef(intermediate_typedef=intermediate_typedef)
+    return _to_typedef(intermediate_typedef=intermediate_typedef)
 
 
 def _walk(typedef: Typedef, parent: Optional[Typedef] = None) -> Iterable[Tuple[Optional[Typedef], Typedef]]:
@@ -349,7 +349,7 @@ def _endpoint_to_route_path(endpoint: swagger_to.intermediate.Endpoint) -> str:
     return "".join(tkns)
 
 
-def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Route:
+def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Route:
     """
     Convert an intermediate representation of an endpoint to a muxing route of Go server stub.
 
@@ -376,7 +376,7 @@ def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappin
                     param.in_what, endpoint.path, endpoint.method, param.name))
 
         argument = Argument()
-        argument.typedef = anonymous_or_get_typedef(intermediate_typedef=param.typedef, typedefs=typedefs)
+        argument.typedef = _anonymous_or_get_typedef(intermediate_typedef=param.typedef, typedefs=typedefs)
         argument.required = param.required
 
         if not param.required and isinstance(argument.typedef, Primitivedef):
@@ -393,7 +393,7 @@ def to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappin
         argument.in_what = param.in_what
 
         if param.json_schema is not None:
-            argument.json_schema = to_json_schema(intermediate_schema=param.json_schema)
+            argument.json_schema = _to_json_schema(intermediate_schema=param.json_schema)
 
         if argument.in_what == 'query':
             route.wrapper.query_arguments.append(argument)
@@ -435,7 +435,7 @@ def to_routes(endpoints: List[swagger_to.intermediate.Endpoint], typedefs: Mutab
     """
     routes = []  # type: List[Route]
     for endpoint in endpoints:
-        routes.append(to_route(endpoint=endpoint, typedefs=typedefs))
+        routes.append(_to_route(endpoint=endpoint, typedefs=typedefs))
 
     return routes
 
