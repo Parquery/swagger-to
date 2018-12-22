@@ -508,7 +508,7 @@ def _express_type(typedef: Typedef) -> str:
         return typedef.type
 
     if isinstance(typedef, Pointerdef):
-        return "*{}".format(_express_type(typedef.pointed))
+        return "*{}".format(_express_or_identify_type(typedef.pointed))
 
     if isinstance(typedef, Arraydef):
         return "[]{}".format(_express_or_identify_type(typedef.items))
