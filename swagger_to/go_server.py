@@ -520,7 +520,7 @@ def _express_type(typedef: Typedef) -> str:
         return _STRUCT_TPL.render(
             typedef=typedef,
             field_type={fielddef: _express_or_identify_type(fielddef.typedef)
-                        for fielddef in typedef.fields.values()})
+                        for fielddef in typedef.fields.values()}).strip()
 
     else:
         raise NotImplementedError("No Go type writing defined for typedef of type: {!r}".format(type(typedef)))
@@ -571,7 +571,9 @@ package {{ package }}
 {% endif %}
 {% for typedef in typedefs.values() %}
 
-{% if typedef.description != '' %}{{ typedef.description|comment }}{% endif %}
+{% if typedef.description != '' %}
+{{ '%s %s'|format(typedef.identifier, typedef.description)|comment }}
+{% endif %}
 type {{ typedef.identifier }} {{ type_expression[typedef] }}
 {% endfor %}
 
@@ -610,8 +612,8 @@ _STRING_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
 val := {{ string_identifier }}
 {{ target_identifier }} = &val{#
 #}{% else %}
-{{ target_identifier }} = {{ string_identifier }}
-{% endif %}''')
+{{ target_identifier }} = {{ string_identifier }}{#
+#}{% endif %}''')
 
 _INT_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
 {
@@ -694,6 +696,7 @@ _FLOAT64_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
 }''')
 
 
+@icontract.require(lambda string_identifier: string_identifier == string_identifier.strip())
 @icontract.ensure(lambda result: not result.endswith('\n'))
 def _argument_from_string(argument: Argument, string_identifier: str) -> str:
     """Generate the code to parse an argument from a string."""
@@ -782,7 +785,7 @@ func {{ route.wrapper.identifier }}(h Handler, w http.ResponseWriter, r *http.Re
 {% if route.handler.arguments %}{# intermediate variables #}
 {% if newliner() %}{{ '\n' }}{% endif %}
 {% for argument in route.handler.arguments %}
-    var {{ argument.parsing_identifier }} {{ express_or_identify_type(argument.typedef)|indent|indent }}
+    var {{ argument.parsing_identifier }} {{ express_or_identify_type[argument]|indent|indent }}
 {% endfor %}
 {% endif %}{# /if intermediate variables #}
 {% if route.wrapper.query_arguments %}
@@ -796,10 +799,12 @@ func {{ route.wrapper.identifier }}(h Handler, w http.ResponseWriter, r *http.Re
         http.Error(w, {{ msg }}, http.StatusBadRequest)
         return
     }
-    {{ argument_from_string(argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent }}
+    {{ argument_from_string(
+        argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent }}
 {% else %}
     if _, ok := q[{{ argument.parameter_name|escaped_str }}]; ok {
-        {{ argument_from_string(argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent|indent }}
+        {{ argument_from_string(
+            argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent|indent }}
     }
 {% endif %}
 {% endfor %}{# /query arguments #}
@@ -920,7 +925,10 @@ def generate_routes_go(package: str, routes: List[Route]) -> str:
     wrapper_code = {
         route: _WRAPPER_TPL.render(
             route=route,
-            express_or_identify_type=_express_or_identify_type,
+            express_or_identify_type={
+                argument: _express_or_identify_type(typedef=argument.typedef)
+                for route in routes for argument in route.handler.arguments
+            },
             argument_from_string=_argument_from_string,
             argument_from_body=_argument_from_body)
         for route in routes
