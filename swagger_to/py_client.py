@@ -5,9 +5,11 @@
 # pylint: disable=too-many-statements,too-many-lines
 
 import collections
-from typing import MutableMapping, Union, Set, List, TextIO, Optional  # pylint: disable=unused-import
+from typing import MutableMapping, Union, List, Optional, Dict, Any  # pylint: disable=unused-import
 
 import icontract
+import jinja2
+import jinja2.exceptions
 
 import swagger_to
 import swagger_to.intermediate
@@ -163,7 +165,7 @@ def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Type
     """
     if intermediate_typedef.identifier:
         if intermediate_typedef.identifier not in typedefs:
-            raise KeyError("Intermediate typedef not found in the translated typedefs: {!r}".format(
+            raise KeyError('Intermediate typedef not found in the translated typedefs: {!r}'.format(
                 intermediate_typedef.identifier))
 
         return typedefs[intermediate_typedef.identifier]
@@ -192,7 +194,7 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
         elif intermediate_typedef.type == 'file':
             typedef = Filedef()
         else:
-            raise NotImplementedError("Converting intermediate type to Python is not supported: {}".format(
+            raise NotImplementedError('Converting intermediate type to Python is not supported: {}'.format(
                 intermediate_typedef.type))
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
@@ -219,7 +221,7 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
         typedef.attributes = collections.OrderedDict(
             sorted(list(typedef.attributes.items()), key=lambda kv: not kv[1].required))
     else:
-        raise NotImplementedError("Converting intermediate typedef to Python is not supported: {!r}".format(
+        raise NotImplementedError('Converting intermediate typedef to Python is not supported: {!r}'.format(
             type(intermediate_typedef)))
 
     typedef.description = intermediate_typedef.description
@@ -283,6 +285,17 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
     return resp
 
 
+@icontract.ensure(
+    lambda result:
+    sorted(result.parameters, key=id) == sorted([
+        param
+        for param in ([result.body_parameter] if result.body_parameter else []) +
+        result.query_parameters +
+        result.path_parameters +
+        result.formdata_parameters +
+        result.file_parameters], key=id),
+    enabled=icontract.SLOW)
+@icontract.ensure(lambda result: all(isinstance(param.typedef, Filedef) for param in result.file_parameters))
 def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
     Translate an endpoint from an intermediate representation to a Python client request function.
@@ -304,7 +317,7 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
             req.file_parameters.append(param)
         elif intermediate_param.in_what == 'body':
             if req.body_parameter is not None:
-                raise KeyError("Duplicate body parameters in an endpoint: {} {}".format(
+                raise KeyError('Duplicate body parameters in an endpoint: {} {}'.format(
                     req.body_parameter.name, intermediate_param.name))
 
             req.body_parameter = param
@@ -349,16 +362,108 @@ def to_requests(endpoints: List[swagger_to.intermediate.Endpoint],
     return requests
 
 
-INDENT = ' ' * 4
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _comment(text: str) -> str:
+    r"""
+    Generate a (possibly multi-line) comment from the text.
+
+    >>> cmt = _comment('  testme\n  \nagain\n')
+    >>> assert cmt == '#   testme\n#\n# again\n#'
+
+    :param text: of the comment
+    :return: Python code
+    """
+    out = []  # type: List[str]
+    lines = text.split('\n')
+    for line in lines:
+        rstripped = line.rstrip()
+        if len(rstripped) > 0:
+            out.append('# {}'.format(rstripped))
+        else:
+            out.append('#')
+
+    return '\n'.join(out)
 
 
-def _write_imports(import_set: Set[str], fid: TextIO) -> None:
-    """Write import statements."""
-    import_lst = sorted(list(import_set))
-    for import_stmt in sorted(import_lst):
-        fid.write('import ' + '{}\n'.format(import_stmt))
-    if len(import_lst) > 0:
-        fid.write("\n\n")
+@icontract.require(lambda text: text != '')
+@icontract.ensure(lambda result: not result.endswith('\n'))
+@icontract.ensure(lambda result: result.startswith('r"""') or result.startswith('"""'))
+@icontract.ensure(lambda result: result.endswith('"""'))
+def _docstring(text: str) -> str:
+    """
+    Generate a (possibly multi-line) docstring from the text.
+
+    :param text: of the docstring
+    :return: Python code
+    """
+    has_backslash = '\\' in text
+    has_triple_quote = '"""' in text
+
+    is_raw = False
+    content = text
+
+    if has_triple_quote:
+        is_raw = False
+        content = text.replace('\\', '\\\\').replace('"""', '\\"\\"\\"')
+    else:
+        if has_backslash:
+            is_raw = True
+
+    parts = []  # type: List[str]
+    if is_raw:
+        parts.append('r')
+
+    lines = text.splitlines()
+    if len(lines) > 1:
+        parts.append('"""\n')
+        parts.append(content)
+        parts.append('\n"""')
+    elif len(lines) == 1:
+        parts.append('"""{}"""'.format(content))
+
+    return ''.join(parts)
+
+
+def _raise(message: str) -> None:
+    """Raise an exception in a template."""
+    raise Exception(message)
+
+
+# Jinja2 environment
+_ENV = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=jinja2.BaseLoader())
+_ENV.filters.update({
+    'comment': _comment,
+    'docstring': _docstring,
+    'snake_case': swagger_to.snake_case,
+    'raise': _raise,
+    'repr': lambda value: repr(value)
+})
+
+
+def _from_string_with_informative_exceptions(env: jinja2.Environment, text: str) -> jinja2.Template:
+    """
+    Parse the jinja2 template raising more informative exceptions if there are any.
+
+    :param env: global jinja2 environment
+    :param text: text of the template
+    :return: parsed template
+    """
+    syntax_err = None  # type: Optional[jinja2.exceptions.TemplateSyntaxError]
+    try:
+        return env.from_string(source=text)
+    except jinja2.exceptions.TemplateSyntaxError as err:
+        syntax_err = err
+
+    if syntax_err is not None:
+        lines = text.splitlines()
+        line = lines[syntax_err.lineno - 1]
+
+        msg = '{}\n{}'.format(syntax_err.message, line)
+
+        raise jinja2.exceptions.TemplateSyntaxError(
+            message=msg, lineno=syntax_err.lineno, name=syntax_err.name, filename=syntax_err.filename)
+    else:
+        raise AssertionError("Unhandled execution path")
 
 
 def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
@@ -383,148 +488,95 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Filedef):
         return 'BinaryIO'
     elif isinstance(typedef, Listdef):
-        return 'List[' + _type_expression(typedef=typedef.items, path=str(path) + '.items') + "]"
+        return 'List[' + _type_expression(typedef=typedef.items, path=str(path) + '.items') + ']'
     elif isinstance(typedef, Dictdef):
-        return 'Dict[str, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + "]"
+        return 'Dict[str, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + ']'
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
-            raise NotImplementedError(
-                "Translating an anonymous class to a type expression is not supported: {}".format(path))
+            raise NotImplementedError(('Translating an anonymous class to a type expression '
+                                       'is not supported: {}').format(path))
 
         return typedef.identifier
     else:
-        raise NotImplementedError("Translating the typedef to a type expression is not supported: {!r}: {}".format(
+        raise NotImplementedError('Translating the typedef to a type expression is not supported: {!r}: {}'.format(
             type(typedef), path))
 
 
-def _attribute_as_argument(attribute: Attribute) -> str:
-    """
-    Represent the instance attribute of a class as an argument to a function (e.g., ``__init__``).
+_CLASS_DEF_WO_ATTRIBUTES = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+{% if classdef.attributes %}{{ raise('Expected a classdef without attributes, but got some.') }}{% endif %}
+class {{ classdef.identifier }}:
+    {% if classdef.description %}
+    {{ classdef.description|docstring|indent }}
 
-    :param attribute: Python representation of the instance attribute of a class
+    {% endif %}
+    def to_jsonable(self) -> MutableMapping[str, Any]:
+        """
+        Dispatches the conversion to {{ classdef.identifier|snake_case }}_to_jsonable.
+
+        :return: a JSON-able representation
+        """
+        return {{ classdef.identifier|snake_case }}_to_jsonable(self)''')
+
+_CLASS_DEF_WITH_ATTRIBUTES_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+{% if not classdef.attributes %}{{ raise('Expected a classdefinition with attributes, but got none.') }}{% endif %}
+class {{ classdef.identifier }}:
+    {% if classdef.description %}
+    {{ classdef.description|docstring|indent }}
+
+    {% endif %}
+    def __init__(
+            self,
+    {% for attr in classdef.attributes.values() %}
+    {% if not attr.required %}
+            {{ attr.name }}: Optional[{{ attribute_type[attr] }}] = None{{ ') -> None:' if loop.last else ',' }}
+    {% else %}
+            {{ attr.name }}: {{ attribute_type[attr] }}{{ ') -> None:' if loop.last else ',' }}
+    {% endif %}{# /if not attr.required #}
+    {% endfor %}{# /for attr #}
+        """Initializes with the given values."""
+        {% set newliner = joiner('SWITCH') %}
+        {% for attr in classdef.attributes.values() %}
+        {% if newliner() %}{{ '\\n' }}{% endif %}
+        {% if attr.description %}
+        {{ attr.description|comment|indent|indent }}
+        {% endif %}
+        self.{{ attr.name }} = {{ attr.name }}
+        {% endfor %}
+
+    def to_jsonable(self) -> MutableMapping[str, Any]:
+        """
+        Dispatches the conversion to {{ classdef.identifier|snake_case }}_to_jsonable.
+
+        :return: JSON-able representation
+        """
+        return {{ classdef.identifier|snake_case }}_to_jsonable(self)''')
+
+
+@icontract.require(lambda classdef: classdef.identifier != '', 'Anonymous classes not allowed', enabled=True)
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_class_definition(classdef: Classdef) -> str:
+    """
+    Generate the Python code defining the class given the class definition.
+
+    :param classdef: class definition in Python representation
     :return: Python code
     """
-    argtype = _type_expression(typedef=attribute.typedef, path=attribute.classdef.identifier + "." + attribute.name)
+    if len(classdef.attributes) == 0:
+        return _CLASS_DEF_WO_ATTRIBUTES.render(classdef=classdef)
 
-    if not attribute.required:
-        return '{}: Optional[{}] = None'.format(attribute.name, argtype)
-
-    return '{}: {}'.format(attribute.name, argtype)
-
-
-def _write_header(service_name: str, fid: TextIO) -> None:
-    """Write the header of the client module."""
-    fid.write('#!bin/bash/python3\n')
-    fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!\n')
-    fid.write('"""Implements the client for {}."""\n\n'.format(service_name))
-    fid.write("# pylint: skip-file\n")
-    fid.write("# pydocstyle: add-ignore=D105,D107,D401\n\n")
-
-    fid.write('import contextlib\n')
-    fid.write("from typing import Any, BinaryIO, Dict, List, Optional\n\n")
-    fid.write("import requests\n")
-    fid.write("import requests.auth\n")
+    return _CLASS_DEF_WITH_ATTRIBUTES_TPL.render(
+        classdef=classdef,
+        attribute_type={
+            attr: _type_expression(typedef=attr.typedef, path='{}.{}'.format(attr.classdef.identifier, attr.name))
+            for attr in classdef.attributes.values()
+        })
 
 
-def _write_footer(fid: TextIO) -> None:
-    """Write the footer of the client module."""
-    fid.write('# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!')
-
-
-def _write_comment(comment: str, indent: str, fid: TextIO) -> None:
-    """Write the comment at the given indention."""
-    lines = comment.strip().splitlines()
-    for i, line in enumerate(lines):
-        rstripped = line.rstrip()
-        if len(rstripped) > 0:
-            fid.write(indent + '# {}'.format(rstripped))
-        else:
-            fid.write(indent + '#')
-
-        if i < len(lines) - 1:
-            fid.write('\n')
-
-
-def _write_docstring(docstring: str, indent: str, fid: TextIO) -> None:
-    """Write the docstring at the given indention."""
-    if not docstring:
-        raise ValueError("Unexpected empty docstring")
-
-    docstring = docstring[0].upper() + docstring[1:]
-    docstring_lines = docstring.splitlines()
-
-    if len(docstring_lines) == 1:
-        fid.write(''.join([indent, '"""', docstring, '"""']))
-        return
-
-    fid.write(indent + '"""\n')
-    for line in docstring_lines:
-        if line.strip():
-            fid.write(indent)
-            fid.write(line)
-        fid.write('\n')
-
-    fid.write('\n')
-    fid.write(indent + '"""')
-
-
-def _write_class(classdef: Classdef, fid: TextIO) -> None:
-    """Write the class defintiion to the client module."""
-    if classdef.identifier == '':
-        raise ValueError("Expected a classdef with an identifier, but got a classdef with an empty identifier.")
-
-    fid.write("class {}:\n".format(classdef.identifier))
-    if classdef.description:
-        _write_docstring(docstring=classdef.description, indent=INDENT, fid=fid)
-        fid.write('\n\n')
-
-    if not classdef.attributes:
-        fid.write(INDENT + 'pass')
-        return
-
-    prefix = INDENT + 'def __init__(self'
-    suffix = ') -> None:'
-
-    args = []  # type: List[str]
-    for attr in classdef.attributes.values():
-        args.append(_attribute_as_argument(attribute=attr))
-
-    line = prefix + ', ' + ', '.join(args) + suffix
-    if len(line) <= 80:
-        fid.write(line)
-    else:
-        fid.write(prefix)
-        for arg in args:
-            fid.write(',\n')
-
-            fid.write(' ' * (len(prefix) - len('self')) + arg)
-
-        fid.write(suffix)
-
-    fid.write('\n')
-
-    for i, attr in enumerate(classdef.attributes.values()):
-        if i > 0:
-            fid.write('\n\n')
-
-        if attr.description:
-            _write_comment(comment=attr.description, indent=INDENT * 2, fid=fid)
-            fid.write('\n')
-        fid.write(INDENT * 2 + 'self.{0} = {0}'.format(attr.name))
-
-    fid.write('\n\n')
-    fid.write(INDENT + 'def to_jsonable(self) -> Dict[str, Any]:\n')
-    fid.write(INDENT * 2 + '"""\n')
-    fid.write(INDENT * 2 + 'Dispatches the conversion to {}_to_jsonable.\n\n'.format(
-        swagger_to.snake_case(identifier=classdef.identifier)))
-
-    fid.write(INDENT * 2 + ':return: JSON-able representation\n\n')
-    fid.write(INDENT * 2 + '"""\n')
-
-    fid.write(INDENT * 2 + 'return {}_to_jsonable(self)'.format(swagger_to.snake_case(identifier=classdef.identifier)))
-
-
-def _default_attribute_value(typedef: Typedef) -> str:
+def _default_value(typedef: Typedef) -> str:
     """
     Determine the default value of the given type definition.
 
@@ -543,59 +595,57 @@ def _default_attribute_value(typedef: Typedef) -> str:
     elif isinstance(typedef, Bytesdef):
         return "b''"
     elif isinstance(typedef, Listdef):
-        return "[]"
+        return '[]'
     elif isinstance(typedef, Dictdef):
-        return "dict()"
+        return 'dict()'
     elif isinstance(typedef, Classdef):
-        return "new_{}()".format(swagger_to.snake_case(identifier=typedef.identifier))
+        return 'new_{}()'.format(swagger_to.snake_case(identifier=typedef.identifier))
     else:
-        raise NotImplementedError("Translating the typedef to a default value is not supported: {}".format(typedef))
+        raise NotImplementedError('Translating the typedef to a default value is not supported: {}'.format(typedef))
 
 
-def _write_class_factory_method(classdef: Classdef, fid: TextIO) -> None:
-    """Write the class factory method in the client module."""
-    fid.write('def new_{}() -> {}:\n'.format(
-        swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
-
-    fid.write(INDENT + '"""Generates a default instance of {}."""\n'.format(classdef.identifier))
-
-    if not classdef.attributes:
-        fid.write(INDENT + "return {}()".format(classdef.identifier))
-        return
-
-    prefix = INDENT + 'return {}('.format(classdef.identifier)
-    suffix = ')'
-    args = []  # type: List[str]
-    for attr in classdef.attributes.values():
-        if attr.required:
-            args.append('{}={}'.format(attr.name, _default_attribute_value(typedef=attr.typedef)))
-
-    line = prefix + ', '.join(args) + suffix
-    if len(line) <= 80:
-        fid.write(line)
-    else:
-        fid.write(prefix)
-        fid.write(args[0])
-
-        for arg in args[1:]:
-            fid.write(',\n')
-            fid.write(' ' * len(prefix) + arg)
-
-        fid.write(suffix)
+_FACTORY_METHOD_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+def new_{{ classdef.identifier|snake_case }}() -> {{ classdef.identifier }}:
+    """Generates an instance of {{ classdef.identifier }} with default values."""
+    {% if not required_attributes %}
+    return {{ classdef.identifier }}()
+    {% else %}
+    return {{ classdef.identifier }}(
+        {% for attr in required_attributes %}
+        {{ attr.name }}={{ default_value[attr] }}{{ ')' if loop.last else ',' }}
+        {% endfor %}
+    {% endif %}{# /if not required_attrbiutes #}
+''')
 
 
-def _write_from_obj(classdefs: List[Classdef], fid: TextIO):
-    """Write the code of the ``from_obj`` function."""
-    # yapf: disable
-    fid.write('''def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_factory_method(classdef: Classdef) -> str:
+    """
+    Generate the code of the factory method for a class conforming to the given class definition.
+
+    :param classdef: class definition in Python representation
+    :return: Python code
+    """
+    return _FACTORY_METHOD_TPL.render(
+        classdef=classdef,
+        required_attributes=[attr for attr in classdef.attributes.values() if attr.required],
+        default_value={attr: _default_value(typedef=attr.typedef)
+                       for attr in classdef.attributes.values()}).strip()
+
+
+_FROM_OBJ_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
     """
     Checks and converts the given obj along the expected types.
 
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
-    :param path: to the object from the root object
+    :param path: to the object used for debugging
     :return: the converted object
-
     """
     if not expected:
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
@@ -609,11 +659,13 @@ def _write_from_obj(classdefs: List[Classdef], fid: TextIO):
         if isinstance(obj, float):
             return obj
 
-        raise ValueError("Expected object of type int or float at {!r}, but got {}.".format(path, type(obj)))
+        raise ValueError(
+            'Expected object of type int or float at {!r}, but got {}.'.format(path, type(obj)))
 
     if exp in [bool, int, str, list, dict]:
         if not isinstance(obj, exp):
-            raise ValueError("Expected object of type {} at {!r}, but got {}.".format(exp, path, type(obj)))
+            raise ValueError(
+                'Expected object of type {} at {!r}, but got {}.'.format(exp, path, type(obj)))
 
     if exp in [bool, int, float, str]:
         return obj
@@ -621,7 +673,8 @@ def _write_from_obj(classdefs: List[Classdef], fid: TextIO):
     if exp == list:
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
-            lst.append(from_obj(value, expected=expected[1:], path=path + '[{}]'.format(i)))
+            lst.append(
+                from_obj(value, expected=expected[1:], path='{}[{}]'.format(path, i)))
 
         return lst
 
@@ -629,26 +682,35 @@ def _write_from_obj(classdefs: List[Classdef], fid: TextIO):
         adict = dict()  # type: Dict[str, Any]
         for key, value in obj.items():
             if not isinstance(key, str):
-                raise ValueError("Expected a key of type str at path {!r}, got: {}".format(path, type(key)))
+                raise ValueError(
+                    'Expected a key of type str at path {!r}, got: {}'.format(path, type(key)))
 
-            adict[key] = from_obj(value, expected=expected[1:], path=path + '["{}"]'.format(key))
+            adict[key] = from_obj(value, expected=expected[1:], path='{}[{!r}]'.format(path, key))
 
-        return adict'''.replace(' ' * 4, INDENT))
+        return adict
+    {% for classdef in classdefs %}
 
-    for classdef in classdefs:
-        fid.write('\n\n')
-        fid.write(INDENT + 'if exp == {}:\n'.format(classdef.identifier))
-        fid.write(INDENT * 2 + 'return {}_from_obj(obj, path=path)'.format(
-            swagger_to.snake_case(classdef.identifier)))
+    if exp == {{ classdef.identifier }}:
+        return {{ classdef.identifier|snake_case }}_from_obj(obj, path=path)
+    {% endfor %}
 
-    fid.write('\n\n')
+    raise ValueError("Unexpected `expected` type: {}".format(exp))''')
 
-    fid.write(INDENT + 'raise ValueError("Unexpected `expected` type: {}".format(exp))')
+
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_from_obj(classdefs: List[Classdef]) -> str:
+    """
+    Generate the code of the ``from_obj`` function.
+
+    :param classdefs: all available class definitions in Python representation
+    :return: Python code
+    """
+    return _FROM_OBJ_TPL.render(classdefs=classdefs)
 
 
 def _expected_type_expression(typedef: Typedef) -> str:
     """
-    Determine the type expression corresponding to the type definition.
+    Determine the type expression supplied to ``from_obj`` function corresponding to the type definition.
 
     :param typedef: type definition in Python representation
     :return: Python code representing the type definition
@@ -661,123 +723,105 @@ def _expected_type_expression(typedef: Typedef) -> str:
     elif isinstance(typedef, Floatdef):
         return 'float'
     elif isinstance(typedef, Strdef):
-        return "str"
+        return 'str'
     elif isinstance(typedef, Bytesdef):
-        return "bytes"
+        return 'bytes'
     elif isinstance(typedef, Listdef):
-        return "list, {}".format(_expected_type_expression(typedef=typedef.items))
+        return 'list, {}'.format(_expected_type_expression(typedef=typedef.items))
     elif isinstance(typedef, Dictdef):
-        return "dict, {}".format(_expected_type_expression(typedef=typedef.values))
+        return 'dict, {}'.format(_expected_type_expression(typedef=typedef.values))
     elif isinstance(typedef, Classdef):
         return typedef.identifier
     else:
-        raise NotImplementedError(
-            "Translating the typedef to an expected type is not supported: {}".format(typedef))
+        raise NotImplementedError('Translating the typedef to an expected type is not supported: {}'.format(typedef))
 
 
-def _write_class_from_obj(classdef: Classdef, fid: TextIO) -> None:
-    """Write the code of ``{class}_from_obj`` function."""
-    fid.write('def {}_from_obj(obj: Any, path: str = "") -> {}:\n'.format(
-        swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
+_CLASS_FROM_OBJ_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+def {{ classdef.identifier|snake_case }}_from_obj(obj: Any, path: str = "") -> {{ classdef.identifier }}:
+    """
+    Generates an instance of {{ classdef.identifier }} from a dictionary object.
 
-    fid.write(INDENT + '"""Generates an instance of {} from a dictionary object."""\n'.format(
-        classdef.identifier))
+    :param obj: a JSON-ed dictionary object representing an instance of {{ classdef.identifier }}
+    :param path: path to the object used for debugging
+    :return: parsed instance of {{ classdef.identifier }}
+    """
+    if not isinstance(obj, dict):
+        raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
 
-    # yapf: disable
-    fid.write(INDENT + 'if not isinstance(obj, dict):\n' +
-              INDENT * 2 +
-              'raise ValueError("Expected a dict at path {}, but got: {}".format(path, type(obj)))\n\n')
-    fid.write(INDENT + 'for key in obj:\n' +
-              INDENT * 2 + 'if not isinstance(key, str):\n' +
-              INDENT * 3 +
-              'raise ValueError("Expected a key of type str at path {}, but got: {}".format(path, type(key)))\n\n')
-    # yapf: enable
+    for key in obj:
+        if not isinstance(key, str):
+            raise ValueError(
+                'Expected a key of type str at path {}, but got: {}'.format(path, type(key)))
+    {% if not classdef.attributes %}
 
-    if not classdef.attributes:
-        fid.write(INDENT + "return {}()".format(classdef.identifier))
-        return
+    return {{ classdef.identifier }}()
+    {% else %}
+    {% for attr in classdef.attributes.values() %}
 
-    def write_set_attr_stmt(indention: str, set_attr_stmt_parts: List[str]) -> None:
-        prefix, value, expected, path, type_suffix = set_attr_stmt_parts
-
-        line = indention + prefix + ', '.join([value, expected, path]) + type_suffix
-        if len(line) <= 80:
-            fid.write(line)
-            return
-
-        fid.write(indention + prefix + value + ',\n')
-        fid.write(' ' * len(indention + prefix) + expected + ',\n')
-        fid.write(' ' * len(indention + prefix) + path + type_suffix)
-
-    for i, attr in enumerate(classdef.attributes.values()):
-        if i > 0:
-            fid.write('\n\n')
-
-        attr_type_expr = _type_expression(typedef=attr.typedef, path=attr.classdef.identifier + "." + attr.name)
-
-        if not attr.required:
-            attr_type_expr = "Optional[{}]".format(attr_type_expr)
-
-        # yapf: disable
-        set_attr_stmt_parts = [
-            '{}_from_obj = from_obj('.format(attr.name),
-            'obj["{0}"]'.format(attr.name),
-            'expected=[{}]'.format(
-                _expected_type_expression(typedef=attr.typedef)),
-            'path=path + ".{}")'.format(attr.name),
-            '  # type: {}'.format(attr_type_expr)
-        ]
-        # yapf: enable
-
-        if attr.required:
-            write_set_attr_stmt(indention=INDENT, set_attr_stmt_parts=set_attr_stmt_parts)
-        else:
-            fid.write(INDENT + 'if "{}" in obj:\n'.format(attr.name))
-            write_set_attr_stmt(indention=INDENT * 2, set_attr_stmt_parts=set_attr_stmt_parts)
-            fid.write("\n")
-            fid.write(INDENT + "else:\n")
-            fid.write(INDENT * 2 + '''{}_from_obj = None'''.format(attr.name))
-
-    fid.write('\n\n')
-
-    prefix = INDENT + 'return {}('.format(classdef.identifier)
-    suffix = ')'
-    args = []  # type: List[str]
-    for attr in classdef.attributes.values():
-        args.append('{0}={0}_from_obj'.format(attr.name))
-
-    line = prefix + ', '.join(args) + suffix
-    if len(line) <= 80:
-        fid.write(line)
+    {% if attr.required %}
+    {{ attr.name }}_from_obj = from_obj(
+        obj[{{ attr.name|repr }}],
+        expected=[{{ expected_type_expression[attr] }}],
+        path=path + {{ '.%s'|format(attr.name)|repr }})  # type: {{ type_expression[attr] }}
+    {% else %}
+    if {{ attr.name|repr }} in obj:
+        {{ attr.name }}_from_obj = from_obj(
+            obj[{{ attr.name|repr }}],
+            expected=[{{ expected_type_expression[attr] }}],
+            path=path + {{ '.%s'|format(attr.name)|repr }})  # type: Optional[{{ type_expression[attr] }}]
     else:
-        fid.write(prefix)
-        fid.write(args[0])
+        {{ attr.name }}_from_obj = None
+    {% endif %}{# /if attr.required #}
+    {% endfor %}{# /for attr in classdef.attributes.values() #}
 
-        for arg in args[1:]:
-            fid.write(',\n')
-            fid.write(' ' * len(prefix) + arg)
+    return {{ classdef.identifier }}(
+    {% for attr in classdef.attributes.values() %}
+        {{ attr.name }}={{ attr.name }}_from_obj{{ ')' if loop.last else ',' }}
+    {% endfor %}{# /for attr in classdef.attributes.values() #}
+    {% endif %}{# /if not classdef.attributes #}''')
 
-        fid.write(suffix)
+
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_class_from_obj(classdef: Classdef) -> str:
+    """
+    Generate the code of the ``{class}_from_obj`` function that parses the JSON-ed object to an instance of a class.
+
+    :param classdef: class definition in Python representation
+    :return: Python code
+    """
+    return _CLASS_FROM_OBJ_TPL.render(
+        classdef=classdef,
+        expected_type_expression={
+            attr: _expected_type_expression(typedef=attr.typedef)
+            for attr in classdef.attributes.values()
+        },
+        type_expression={
+            attr: _type_expression(typedef=attr.typedef, path=attr.classdef.identifier + '.' + attr.name)
+            for attr in classdef.attributes.values()
+        }).strip()
 
 
-def _write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
-    """Write ``to_jsonable`` function."""
-    # yapf: disable
-    fid.write('''def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
+_TO_JSONABLE_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
     """
     Checks and converts the given object along the expected types to a JSON-able representation.
 
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
+    :param path: path to the object used for debugging 
     :return: JSON-able representation of the object
-
     """
     if not expected:
         raise ValueError("`expected` is empty, but at least one type needs to be specified.")
 
     exp = expected[0]
     if not isinstance(obj, exp):
-        raise ValueError("Expected object of type {} at path {!r}, but got {}.".format(exp, path, type(obj)))
+        raise ValueError('Expected object of type {} at path {!r}, but got {}.'.format(
+            exp, path, type(obj)))
 
     # Assert on primitive types to help type-hinting.
     if exp == bool:
@@ -801,7 +845,8 @@ def _write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
 
         lst = []  # type: List[Any]
         for i, value in enumerate(obj):
-            lst.append(to_jsonable(value, expected=expected[1:], path=''.join([path, '[', str(i), ']'])))
+            lst.append(
+                to_jsonable(value, expected=expected[1:], path='{}[{}]'.format(path, i)))
 
         return lst
 
@@ -811,116 +856,261 @@ def _write_to_jsonable(classdefs: List[Classdef], fid: TextIO):
         adict = dict()  # type: Dict[str, Any]
         for key, value in obj.items():
             if not isinstance(key, str):
-                raise ValueError("Expected a key of type str at path {!r}, got: {}".format(path, type(key)))
+                raise ValueError(
+                    'Expected a key of type str at path {!r}, got: {}'.format(path, type(key)))
 
-            adict[key] = to_jsonable(value, expected=expected[1:], path=''.join([path, '[', key, ']']))
+            adict[key] = to_jsonable(
+                value,
+                expected=expected[1:],
+                path='{}[{!r}]'.format(path, key))
 
-        return adict'''.replace(' ' * 4, INDENT))
+        return adict
+    {% for classdef in classdefs %}
 
-    for classdef in classdefs:
-        fid.write('\n\n')
-        fid.write(INDENT + 'if exp == {}:\n'.format(classdef.identifier))
-        fid.write(INDENT * 2 + 'assert isinstance(obj, {})\n'.format(classdef.identifier))
-        fid.write(INDENT * 2 + 'return {}_to_jsonable(obj, path=path)'.format(
-            swagger_to.snake_case(classdef.identifier)))
+    if exp == {{ classdef.identifier }}:
+        assert isinstance(obj, {{ classdef.identifier }})
+        return {{ classdef.identifier|snake_case }}_to_jsonable(obj, path=path)
+    {% endfor %}{# /for classdef in classdefs #}
 
-    fid.write('\n\n')
-
-    fid.write(INDENT + 'raise ValueError("Unexpected `expected` type: {}".format(exp))')
-
-
-def _write_class_to_jsonable(classdef: Classdef, fid: TextIO) -> None:
-    """Write ``{class}_to_jsonable`` function."""
-    fid.write('def {0}_to_jsonable({0}: {1}, path: str = "") -> Dict[str, Any]:\n'.format(
-        swagger_to.snake_case(identifier=classdef.identifier), classdef.identifier))
-
-    fid.write(INDENT + '"""Generates a dictionary JSON-able object from an instance of {}."""\n'.format(
-        classdef.identifier))
-
-    if not classdef.attributes:
-        fid.write(INDENT + 'return dict()')
-        return
-
-    fid.write(INDENT + 'res = dict()  # type: Dict[str, Any]\n')
-    fid.write('\n')
-
-    variable = swagger_to.snake_case(identifier=classdef.identifier)
-
-    for i, attr in enumerate(classdef.attributes.values()):
-        if i > 0:
-            fid.write('\n\n')
-
-        if attr.required:
-            indent = INDENT
-        else:
-            fid.write(INDENT + 'if {}.{} is not None:\n'.format(variable, attr.name))
-            indent = INDENT * 2
-
-        if isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef)):
-            fid.write(indent + 'res["{0}"] = {1}.{0}'.format(attr.name, variable))
-        else:
-            prefix = indent + 'res["{}"] = to_jsonable('.format(attr.name)
-            value = '{}.{}'.format(variable, attr.name)
-            expected = '[{}]'.format(_expected_type_expression(typedef=attr.typedef))
-            path = '"{{}}.{}".format(path))'.format(attr.name)
-
-            line = prefix + ', '.join([value, expected, path])
-            if len(line) <= 80:
-                fid.write(line)
-            else:
-                fid.write(prefix + value + ',\n')
-                fid.write(' ' * len(prefix) + expected + ',\n')
-                fid.write(' ' * len(prefix) + path)
-
-    fid.write('\n')
-    fid.write(INDENT + 'return res')
+    raise ValueError("Unexpected `expected` type: {}".format(exp))''')
 
 
-def _to_string_expression(typedef: Typedef, expression: str) -> str:
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_to_jsonable(classdefs: List[Classdef]) -> str:
     """
-    Wrap the expression in str() if necessary.
+    Generate the code of the ``to_jsonable`` function that converts a Python object to a JSON-able format.
 
-    :param typedef: type definition of the variable
-    :param expression: Python expression to be converted to string in the generated code
+    :param classdefs: list of all available class definitions
     :return: Python code
     """
-    if isinstance(typedef, Strdef):
-        return expression
+    return _TO_JSONABLE_TPL.render(classdefs=classdefs)
 
-    return 'str({})'.format(expression)
 
-@icontract.ensure(lambda result: not result.startswith('"""'))
-@icontract.ensure(lambda result: not result.endswith('"""'))
-def _request_docstring(request: Request) -> str:
+_CLASS_TO_JSONABLE_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+def {{ classdef.identifier|snake_case }}_to_jsonable(
+        {{ classdef.identifier|snake_case }}: {{ classdef.identifier }},
+        path: str = "") -> MutableMapping[str, Any]:
     """
-    Assemble the docstring of the given client request function.
+    Generates a JSON-able mapping from an instance of {{ classdef.identifier }}.
 
-    :param request: client request function to be documented
-    :return: docstring of the request function
+    :param {{ classdef.identifier|snake_case }}: instance of {{ classdef.identifier }} to be JSON-ized
+    :param path: path to the {{ classdef.identifier|snake_case }} used for debugging
+    :return: a JSON-able representation
     """
-    docstring_lines = []  # type: List[str]
-    if request.description:
-        docstring_lines += request.description.splitlines()
-        if request.parameters:
-            docstring_lines += ['']
+    {% if not classdef.attributes %}
+    return dict()
+    {% else %}
+    res = dict()  # type: Dict[str, Any]
+    {% for attr in classdef.attributes.values() %}
 
-    for param in request.parameters:
-        if not param.description:
-            docstring_lines += [':param {}:'.format(param.name)]
-        else:
-            description_lines = param.description.splitlines()
-            if len(description_lines) == 1:
-                docstring_lines += [':param {}: {}'.format(param.name, param.description)]
-            else:
-                docstring_lines += [':param {}:'.format(param.name)]
-                for line in description_lines:
-                    docstring_lines += [INDENT * 2 + line]
+    {% set assignment %}
+{% if is_primitive[attr] %}
+res[{{ attr.name|repr }}] = {{ classdef.identifier|snake_case }}.{{ attr.name }}
+{% else %}
+res[{{ attr.name|repr }}] = to_jsonable(
+    {{ classdef.identifier|snake_case }}.{{ attr.name }},
+    expected=[{{ expected_type_expression[attr] }}],
+    path={{ '{}.%s'|format(attr.name)|repr }}.format(path))
+{% endif %}{# /if is_primitive[attr] #}
+    {% endset %}{# /set assignment #}
+    {% if not attr.required %}
+    if {{ classdef.identifier|snake_case }}.{{ attr.name }} is not None:
+        {{ assignment|trim|indent }}
+    {% else %}
+    {{ assignment|trim|indent }}
+    {% endif %}{# /if not attr.required #}
+    {% endfor %}{# /for attr in classdef.attributes.values() #}
 
-    return '\n'.join(docstring_lines)
+    return res
+    {% endif %}{# /if not classdef.attributes #}''')
 
 
-def _write_request(request: Request, fid: TextIO) -> None:
-    """Write the client request function."""
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_class_to_jsonable(classdef: Classdef) -> str:
+    """
+    Generate ``{class}_to_jsonable`` function which converts the given instance of the class to a JSON-able format.
+
+    :param classdef: class definition in Python representation
+    :return: Python code
+    """
+    return _CLASS_TO_JSONABLE_TPL.render(
+        classdef=classdef,
+        is_primitive={
+            attr: isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef))
+            for attr in classdef.attributes.values()
+        },
+        expected_type_expression={
+            attr: _expected_type_expression(typedef=attr.typedef)
+            for attr in classdef.attributes.values()
+        }).strip()
+
+
+_REQUEST_DOCSTRING_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+{% if request.description %}
+{{ request.description }}
+{% else %}
+Send a {{ request.method }} request to {{ request.path }}.
+{% endif %}{# /if request.description #}
+{% if request.parameters %}
+
+{% for param in request.parameters %}
+{% if not param.description %}
+:param {{ param.name }}:
+{% else %}
+{% if '\\n' in param.description %}
+:param {{ param.name }}:
+    {{ param.description|indent }}
+{% else %}
+:param {{ param.name }}: {{ param.description }}
+{% endif %}{# /if '\\n' in param.description #}
+{% endif %}{# /if not param.description #}
+{% endfor %}{# /for request.parameters #}
+{% endif %}{# /if request.parameters #}''')
+
+_REQUEST_FUNCTION_TPL = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+{% if not request.parameters %}
+def {{ request.operation_id}}(self) -> {{ return_type }}:
+{% else %}
+{% set suffix = ') -> %s:'|format(return_type) %}
+def {{ request.operation_id}}(
+        self,
+        {% for param in request.parameters %}
+        {% if not param.required %}
+        {{ param.name }}: Optional[{{ type_expression[param] }}] = None{{ suffix if loop.last else ',' }}
+        {% else %}
+        {{ param.name }}: {{ type_expression[param] }}{{ suffix if loop.last else ',' }}
+        {% endif %}
+        {% endfor %}{# /for param in request.parameters #}
+{% endif %}{# /if not request.parameters #}
+    {{ request_docstring|docstring|indent }}
+    {% if not path_tokens %}{### Path parameters ###}
+    url = self.url_prefix + {{ request.path|repr }}
+    {% else %}
+    url = "".join([
+        self.url_prefix,
+    {% for token in path_tokens %}
+    {% if token.parameter %}
+        {{ 'str(%s)'|format(token.parameter.name if is_str[token.parameter] else token.parameter.name) }}{#
+            #}{{ '])' if loop.last else ',' }}
+    {% else %}
+        {{ token.text|repr }}{{ '])' if loop.last else ',' }}
+    {% endif %}
+    {% endfor %}{# /for token in path_tokens #}
+    {% endif %}{# /if not path_tokens #}
+    {% if request.query_parameters %}{### Query parameters ###}
+
+    params = {
+        {% for param in request.query_parameters %}
+        {% if is_primitive[param] %}
+        {{ param.name|repr }}: {{ param.name }}{{ '}' if loop.last else ',' }}
+        {% else %}
+        {{ param.name|repr }}: to_jsonable(
+            {{ param.name }}, expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
+        {% endif %}
+        {% endfor %}{# /for param in request.query_parameters #}
+    {% endif %}{# /if request.query_parameters #}
+    {% if request.body_parameter %}{### Body parameter ###}
+
+    {% if is_primitive[request.body_parameter] %}
+    data = {{ request.body_parameter.name }}
+    {% else %}
+    data = to_jsonable(
+        {{ request.body_parameter.name }},
+        expected=[{{ expected_type_expression[request.body_parameter] }}])
+    {% endif %}{# /is_primitive[request.body_parameter] #}
+    {% endif %}{# /if request.body_parameter #}
+    {% if request.formdata_parameters %}{### Form-data parameters ###}
+
+    data = {
+        {% for param in request.formdata_parameters %}
+        {% if is_primitive[param] %}
+        {{ param.name|repr }}: {{ param.name }}{{ '}' if loop.last else ',' }}
+        {% else %}
+        {{ param.name|repr }}: to_jsonable(
+            {{ param.name }},
+            expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
+        {% endif %}{# /if is_primitive[param] #}
+        {% endfor %}{# /for param in request.formdata_parameters #}
+    {% endif %}{# /if request.formdata_parameters #}
+    {% if request.file_parameters %}
+
+    files = {
+        {% for param in request.file_parameters %}
+        {{ param.name|repr }}: {{ param.name }}{{ '}' if loop.last else ',' }}
+        {% endfor %}{# /for param in request.file_parameters #}
+    {% endif %}{# /if request.file_parameters #}
+
+    {% if not request.parameters %}
+    resp = requests.request(method={{ request.method|repr }}, url=url)
+    {% else %}
+    resp = requests.request(
+        method={{ request.method|repr }},
+        url=url,
+        {% if request.query_parameters %}
+        params=params,
+        {% endif %}
+        {% if request.body_parameter %}
+        json=data,
+        {% endif %}
+        {% if request.formdata_parameters %}
+        data=data,
+        {% endif %}
+        {% if request.file_parameters %}
+        files=files,
+        {% endif %}
+        auth=self.auth)
+    {% endif %}{# /if not request.parameters #}
+
+    with contextlib.closing(resp):
+        resp.raise_for_status()
+        {% if resp is none %}
+        {% if return_type == 'bytes' %}
+        return resp.content
+        {% elif return_type == 'Any' %}
+        return resp.json()
+        {% else %}
+        {{ raise('Unhandled return type of the request %s.%s: %s'|format(request.path, request.method, return_type)) }}
+        {% endif %}{# /if return_type == 'bytes' #}
+        {% else %}
+        return from_obj(
+            obj=resp.json(),
+            expected=[{{ expected_type_expression[resp] }}])
+        {% endif %}{# /if resp is none #}''')
+
+
+class _Token:
+    """Represent a token of the tokenized Swagger path to an endpoint."""
+
+    def __init__(self, text: str, parameter: Optional[Parameter] = None) -> None:
+        """
+        Initialize with the given values.
+
+        :param text: text encompassed by the token
+        :param parameter: parameter, if referenced by the token
+        """
+        self.text = text
+        self.parameter = parameter
+
+
+@icontract.require(
+    lambda request: not request.body_parameter or not request.formdata_parameters,
+    'Both body parameter and form-data parameters are specified. '
+    'The python client does not know how to resolve this request.',
+    enabled=True)
+@icontract.ensure(lambda result: not result.endswith('\n'))
+def _generate_request_function(request: Request) -> str:
+    """
+    Generate the code of the client request function.
+
+    :param request: request to the endpoint in Python representation
+    :return: Python code
+    """
     resp = None  # type: Optional[Response]
     return_type = 'bytes'
     if request.produces == ['application/json']:
@@ -933,220 +1123,133 @@ def _write_request(request: Request, fid: TextIO) -> None:
                 resp = None
                 return_type = 'Any'
 
-    prefix = INDENT + 'def {}('.format(request.operation_id)
-    suffix = ') -> {}:'.format(return_type)
+    request_docstring = _REQUEST_DOCSTRING_TPL.render(request=request)
 
-    args = ['self']  # type: List[str]
-    for param in request.parameters:
-        param_type = _type_expression(typedef=param.typedef, path=request.operation_id + '.' + param.name)
-
-        if not param.required:
-            args.append('{}: Optional[{}] = None'.format(param.name, param_type))
-        else:
-            args.append('{}: {}'.format(param.name, param_type))
-
-    line = prefix + ', '.join(args) + suffix
-    if len(line) <= 80:
-        fid.write(line)
-    else:
-        fid.write(prefix)
-        for i, arg in enumerate(args):
-            if i > 0:
-                fid.write(',\n')
-                fid.write(' ' * len(prefix))
-            fid.write(arg)
-
-        fid.write(suffix)
-    fid.write('\n')
-
-    # assemble the docstring
-    docstring = _request_docstring(request=request)
-    _write_docstring(docstring=docstring, indent=INDENT * 2, fid=fid)
-    fid.write('\n')
-
-    # path parameters
-    name_to_parameters = dict([(param.name, param) for param in request.parameters])
-
+    # Prepare a representation of path parameters
     token_pth = swagger_to.tokenize_path(path=request.path)
+    name_to_parameters = {param.name: param for param in request.parameters}
 
-    if not token_pth.parameter_to_token_indices:
-        fid.write(INDENT * 2 + 'url = self.url_prefix + "{}"'.format(request.path))
-    else:
-        fid.write(INDENT * 2 + 'url_parts = [self.url_prefix]')
-        for i, tkn in enumerate(token_pth.tokens):
-            fid.write("\n")
-
+    path_tokens = []  # type: List[_Token]
+    if token_pth.parameter_to_token_indices:
+        for i, token_text in enumerate(token_pth.tokens):
+            param = None  # type: Optional[Parameter]
             if i in token_pth.token_index_to_parameter:
                 param_name = token_pth.token_index_to_parameter[i]
                 param = name_to_parameters[param_name]
 
-                fid.write(
-                    INDENT * 2 + 'url_parts.append({})'.format(
-                        _to_string_expression(typedef=param.typedef, expression=param.name)))
-            else:
-                fid.write(INDENT * 2 + 'url_parts.append("{}")'.format(
-                    tkn.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')))
+            path_tokens.append(_Token(text=token_text, parameter=param))
 
-        fid.write('\n')
-        fid.write(INDENT * 2 + 'url = "".join(url_parts)')
+    expected_type_expression = {
+        param: _expected_type_expression(typedef=param.typedef)
+        for param in request.parameters if not isinstance(param.typedef, Filedef)
+    }  # type: Dict[Union[Parameter, Response], str]
 
-    if request.query_parameters:
-        fid.write('\n\n')
-        fid.write(INDENT * 2 + 'params = {\n')
+    if resp is not None:
+        expected_type_expression[resp] = _expected_type_expression(typedef=resp.typedef)
 
-        for i, param in enumerate(request.query_parameters):
-            if i > 0:
-                fid.write(',\n')
-            if isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef)):
-                fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
-            else:
-                fid.write(INDENT * 3 + '"{0}": to_jsonable({0}, expected=[{1}])'.format(
-                    param.name, _expected_type_expression(typedef=param.typedef)))
-
-        fid.write('}')
-
-    if request.body_parameter and request.formdata_parameters:
-        raise KeyError("Both body parameter and form-data parameters are specified. "
-                       "The python client does not know how to resolve this request.")
-
-    if request.body_parameter:
-        fid.write('\n\n')
-        if isinstance(request.body_parameter.typedef, (Booldef, Intdef, Floatdef, Strdef)):
-            fid.write(INDENT * 2 + 'data = {}'.format(request.body_parameter.name))
-        else:
-            fid.write(INDENT * 2 + 'data = to_jsonable({0}, expected=[{1}])'.format(
-                request.body_parameter.name,
-                _expected_type_expression(typedef=request.body_parameter.typedef)))
-
-    if request.formdata_parameters:
-        fid.write('\n\n')
-        fid.write(INDENT * 2 + 'data = {\n')
-
-        for i, param in enumerate(request.formdata_parameters):
-            if i > 0:
-                fid.write(',\n')
-
-            if isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef)):
-                fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
-            else:
-                fid.write(INDENT * 3 + '"{0}": to_jsonable({0}, expected=[{1}])'.format(
-                    param.name, _expected_type_expression(typedef=param.typedef)))
-
-        fid.write('}')
-
-    if request.file_parameters:
-        fid.write('\n\n')
-        fid.write(INDENT * 2 + 'files = {\n')
-
-        for i, param in enumerate(request.file_parameters):
-            if i > 0:
-                fid.write(',\n')
-
-            assert isinstance(param.typedef, Filedef), \
-                "Expected parameter {} of path {}.{} to be Filedef, but got: {}".format(
-                    param.name, request.path, request.method, type(param.typedef))
-
-            fid.write(INDENT * 3 + '"{0}": {0}'.format(param.name))
-
-        fid.write('}')
-
-    fid.write('\n\n')
-
-    fid.write(INDENT * 2 + 'resp = requests.request(method={!r}, url=url'.format(request.method))
-    if request.query_parameters:
-        fid.write(', params=params')
-
-    if request.body_parameter:
-        fid.write(', json=data')
-    elif request.formdata_parameters:
-        fid.write(', data=data')
-    else:
-        # ignore the parameter which we don't know how to handle.
-        pass
-
-    if request.file_parameters:
-        fid.write(', files=files')
-
-    fid.write(', auth=self.auth)\n')
-    fid.write(INDENT * 2 + 'with contextlib.closing(resp):\n')
-    fid.write(INDENT * 3 + 'resp.raise_for_status()\n')
-
-    if resp is None:
-        if return_type == 'bytes':
-            fid.write(INDENT * 3 + 'return resp.content')
-        elif return_type == 'Any':
-            fid.write(INDENT * 3 + 'return resp.json()')
-        else:
-            raise NotImplementedError("Unhandled return type of the request {}.{}: {!r}".format(
-                request.path, request.method, return_type))
-    else:
-        fid.write(INDENT * 3 + 'return from_obj(obj=resp.json(), expected=[{}], path="")'.format(
-            _expected_type_expression(typedef=resp.typedef)))
+    return _REQUEST_FUNCTION_TPL.render(
+        request=request,
+        return_type=return_type,
+        resp=resp,
+        request_docstring=request_docstring,
+        type_expression={
+            param: _type_expression(typedef=param.typedef, path='{}.{}'.format(request.operation_id, param.name))
+            for param in request.parameters
+        },
+        path_tokens=path_tokens,
+        is_str={param: isinstance(param, Strdef)
+                for param in request.parameters},
+        is_primitive={
+            param: isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef))
+            for param in request.parameters
+        },
+        expected_type_expression=expected_type_expression).strip()
 
 
-def _write_client(requests: List[Request],
-                  fid: TextIO) -> None:
-    """Write the client class."""
-    fid.write("class RemoteCaller:\n")
-    fid.write(INDENT + '"""Executes the remote calls to the server."""\n')
-    fid.write('\n')
+_CLIENT_PY = _from_string_with_informative_exceptions(
+    env=_ENV,
+    text='''\
+#!/usr/bin/env python3
+# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+"""Implements the client for {{ service_name }}."""
 
-    fid.write(INDENT + 'def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:\n')
-    fid.write(INDENT * 2 + "self.url_prefix = url_prefix\n")
-    fid.write(INDENT * 2 + "self.auth = auth")
+# pylint: skip-file
+# pydocstyle: add-ignore=D105,D107,D401
 
-    if requests:
-        fid.write('\n\n')
+import contextlib
+from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
 
-    for i, request in enumerate(requests):
-        if i > 0:
-            fid.write('\n\n')
-        _write_request(request=request, fid=fid)
+import requests
+import requests.auth
+{% if classdefs %}
 
 
-def write_client_py(service_name: str,
-                    typedefs: MutableMapping[str, Typedef],
-                    requests: List[Request],
-                    fid: TextIO) -> None:
+{{ from_obj }}
+
+
+{{ to_jsonable }}
+{% for classdef in classdefs %}
+
+
+{{ class_definition[classdef] }}
+
+
+{{ factory_method[classdef] }}
+
+
+{{ class_from_obj[classdef] }}
+
+
+{{ class_to_jsonable[classdef] }}
+{% endfor %}{# /for classdef in classdefs #}
+{% endif %}{# /if classdefs #}
+
+
+class RemoteCaller:
+    """Executes the remote calls to the server."""
+
+    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+        self.url_prefix = url_prefix
+        self.auth = auth
+    {% for request in requests %}
+
+    {{ request_function[request]|indent }}
+    {% endfor %}{# /for request in requests #}
+
+
+# Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
+
+''')
+
+
+@icontract.ensure(lambda result: result.endswith('\n'), 'File ends with a new line.')
+def generate_client_py(service_name: str, typedefs: MutableMapping[str, Typedef], requests: List[Request]) -> str:
     """
-    Generate the file with the client code.
+    Generate the client code.
 
     :param service_name: used to designate the service that client connects to
     :param typedefs: table of type definitions in Python representation
     :param requests: request functions in Python representation
-    :param fid: target
-    :return:
+    :return: Python code
     """
-    _write_header(service_name=service_name, fid=fid)
+    classdefs = [typedef for typedef in typedefs.values() if isinstance(typedef, Classdef)]
 
-    if typedefs:
-        classdefs = [typedef for typedef in typedefs.values() if isinstance(typedef, Classdef)]
+    assert len(set(classdefs)) == len(classdefs), \
+        'All class definitions in Python representation are expected to be unique.'
 
-        if classdefs:
-            fid.write('\n\n')
-            _write_from_obj(classdefs=classdefs, fid=fid)
-            fid.write('\n\n\n')
-            _write_to_jsonable(classdefs=classdefs, fid=fid)
-            fid.write('\n\n\n')
-
-        for i, classdef in enumerate(classdefs):
-            if i > 0:
-                fid.write('\n\n\n')
-            _write_class(classdef=classdef, fid=fid)
-            fid.write('\n\n\n')
-            _write_class_factory_method(classdef=classdef, fid=fid)
-            fid.write('\n\n\n')
-            _write_class_from_obj(classdef=classdef, fid=fid)
-            fid.write('\n\n\n')
-            _write_class_to_jsonable(classdef=classdef, fid=fid)
-
-    if typedefs:
-        fid.write('\n\n\n')
-
-    _write_client(requests=requests, fid=fid)
-
-    if requests and typedefs:
-        fid.write('\n\n\n')
-
-    _write_footer(fid=fid)
-    fid.write('\n')
+    return _CLIENT_PY.render(
+        service_name=service_name,
+        classdefs=classdefs,
+        from_obj=_generate_from_obj(classdefs=classdefs),
+        to_jsonable=_generate_to_jsonable(classdefs=classdefs),
+        class_definition={classdef: _generate_class_definition(classdef=classdef)
+                          for classdef in classdefs},
+        factory_method={classdef: _generate_factory_method(classdef=classdef)
+                        for classdef in classdefs},
+        class_from_obj={classdef: _generate_class_from_obj(classdef=classdef)
+                        for classdef in classdefs},
+        class_to_jsonable={classdef: _generate_class_to_jsonable(classdef=classdef)
+                           for classdef in classdefs},
+        requests=requests,
+        request_function={request: _generate_request_function(request=request)
+                          for request in requests})

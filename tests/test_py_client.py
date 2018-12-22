@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """Test the Py client code generation."""
-import io
 import os
 import pathlib
 import unittest
-from typing import TextIO, cast
 
 import swagger_to.intermediate
 import swagger_to.py_client
 import swagger_to.swagger
 
 # pylint: disable=missing-docstring
+# pylint: disable=protected-access
 
 
 class TestPyClient(unittest.TestCase):
@@ -41,15 +40,37 @@ class TestPyClient(unittest.TestCase):
 
             py_requests = swagger_to.py_client.to_requests(endpoints=endpoints, typedefs=py_typedefs)
 
-            buf = io.StringIO()
-            buffid = cast(TextIO, buf)
-            swagger_to.py_client.write_client_py(
-                service_name=swagger.name, typedefs=py_typedefs, requests=py_requests, fid=buffid)
-
-            got = buf.getvalue()
+            got = swagger_to.py_client.generate_client_py(
+                service_name=swagger.name, typedefs=py_typedefs, requests=py_requests)
 
             expected = (case_dir / "client.py").read_text()
             self.assertEqual(expected, got)
+
+
+class TestDocstring(unittest.TestCase):
+    def test_single_line(self):
+        result = swagger_to.py_client._docstring(text=r'Do something.')
+        self.assertEqual('"""Do something."""', result)
+
+    def test_backslash_handled(self):
+        result = swagger_to.py_client._docstring(text=r'Do \something.')
+        self.assertEqual('r"""Do \\something."""', result)
+
+    def test_triple_quote_handled(self):
+        result = swagger_to.py_client._docstring(text='Do """something.')
+        self.assertEqual('"""Do \\"\\"\\"something."""', result)
+
+    def test_backslash_and_triple_quote(self):
+        result = swagger_to.py_client._docstring(text='Do \\ really """something.')
+        self.assertEqual('"""Do \\\\ really \\"\\"\\"something."""', result)
+
+    def test_special_chars(self):
+        result = swagger_to.py_client._docstring(text='Do \t really something.')
+        self.assertEqual('"""Do \t really something."""', result)
+
+    def test_multiline(self):
+        result = swagger_to.py_client._docstring(text='Do\nreally\nsomething.')
+        self.assertEqual('"""\nDo\nreally\nsomething.\n"""', result)
 
 
 if __name__ == '__main__':
