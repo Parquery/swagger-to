@@ -517,6 +517,9 @@ def _express_type(typedef: Typedef) -> str:
         return "map[string]{}".format(_express_or_identify_type(typedef.values))
 
     if isinstance(typedef, Structdef):
+        if len(typedef.fields) == 0:
+            return "struct {}"
+
         return _STRUCT_TPL.render(
             typedef=typedef,
             field_type={fielddef: _express_or_identify_type(fielddef.typedef)
