@@ -1,0 +1,26 @@
+package test_server
+
+import (
+	"net/http"
+	"log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+	LogErr *log.Logger
+	LogOut *log.Logger}
+
+// Upload implements Handler.Upload.
+func (h *HandlerImpl) Upload(w http.ResponseWriter,
+	r *http.Request) {
+	http.Error(w, "Not implemented: Upload", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: Upload")
+}
+
+// Static implements Handler.Static.
+func (h *HandlerImpl) Static(w http.ResponseWriter,
+	r *http.Request,
+	path string) {
+	http.Error(w, "Not implemented: Static", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: Static")
+}

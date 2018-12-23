@@ -1,0 +1,49 @@
+swagger: '2.0'
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test_server
+paths:
+  /upload:
+    put:
+      operationId: upload
+      tags:
+        - test_server
+      parameters:
+        - name: file_nme
+          in: formData
+          description: identifies the uploaded file.
+          required: true
+          type: string
+        - name: reference_image
+          in: formData
+          description: |
+            contains a .tar archive containing the reference image(s) encoded in JPEG.
+          required: true
+          type: file
+      consumes:
+        - multipart/form-data
+      responses:
+        200:
+          description: states that the session was correctly updated.
+        default:
+          description: contains an unexpected error.
+  /{path}:
+    get:
+      operationId: static
+      tags:
+        - test_server
+      description: serves a static file that matches the path.
+      parameters:
+        - name: path
+          in: path
+          description: is the path to the file relative to the root.
+          required: true
+          type: string
+          pattern: .+
+      responses:
+        200:
+          description: serves the file content.
+        default:
+          description: contains an unexpected error.
