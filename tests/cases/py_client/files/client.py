@@ -28,6 +28,7 @@ class RemoteCaller:
 
         :param file_nme: identifies the uploaded file.
         :param reference_image: contains a .tar archive containing the reference image(s) encoded in JPEG.
+
         :return: states that the session was correctly updated.
         """
         url = self.url_prefix + '/upload'
@@ -56,6 +57,7 @@ class RemoteCaller:
         Serves a static file that matches the path.
 
         :param path: is the path to the file relative to the root.
+
         :return: serves the file content.
         """
         url = "".join([

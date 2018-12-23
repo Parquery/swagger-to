@@ -971,12 +971,15 @@ Send a {{ request.method }} request to {{ request.path }}.
 {% endfor %}{# /for request.parameters #}
 {% endif %}{# /if request.parameters #}
 {% if resp is none or resp.description == ''%}
+
 :return:
 {% else %}
 {% if '\\n' in resp.description %}
+
 :return:
     {{ resp.description|indent }}
 {% else %}
+
 :return: {{ resp.description }}
 {% endif %}{# /if '\\n' in resp.description #}
 {% endif %}{# /if resp is none #}''')
