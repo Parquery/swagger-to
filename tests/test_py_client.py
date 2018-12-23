@@ -43,7 +43,8 @@ class TestPyClient(unittest.TestCase):
             got = swagger_to.py_client.generate_client_py(
                 service_name=swagger.name, typedefs=py_typedefs, requests=py_requests)
 
-            expected = (case_dir / "client.py").read_text()
+            expected_pth = case_dir / "client.py"
+            expected = expected_pth.read_text()
             self.assertEqual(expected, got)
 
 

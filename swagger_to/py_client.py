@@ -750,14 +750,13 @@ def {{ classdef.identifier|snake_case }}_from_obj(obj: Any, path: str = "") -> {
     if not isinstance(obj, dict):
         raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
 
+    {% if not classdef.attributes %}
+    return {{ classdef.identifier }}()
+    {% else %}
     for key in obj:
         if not isinstance(key, str):
             raise ValueError(
                 'Expected a key of type str at path {}, but got: {}'.format(path, type(key)))
-    {% if not classdef.attributes %}
-
-    return {{ classdef.identifier }}()
-    {% else %}
     {% for attr in classdef.attributes.values() %}
 
     {% if attr.required %}

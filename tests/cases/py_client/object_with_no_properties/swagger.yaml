@@ -1,0 +1,35 @@
+swagger: '2.0'
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test
+paths:
+  /products:
+    get:
+      operationId: test_me
+      tags:
+        - test
+      description: |
+        is a test endpoint.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: empty_object
+          in: body
+          schema:
+            $ref: '#/definitions/EmptyObject'
+      responses:
+        200:
+          description: is a response with an empty object.
+          schema:
+            $ref: '#/definitions/EmptyObject'
+        default:
+          description: Unexpected error
+
+definitions:
+  EmptyObject:
+    description: is an empty object without properties.
+    type : object
