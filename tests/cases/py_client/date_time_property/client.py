@@ -137,7 +137,7 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
 
 
 class TestObject:
-    """is a test object."""
+    """Is a test object."""
 
     def __init__(
             self,
@@ -214,7 +214,7 @@ class RemoteCaller:
             self,
             test_object: Optional[TestObject] = None) -> TestObject:
         """
-        is a test endpoint.
+        Is a test endpoint.
 
         :param test_object:
         :return: a test object

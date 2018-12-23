@@ -182,6 +182,28 @@ def snake_case(identifier: str) -> str:
     return result.lower()
 
 
+def upper_first(text: str) -> str:
+    """
+    Capitalizes the first letter of the text.
+
+    >>> upper_first(text='some text')
+    'Some text'
+
+    >>> upper_first(text='Some text')
+    'Some text'
+
+    >>> upper_first(text='')
+    ''
+
+    :param text: to be capitalized
+    :return: text with the first letter capitalized
+    """
+    if len(text) == 0:
+        return ''
+
+    return text[0].upper() + text[1:]
+
+
 class TokenizedPath:
     """Represent a tokenization of a Swagger path to an endpoint."""
 
