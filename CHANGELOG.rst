@@ -1,7 +1,26 @@
+3.0.0
+=====
+The major change is:
+
+* Made all functions protected in the modules responsible for code generation.
+
+  This impacts only the users which used swagger-to as a library. This change does not affect users which use
+  swagger-to only as CLI.
+
+The minor changes are:
+
+* Rewritten go-server and py-client generation with jinja2 template engine.
+
+  The generated code is semantically equal to the previous version, but a bit more readable and easier to diff
+  since we enforce now the line width of 100 columns and split argument lists into multiple lines.
+* swagger-to-py-client includes a response description in the docstring of the request function.
+* Refactored tests into a hierarchy of test case directories
+* Added test cases with files, empty objects and objects with optional fields to swagger-to-py-client and go-server.
+
 2.4.0
 =====
 * swagger-to-elm-client ignores formData parameters gracefully
-* Added `no_samples` flag to swagger-to-elm-client and swagger-to-go-server to 
+* Added `no_samples` flag to swagger-to-elm-client and swagger-to-go-server to
   avoid generating sample files.
 
 2.3.0
