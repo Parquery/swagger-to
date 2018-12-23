@@ -23,7 +23,7 @@ paths:
             $ref: '#/definitions/TestObject'
       responses:
         200:
-          description: is a response with a test object.
+          description: a test object
           schema:
             $ref: '#/definitions/TestObject'
         default:

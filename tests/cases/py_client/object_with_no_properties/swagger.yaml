@@ -23,7 +23,7 @@ paths:
             $ref: '#/definitions/EmptyObject'
       responses:
         200:
-          description: is a response with an empty object.
+          description: an empty object
           schema:
             $ref: '#/definitions/EmptyObject'
         default:
