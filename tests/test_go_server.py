@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 import unittest
 
+import collections
+
 import swagger_to.go_server
 import swagger_to.intermediate
 import swagger_to.swagger
@@ -61,25 +63,28 @@ class TestGoServer(unittest.TestCase):
 
             package = swagger.name
 
-            got = swagger_to.go_server.generate_types_go(package=package, typedefs=go_typedefs)
-            expected = (case_dir / "types.go").read_text()
-            self.assertEqual(expected, got)
+            got = collections.OrderedDict([("types.go",
+                                            swagger_to.go_server.generate_types_go(
+                                                package=package,
+                                                typedefs=go_typedefs)), ("routes.go",
+                                                                         swagger_to.go_server.generate_routes_go(
+                                                                             package=package, routes=go_routes)),
+                                           ("handler_impl.go.sample",
+                                            swagger_to.go_server.generate_handler_impl_go(
+                                                package=package,
+                                                routes=go_routes)), ("handler.go",
+                                                                     swagger_to.go_server.generate_handler_go(
+                                                                         package=package, routes=go_routes)),
+                                           ("jsonschemas.go",
+                                            swagger_to.go_server.generate_json_schemas_go(
+                                                package=package, routes=go_routes, typedefs=go_typedefs))])
 
-            got = swagger_to.go_server.generate_routes_go(package=package, routes=go_routes)
-            expected = (case_dir / "routes.go").read_text()
-            self.assertEqual(expected, got)
+            for filename, text in got.items():
+                expected_pth = case_dir / filename
 
-            got = swagger_to.go_server.generate_handler_impl_go(package=package, routes=go_routes)
-            expected = (case_dir / "handler_impl.go.sample").read_text()
-            self.assertEqual(expected, got)
-
-            got = swagger_to.go_server.generate_handler_go(package=package, routes=go_routes)
-            expected = (case_dir / "handler.go").read_text()
-            self.assertEqual(expected, got)
-
-            got = swagger_to.go_server.generate_json_schemas_go(package=package, routes=go_routes, typedefs=go_typedefs)
-            expected = (case_dir / "jsonschemas.go").read_text()
-            self.assertEqual(expected, got)
+                expected = expected_pth.read_text()
+                self.assertEqual(expected, text,
+                                 "A mismatch between the generated file and the expected file: {}".format(expected_pth))
 
 
 if __name__ == '__main__':
