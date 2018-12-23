@@ -81,7 +81,6 @@ class TestGoServer(unittest.TestCase):
 
             for filename, text in got.items():
                 expected_pth = case_dir / filename
-
                 expected = expected_pth.read_text()
                 self.assertEqual(expected, text,
                                  "A mismatch between the generated file and the expected file: {}".format(expected_pth))

@@ -40,12 +40,12 @@ class TestPyClient(unittest.TestCase):
 
             py_requests = swagger_to.py_client.to_requests(endpoints=endpoints, typedefs=py_typedefs)
 
-            got = swagger_to.py_client.generate_client_py(
+            text = swagger_to.py_client.generate_client_py(
                 service_name=swagger.name, typedefs=py_typedefs, requests=py_requests)
 
             expected_pth = case_dir / "client.py"
             expected = expected_pth.read_text()
-            self.assertEqual(expected, got)
+            self.assertEqual(expected, text)
 
 
 class TestDocstring(unittest.TestCase):
