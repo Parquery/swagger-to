@@ -968,7 +968,17 @@ Send a {{ request.method }} request to {{ request.path }}.
 {% endif %}{# /if '\\n' in param.description #}
 {% endif %}{# /if not param.description #}
 {% endfor %}{# /for request.parameters #}
-{% endif %}{# /if request.parameters #}''')
+{% endif %}{# /if request.parameters #}
+{% if resp is none or resp.description == ''%}
+:return:
+{% else %}
+{% if '\\n' in resp.description %}
+:return:
+    {{ resp.description|indent }}
+{% else %}
+:return: {{ resp.description }}
+{% endif %}{# /if '\\n' in resp.description #}
+{% endif %}{# /if resp is none #}''')
 
 _REQUEST_FUNCTION_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
@@ -1068,19 +1078,15 @@ def {{ request.operation_id}}(
 
     with contextlib.closing(resp):
         resp.raise_for_status()
-        {% if resp is none %}
         {% if return_type == 'bytes' %}
         return resp.content
-        {% elif return_type == 'Any' %}
+        {% elif return_type == 'MutableMapping[str, Any]' %}
         return resp.json()
-        {% else %}
-        {{ raise('Unhandled return type of the request %s.%s: %s'|format(request.path, request.method, return_type)) }}
-        {% endif %}{# /if return_type == 'bytes' #}
         {% else %}
         return from_obj(
             obj=resp.json(),
             expected=[{{ expected_type_expression[resp] }}])
-        {% endif %}{# /if resp is none #}''')
+        {% endif %}''')
 
 
 class _Token:
@@ -1112,17 +1118,19 @@ def _generate_request_function(request: Request) -> str:
     """
     resp = None  # type: Optional[Response]
     return_type = 'bytes'
-    if request.produces == ['application/json']:
-        if '200' in request.responses:
-            resp = request.responses['200']
+
+    if '200' in request.responses:
+        resp = request.responses['200']
+
+        if request.produces == ['application/json']:
             if resp.typedef is not None:
                 return_type = _type_expression(typedef=resp.typedef, path=request.operation_id + '.' + str(resp.code))
             else:
-                # The schema for the response has not been defined. Hence we can not parse the response.
-                resp = None
-                return_type = 'Any'
+                # The schema for the response has not been defined. Hence we can not parse the response to an object,
+                # but we can at least parse it as JSON.
+                return_type = 'MutableMapping[str, Any]'
 
-    request_docstring = _REQUEST_DOCSTRING_TPL.render(request=request)
+    request_docstring = _REQUEST_DOCSTRING_TPL.render(request=request, resp=resp).rstrip()
 
     # Prepare a representation of path parameters
     token_pth = swagger_to.tokenize_path(path=request.path)
@@ -1143,7 +1151,7 @@ def _generate_request_function(request: Request) -> str:
         for param in request.parameters if not isinstance(param.typedef, Filedef)
     }  # type: Dict[Union[Parameter, Response], str]
 
-    if resp is not None:
+    if return_type not in ['bytes', 'MutableMapping[str, Any]']:
         expected_type_expression[resp] = _expected_type_expression(typedef=resp.typedef)
 
     return _REQUEST_FUNCTION_TPL.render(
