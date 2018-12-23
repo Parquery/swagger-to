@@ -53,7 +53,7 @@ class RemoteCaller:
             self,
             path: str) -> bytes:
         """
-        serves a static file that matches the path.
+        Serves a static file that matches the path.
 
         :param path: is the path to the file relative to the root.
         :return: serves the file content.

@@ -436,7 +436,8 @@ _ENV.filters.update({
     'docstring': _docstring,
     'snake_case': swagger_to.snake_case,
     'raise': _raise,
-    'repr': lambda value: repr(value)
+    'repr': lambda value: repr(value),
+    'upper_first': swagger_to.upper_first
 })
 
 
@@ -508,7 +509,7 @@ _CLASS_DEF_WO_ATTRIBUTES = _from_string_with_informative_exceptions(
 {% if classdef.attributes %}{{ raise('Expected a classdef without attributes, but got some.') }}{% endif %}
 class {{ classdef.identifier }}:
     {% if classdef.description %}
-    {{ classdef.description|docstring|indent }}
+    {{ classdef.description|upper_first|docstring|indent }}
 
     {% endif %}
     def to_jsonable(self) -> MutableMapping[str, Any]:
@@ -525,7 +526,7 @@ _CLASS_DEF_WITH_ATTRIBUTES_TPL = _from_string_with_informative_exceptions(
 {% if not classdef.attributes %}{{ raise('Expected a classdefinition with attributes, but got none.') }}{% endif %}
 class {{ classdef.identifier }}:
     {% if classdef.description %}
-    {{ classdef.description|docstring|indent }}
+    {{ classdef.description|upper_first|docstring|indent }}
 
     {% endif %}
     def __init__(
@@ -950,7 +951,7 @@ _REQUEST_DOCSTRING_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
 {% if request.description %}
-{{ request.description }}
+{{ request.description|upper_first }}
 {% else %}
 Send a {{ request.method }} request to {{ request.path }}.
 {% endif %}{# /if request.description #}

@@ -137,7 +137,7 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
 
 
 class EmptyObject:
-    """is an empty object without properties."""
+    """Is an empty object without properties."""
 
     def to_jsonable(self) -> MutableMapping[str, Any]:
         """
@@ -191,7 +191,7 @@ class RemoteCaller:
             self,
             empty_object: Optional[EmptyObject] = None) -> EmptyObject:
         """
-        is a test endpoint.
+        Is a test endpoint.
 
         :param empty_object:
         :return: an empty object
