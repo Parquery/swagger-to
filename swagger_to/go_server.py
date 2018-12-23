@@ -548,8 +548,8 @@ def _define_type(typedef: Typedef) -> str:
 _IMPORTS_TPL = ENV.from_string('''\
 {% if imports|length == 0 %}
 {% elif imports|length == 1 %}
-import "{{ imports[0] }}"
-{% else %}
+import "{{ imports[0] }}"{#
+#}{% else %}
 import (
 {% for imprt in imports %}
     "{{ imprt }}"
