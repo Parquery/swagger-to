@@ -822,6 +822,7 @@ class RemoteCaller:
 
         :param latitude: Latitude component of location.
         :param longitude: Longitude component of location.
+
         :return: An array of products
         """
         url = self.url_prefix + '/products'
@@ -859,6 +860,7 @@ class RemoteCaller:
         :param end_latitude: Latitude component of end location.
         :param end_longitude: Longitude component of end location.
         :param max_lines: A maximum number of lines in the produced json.
+
         :return: An array of price estimates by product
         """
         url = "".join([
@@ -900,6 +902,7 @@ class RemoteCaller:
         :param start_longitude: Longitude component of start location.
         :param customer_uuid: Unique customer identifier to be used for experience customization.
         :param product_id: Unique identifier representing a specific product for a given latitude & longitude.
+
         :return: An array of products
         """
         url = self.url_prefix + '/estimates/time'
@@ -929,6 +932,7 @@ class RemoteCaller:
         Update an User Profile.
 
         :param update_user: profile of a user to update
+
         :return: Previous profile information for a user
         """
         url = self.url_prefix + '/me'
@@ -960,6 +964,7 @@ class RemoteCaller:
         :param user_id: identifies a user.
         :param profile_picture: contains the user image encoded in JPEG as a multi-value field.
         :param birthday: is the user's birth date.
+
         :return: Confirms that the information was uploaded.
         """
         url = self.url_prefix + '/upload_infos'
@@ -993,6 +998,7 @@ class RemoteCaller:
 
         :param offset: Offset the list of returned results by this amount. Default is zero.
         :param limit: Number of items to retrieve. Default is 5, maximum is 100.
+
         :return: History information for the given user
         """
         url = self.url_prefix + '/history'

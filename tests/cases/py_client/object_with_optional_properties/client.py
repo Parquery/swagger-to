@@ -235,6 +235,7 @@ class RemoteCaller:
         Is a test endpoint.
 
         :param test_object:
+
         :return: a test object
         """
         url = self.url_prefix + '/products'
