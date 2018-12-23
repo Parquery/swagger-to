@@ -1006,7 +1006,7 @@ import "net/http"
 type Handler interface {
 {% for route in routes %}
     {% if not loop.first %}
-    
+
     {% endif %}
     {% if route.handler.description %}
     {{ route.handler.description|comment|indent }}

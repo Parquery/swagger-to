@@ -90,7 +90,7 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
 
     :param obj: to be converted
     :param expected: list of types representing the (nested) structure
-    :param path: path to the object used for debugging 
+    :param path: path to the object used for debugging
     :return: JSON-able representation of the object
     """
     if not expected:
