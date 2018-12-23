@@ -1,3 +1,11 @@
+3.0.1
+=====
+* Added new line before ``:return:`` in swagger-to-py-client.
+* swagger-to-py-client capitalizes the first letter of class and request function docstrings, respectively.
+* Stripped trailing white spaces in swagger-to-go-server and py-client templates.
+* Added ``date-time`` test case for swagger-to-go-server and py-client.
+* Fixed contract violation in go server due to one-line imports ending in a superfluous new line.
+
 3.0.0
 =====
 The major change is:
