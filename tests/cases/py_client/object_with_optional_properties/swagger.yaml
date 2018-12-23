@@ -1,0 +1,47 @@
+swagger: '2.0'
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test
+paths:
+  /products:
+    get:
+      operationId: test_me
+      tags:
+        - test
+      description: |
+        is a test endpoint.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: test_object
+          in: body
+          schema:
+            $ref: '#/definitions/TestObject'
+      responses:
+        200:
+          description: is a response with a test object.
+          schema:
+            $ref: '#/definitions/TestObject'
+        default:
+          description: Unexpected error
+
+definitions:
+  Capacity:
+    type: integer
+    format: int32
+    description: is an identifiable primitive definition.
+
+  TestObject:
+    description: is a test object.
+    type : object
+    properties:
+      product_id:
+        type: string
+        description: is a test string property.
+      capacity:
+        $ref: "#/definitions/Capacity"
+    # All fields are intentionally marked as opional.
