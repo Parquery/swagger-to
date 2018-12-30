@@ -4,9 +4,9 @@
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements, too-many-lines
 
-import collections
 from typing import MutableMapping, Union, Set, List, Optional, Mapping, Iterable, Tuple  # pylint: disable=unused-import
 
+import collections
 import icontract
 import jinja2
 
@@ -299,6 +299,7 @@ class Wrapper:
         self.identifier = ''
         self.handler = None  # type: Union[None, Handler]
 
+        self.header_arguments = []  # type: List[Argument]
         self.query_arguments = []  # type: List[Argument]
         self.path_arguments = []  # type: List[Argument]
         self.body_argument = None  # type: Union[None, Argument]
@@ -374,7 +375,7 @@ def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappi
             # No code is generated for the parameters in the form data since there are so many edge cases
             # which we possibly can't cover.
             continue
-        elif param.in_what in ['query', 'body', 'path']:
+        elif param.in_what in ['query', 'body', 'path', 'header']:
             handable_parameters.append(param)
         else:
             raise NotImplementedError(
@@ -395,6 +396,28 @@ def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappi
             param: swagger_to.camel_case(identifier="{}_{}".format(param.in_what, param.name))
             for param in endpoint.parameters
         }
+
+        ##
+        # Assert that there are no conflicts at this point
+        ##
+
+        by_identifier = collections.defaultdict(
+            list)  # type: MutableMapping[str, List[swagger_to.intermediate.Parameter]]
+        for param, identifier in param_to_identifier.items():
+            by_identifier[identifier].append(param)
+
+        # yapf: disable
+        msgs = [
+            "in the endpoint {} {} for the identifier {!r}: {}".format(
+                endpoint.method.upper(), endpoint.path, identifier, ", ".join(
+                    ["{} in {}".format(param.name, param.in_what) for param in params]))
+            for identifier, params in by_identifier.items()
+            if len(params) > 1
+        ]
+        # yapf: enable
+
+        if len(msgs) > 0:
+            raise ValueError("There are conflicting identifiers for parameters:\n{}".format("\n".join(msgs)))
 
     ##
     # Convert parameters to arguments
@@ -426,7 +449,10 @@ def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappi
         if param.json_schema is not None:
             argument.json_schema = _to_json_schema(intermediate_schema=param.json_schema)
 
-        if argument.in_what == 'query':
+        if argument.in_what == 'header':
+            route.wrapper.header_arguments.append(argument)
+
+        elif argument.in_what == 'query':
             route.wrapper.query_arguments.append(argument)
 
         elif argument.in_what == 'body':
@@ -820,62 +846,83 @@ func {{ route.wrapper.identifier }}(h Handler, w http.ResponseWriter, r *http.Re
 {% if newliner() %}{{ '\n' }}{% endif %}
 {% for argument in route.handler.arguments %}
     var {{ argument.parsing_identifier }} {{ express_or_identify_type[argument]|indent|indent }}
-{% endfor %}
+{% endfor %}{# /for argument in route.handler.arguments #}
 {% endif %}{# /if intermediate variables #}
-{% if route.wrapper.query_arguments %}
+{% if route.wrapper.header_arguments %}{### Header arguments ###}
+    {% if newliner() %}{{ '\n' }}{% endif %}
+    hdr := r.Header
+    {% for argument in route.wrapper.header_arguments %}
+
+    {% if argument.required %}
+    if _, ok := hdr[{{ argument.parameter_name|escaped_str }}]; !ok {
+        {% set msg = "Parameter '%s' expected in header"|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}, http.StatusBadRequest)
+        return
+    }
+    {{ argument_from_string(
+        argument, "hdr.Get(%s)"|format(argument.parameter_name|escaped_str))|indent }}
+    {% else %}
+    if _, ok := hdr[{{ argument.parameter_name|escaped_str }}]; ok {
+        {{ argument_from_string(
+            argument, "hdr.Get(%s)"|format(argument.parameter_name|escaped_str))|indent|indent }}
+    }
+    {% endif %}{# /if argument.required #}
+    {% endfor %}{# /for argument in route.wrapper.header_arguments #}
+{% endif %}{# /if header arguments #}
+{% if route.wrapper.query_arguments %}{### Query arguments ###}
     {% if newliner() %}{{ '\n' }}{% endif %}
     q := r.URL.Query()
-{% for argument in route.wrapper.query_arguments %}{# query arguments #}
+    {% for argument in route.wrapper.query_arguments %}
 
-{% if argument.required %}
+    {% if argument.required %}
     if _, ok := q[{{ argument.parameter_name|escaped_str }}]; !ok {
-{% set msg = "Parameter '%s' expected in query"|format(argument.parameter_name)|escaped_str %}
+        {% set msg = "Parameter '%s' expected in query"|format(argument.parameter_name)|escaped_str %}
         http.Error(w, {{ msg }}, http.StatusBadRequest)
         return
     }
     {{ argument_from_string(
         argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent }}
-{% else %}
+    {% else %}
     if _, ok := q[{{ argument.parameter_name|escaped_str }}]; ok {
         {{ argument_from_string(
             argument, "q.Get(%s)"|format(argument.parameter_name|escaped_str))|indent|indent }}
     }
-{% endif %}
-{% endfor %}{# /query arguments #}
+    {% endif %}{# /if argument.required #}
+    {% endfor %}{# /for query arguments #}
 {% endif %}{# /if query arguments #}
-{% if route.wrapper.path_arguments %}
+{% if route.wrapper.path_arguments %}{### Path arguments ###}
     {% if newliner() %}{{ '\n' }}{% endif %}
     vars := mux.Vars(r)
-{% for argument in route.wrapper.path_arguments %}
+    {% for argument in route.wrapper.path_arguments %}
 
-{% if argument.required %}
+    {% if argument.required %}
     if _, ok := vars[{{ argument.parameter_name|escaped_str }}]; !ok {
-{% set msg = "Parameter '%s' expected in path"|format(argument.parameter_name)|escaped_str %}
+    {% set msg = "Parameter '%s' expected in path"|format(argument.parameter_name)|escaped_str %}
         http.Error(w, {{ msg }}, http.StatusBadRequest)
         return
     }
     {{ argument_from_string(argument, "vars[%s]"|format(argument.parameter_name|escaped_str))|indent }}
-{% else %}
+    {% else %}
     if value, ok := vars[{{ argument.parameter_name|escaped_str }}]; ok {
         {{ argument_from_string(argument, "vars[%s]"|format(argument.parameter_name|escaped_str))|indent|indent }}
     }
-{% endif %}
-{% endfor %}{# /path arguments #}
+    {% endif %}
+    {% endfor %}{# /path arguments #}
 {% endif %}{# /if path arguments #}
-{% if route.wrapper.body_argument is not none %}
+{% if route.wrapper.body_argument is not none %}{### Body argument ###}
     {% if newliner() %}{{ '\n' }}{% endif %}
-{% if route.wrapper.body_argument.required %}
+    {% if route.wrapper.body_argument.required %}
     if r.Body == nil {
-{% set msg = "Parameter '%s' expected in body, but got no body"|format(route.wrapper.body_argument.parameter_name)|escaped_str %}
+    {% set msg = "Parameter '%s' expected in body, but got no body"|format(route.wrapper.body_argument.parameter_name)|escaped_str %}
         http.Error(w, {{ msg }}, http.StatusBadRequest)
         return
     }
     {{ argument_from_body(route.wrapper.body_argument)|indent }}
-{% else %}
+    {% else %}
     if r.Body != nil {
         {{ argument_from_body(route.wrapper.body_argument)|indent|indent }}
     }
-{% endif %}
+    {% endif %}{# /if route.wrapper.body_argument.required #}
 {% endif %}{# /if body argument #}
 {% if newliner() %}{{ '\n' }}{% endif %}
 {% if not route.handler.arguments %}
@@ -943,7 +990,7 @@ def generate_routes_go(package: str, routes: List[Route]) -> str:
                 import_set.add('io/ioutil')
                 import_set.add('encoding/json')
 
-            if argument.in_what == 'query':
+            if argument.in_what == 'query' or argument.in_what == 'header':
                 tajp = ''
                 if isinstance(argument.typedef, Primitivedef):
                     tajp = argument.typedef.type

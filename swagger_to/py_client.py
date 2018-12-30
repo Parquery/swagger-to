@@ -149,6 +149,7 @@ class Request:
 
         # parameters split into categories
         self.body_parameter = None  # type: Optional[Parameter]
+        self.header_parameters = []  # type: List[Parameter]
         self.query_parameters = []  # type: List[Parameter]
         self.path_parameters = []  # type: List[Parameter]
         self.formdata_parameters = []  # type: List[Parameter]
@@ -280,6 +281,7 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
         param
         for param in ([result.body_parameter] if result.body_parameter else []) +
                      result.query_parameters +
+                     result.header_parameters +
                      result.path_parameters +
                      result.formdata_parameters +
                      result.file_parameters], key=id),
@@ -312,9 +314,32 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
     needs_location_prefix = len(set(identifiers)) != len(identifiers)
     if needs_location_prefix:
         param_to_identifier = {
-            param: swagger_to.snake_case(identifier="{}_{}".format(param.in_what, param.name))
-            for param in endpoint.parameters
+            inter_param: swagger_to.snake_case(identifier="{}_{}".format(inter_param.in_what, inter_param.name))
+            for inter_param in endpoint.parameters
         }
+
+        ##
+        # Assert that there are no conflicts at this point
+        ##
+
+        by_identifier = collections.defaultdict(
+            list)  # type: MutableMapping[str, List[swagger_to.intermediate.Parameter]]
+        for inter_param, identifier in param_to_identifier.items():
+            by_identifier[identifier].append(inter_param)
+
+        # yapf: disable
+        msgs = [
+            "in the endpoint {} {} for the identifier {!r}: {}".format(
+                endpoint.method.upper(), endpoint.path, identifier, ", ".join(
+                    ["{} in {}".format(inter_param.name, inter_param.in_what)
+                     for inter_param in inter_params]))
+            for identifier, inter_params in by_identifier.items()
+            if len(inter_params) > 1
+        ]
+        # yapf: enable
+
+        if len(msgs) > 0:
+            raise ValueError("There are conflicting identifiers for parameters:\n{}".format("\n".join(msgs)))
 
     ##
     # Convert parameters
@@ -354,6 +379,8 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
             req.file_parameters.append(param)
         elif param.in_what == 'body':
             req.body_parameter = param
+        elif param.in_what == 'header':
+            req.header_parameters.append(param)
         elif param.in_what == 'query':
             req.query_parameters.append(param)
         elif param.in_what == 'path':
@@ -361,7 +388,7 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
         elif param.in_what == 'formData':
             req.formdata_parameters.append(param)
         else:
-            raise NotImplementedError("Unsupported parameter 'in' to Python translation: {}".format(param.in_what))
+            raise NotImplementedError("Unsupported parameter location: in {}".format(param.in_what))
 
     # Parameters are sorted so that first come the required ones; python requires the optional parameters to come
     # at the end.
@@ -1050,6 +1077,18 @@ def {{ request.operation_id}}(
     {% endif %}
     {% endfor %}{# /for token in path_tokens #}
     {% endif %}{# /if not path_tokens #}
+    {% if request.header_parameters %}{### Header parameters ###}
+
+    headers = {
+        {% for param in request.header_parameters %}
+        {% if is_primitive[param] %}
+        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
+        {% else %}
+        {{ param.name|repr }}: to_jsonable(
+            {{ param.identifier }}, expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
+        {% endif %}
+        {% endfor %}{# /for param in request.header_parameters #}
+    {% endif %}{# /if request.header_parameters #}
     {% if request.query_parameters %}{### Query parameters ###}
 
     params = {
@@ -1099,6 +1138,9 @@ def {{ request.operation_id}}(
     resp = requests.request(
         method={{ request.method|repr }},
         url=url,
+        {% if request.header_parameters %}
+        headers=headers,
+        {% endif %}
         {% if request.query_parameters %}
         params=params,
         {% endif %}

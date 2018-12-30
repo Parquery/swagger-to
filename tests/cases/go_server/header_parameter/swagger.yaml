@@ -1,0 +1,36 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test
+paths:
+  /products:
+    get:
+      operationId: test_me
+      tags:
+        - test
+      description: is a test endpoint.
+      parameters:
+        - name: Some-parameter
+          in: header
+          type: string
+          required: true
+        - name: Some-optional
+          in: header
+          type: string
+          required: false
+        - name: X-Some-Custom-Parameter
+          in: header
+          type: integer
+          format: int64
+          required: true
+      responses:
+        200:
+          description: a confirmation
+        default:
+          description: Unexpected error
