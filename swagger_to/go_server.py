@@ -4,9 +4,9 @@
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 # pylint: disable=too-many-statements, too-many-lines
 
+import collections
 from typing import MutableMapping, Union, Set, List, Optional, Mapping, Iterable, Tuple  # pylint: disable=unused-import
 
-import collections
 import icontract
 import jinja2
 
@@ -273,7 +273,10 @@ class Argument:
         self.typedef = None  # type: Union[None, Typedef]
         self.identifier = ''
         self.in_what = ''
+
+        # Original name of the endpoint parameter
         self.parameter_name = ''
+
         self.required = False
         self.parsing_identifier = ''
         self.json_schema = None  # type: Optional[JsonSchema]
@@ -362,18 +365,48 @@ def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappi
     route.path = _endpoint_to_route_path(endpoint=endpoint)
     route.description = endpoint.description
 
-    # parameters to arguments
+    ##
+    # Determine handable parameters
+    ##
+    handable_parameters = []  # type: List[swagger_to.intermediate.Parameter]
+
     for param in endpoint.parameters:
+        # Assert that we can handle all the supplied parameters.
         if param.in_what == 'formData':
-            # no code is generated for the parameters in the form data since there are so many edge cases
+            # No code is generated for the parameters in the form data since there are so many edge cases
             # which we possibly can't cover.
             continue
         elif param.in_what in ['query', 'body', 'path']:
-            pass
+            handable_parameters.append(param)
         else:
             raise NotImplementedError(
                 "Handling of parameters in {} is not implemented yet: endpoint {} {}, parameter {}.".format(
                     param.in_what, endpoint.path, endpoint.method, param.name))
+
+    ##
+    # Generate identifiers corresponding to the parameters.
+    ##
+
+    param_to_identifier = {param: swagger_to.camel_case(identifier=param.name) for param in handable_parameters}
+
+    # Add the location as prefix if the argument identifiers overlap
+    identifiers = list(param_to_identifier.values())
+    needs_location_prefix = len(set(identifiers)) != len(identifiers)
+    if needs_location_prefix:
+        param_to_identifier = {
+            param: swagger_to.camel_case(identifier="{}_{}".format(param.in_what, param.name))
+            for param in endpoint.parameters
+        }
+
+    ##
+    # Convert parameters to arguments
+    ##
+
+    assert all(param in param_to_identifier for param in handable_parameters), \
+        "Expected all parameters to have a generated argument identifier."
+
+    for param in handable_parameters:
+        identifier = param_to_identifier[param]
 
         argument = Argument()
         argument.typedef = _anonymous_or_get_typedef(intermediate_typedef=param.typedef, typedefs=typedefs)
@@ -388,9 +421,9 @@ def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappi
             argument.typedef = pointer_typedef
 
         argument.parameter_name = param.name
-        argument.parsing_identifier = swagger_to.camel_case(identifier='a_' + param.name)
-        argument.identifier = swagger_to.camel_case(identifier=param.name)
+        argument.identifier = identifier
         argument.in_what = param.in_what
+        argument.parsing_identifier = swagger_to.camel_case(identifier='a_' + identifier)
 
         if param.json_schema is not None:
             argument.json_schema = _to_json_schema(intermediate_schema=param.json_schema)

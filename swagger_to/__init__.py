@@ -74,6 +74,10 @@ def camel_case_split(identifier: str) -> List[str]:
     return parts
 
 
+@icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
+@icontract.ensure(lambda result: '_' not in result)
+@icontract.ensure(lambda result: result[0].isupper())
+@icontract.ensure(lambda result: result != '')
 def capital_camel_case(identifier: str) -> str:
     """
     Translate an arbitrary identifier to a CamelCase.
@@ -87,9 +91,6 @@ def capital_camel_case(identifier: str) -> str:
     :param identifier: arbitrary identifier
     :return: identifier as CamelCase
     """
-    if identifier == '':
-        raise ValueError("Unexpected empty identifier")
-
     parts = identifier.split("_")
 
     camel_parts = []  # type: List[str]
@@ -112,6 +113,10 @@ def capital_camel_case(identifier: str) -> str:
     return "".join(new_parts)
 
 
+@icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
+@icontract.ensure(lambda result: '_' not in result)
+@icontract.ensure(lambda result: result[0].islower())
+@icontract.ensure(lambda result: result != '')
 def camel_case(identifier: str) -> str:
     """
     Translate an arbitrary identifier to a camelCase.
@@ -128,9 +133,6 @@ def camel_case(identifier: str) -> str:
     :param identifier: arbitrary identifier
     :return: identifier as camelCase
     """
-    if identifier == '':
-        raise ValueError("Unexpected empty identifier")
-
     parts = identifier.split("_")
 
     camel_parts = []  # type: List[str]
