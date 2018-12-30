@@ -5,7 +5,7 @@
 # pylint: disable=too-many-statements,too-many-lines
 
 import collections
-from typing import MutableMapping, Union, List, Optional, Dict, Any  # pylint: disable=unused-import
+from typing import MutableMapping, Union, List, Optional, Dict  # pylint: disable=unused-import
 
 import icontract
 import jinja2
@@ -279,10 +279,10 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
     sorted(result.parameters, key=id) == sorted([
         param
         for param in ([result.body_parameter] if result.body_parameter else []) +
-        result.query_parameters +
-        result.path_parameters +
-        result.formdata_parameters +
-        result.file_parameters], key=id),
+                     result.query_parameters +
+                     result.path_parameters +
+                     result.formdata_parameters +
+                     result.file_parameters], key=id),
     enabled=icontract.SLOW)
 @icontract.ensure(lambda result: all(isinstance(param.typedef, Filedef) for param in result.file_parameters))
 def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
@@ -300,13 +300,35 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
     req.path = endpoint.path
 
     ##
+    # Generate identifiers corresponding to the parameters.
+    ##
+
+    param_to_identifier = {
+        intermediate_param: swagger_to.snake_case(identifier=intermediate_param.name)
+        for intermediate_param in endpoint.parameters
+    }
+
+    identifiers = list(param_to_identifier.values())
+    needs_location_prefix = len(set(identifiers)) != len(identifiers)
+    if needs_location_prefix:
+        param_to_identifier = {
+            param: swagger_to.snake_case(identifier="{}_{}".format(param.in_what, param.name))
+            for param in endpoint.parameters
+        }
+
+    ##
     # Convert parameters
     ##
 
+    assert all(intermediate_param in param_to_identifier for intermediate_param in endpoint.parameters), \
+        "Expected all parameters to have a generated argument identifier."
+
     req.parameters = []
     for intermediate_param in endpoint.parameters:
+        identifier = param_to_identifier[intermediate_param]
+
         param = Parameter()
-        param.identifier = swagger_to.snake_case(identifier=intermediate_param.name)
+        param.identifier = identifier
         param.name = intermediate_param.name
         param.in_what = intermediate_param.in_what
         param.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_param.typedef, typedefs=typedefs)
