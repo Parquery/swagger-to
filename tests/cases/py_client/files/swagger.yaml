@@ -1,4 +1,8 @@
 swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
 schemes:
   - https
 basePath: /
