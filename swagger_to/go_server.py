@@ -289,7 +289,6 @@ class Handler:
         """Initialize with default values."""
         self.identifier = ''
         self.arguments = []  # type: List[Argument]
-        self.description = ''
 
 
 class Wrapper:
@@ -298,7 +297,6 @@ class Wrapper:
     def __init__(self):
         """Initialize with default values."""
         self.identifier = ''
-        self.description = ''
         self.handler = None  # type: Union[None, Handler]
 
         self.query_arguments = []  # type: List[Argument]
@@ -442,18 +440,13 @@ def _to_route(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMappi
 
         route.handler.arguments.append(argument)
 
-    route.wrapper.identifier = swagger_to.capital_camel_case(identifier='wrap_' + endpoint.operation_id)
-    route.wrapper.description = '{} wraps the path `{}` with the method "{}"'.format(
-        route.wrapper.identifier, route.path, route.method)
-    if len(route.description) > 0:
-        route.wrapper.description += '\n\nPath description:\n' + route.description
+    ##
+    # Determine route attributes
+    ##
 
+    route.wrapper.identifier = swagger_to.capital_camel_case(identifier='wrap_' + endpoint.operation_id)
     route.wrapper.handler = route.handler
     route.handler.identifier = swagger_to.capital_camel_case(identifier=endpoint.operation_id)
-    route.handler.description = '{} handles the path `{}` with the method "{}".'.format(
-        route.handler.identifier, route.path, route.method)
-    if len(route.description) > 0:
-        route.handler.description += '\n\nPath description:\n' + route.description
 
     return route
 
@@ -736,14 +729,13 @@ _FLOAT64_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
 @icontract.ensure(lambda result: not result.endswith('\n'))
 def _argument_from_string(argument: Argument, string_identifier: str) -> str:
     """Generate the code to parse an argument from a string."""
+    target_identifier = argument.parsing_identifier
+
     tajp = ''
     if isinstance(argument.typedef, Primitivedef):
-        target_identifier = argument.parsing_identifier
         tajp = argument.typedef.type
 
     elif isinstance(argument.typedef, Pointerdef):
-        target_identifier = argument.parsing_identifier
-
         if isinstance(argument.typedef.pointed, Primitivedef):
             tajp = argument.typedef.pointed.type
     else:
@@ -814,9 +806,15 @@ def _argument_from_body(argument: Argument) -> str:
 
 _WRAPPER_TPL = ENV.from_string('''\
 {% set newliner = joiner("XXX") %}
-{% if route.wrapper.description %}
-{{ route.wrapper.description|comment }}
+{% set description %}
+{{ route.wrapper.identifier }} wraps the path `{{ route.path }}` with the method "{{ route.method }}".
+{% if route.description %}
+
+Path description:
+{{ route.description }}
 {% endif %}
+{% endset %}{# /set description #}
+{{ description|trim|comment }}
 func {{ route.wrapper.identifier }}(h Handler, w http.ResponseWriter, r *http.Request) {
 {% if route.handler.arguments %}{# intermediate variables #}
 {% if newliner() %}{{ '\n' }}{% endif %}
@@ -1041,9 +1039,15 @@ type Handler interface {
     {% if not loop.first %}
 
     {% endif %}
-    {% if route.handler.description %}
-    {{ route.handler.description|comment|indent }}
-    {% endif %}
+    {% set handler_description %}
+{{ route.handler.identifier }} handles the path `{{ route.path }}` with the method "{{ route.method }}".
+{% if route.description %}
+
+Path description:
+{{ route.description }}
+{% endif %}{# /if route.description #}
+    {% endset %}{# /set handler_description #}
+    {{ handler_description|trim|comment|indent }}
     {% if not route.handler.arguments %}
     {{ route.handler.identifier }}(w http.ResponseWriter,
         r *http.Request)

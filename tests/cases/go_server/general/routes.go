@@ -48,7 +48,7 @@ func SetupRouter(h Handler) *mux.Router {
 	return r
 }
 
-// WrapProducts wraps the path `/products` with the method "get"
+// WrapProducts wraps the path `/products` with the method "get".
 //
 // Path description:
 // The Products endpoint returns information about the Uber products offered at a given location.
@@ -92,7 +92,7 @@ func WrapProducts(h Handler, w http.ResponseWriter, r *http.Request) {
 		aLongitude)
 }
 
-// WrapEstimatesPrice wraps the path `/estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}` with the method "get"
+// WrapEstimatesPrice wraps the path `/estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}` with the method "get".
 //
 // Path description:
 // The Price Estimates endpoint returns an estimated price range for each product offered at a given
@@ -186,7 +186,7 @@ func WrapEstimatesPrice(h Handler, w http.ResponseWriter, r *http.Request) {
 		aMaxLines)
 }
 
-// WrapEstimatesTime wraps the path `/estimates/time` with the method "get"
+// WrapEstimatesTime wraps the path `/estimates/time` with the method "get".
 //
 // Path description:
 // The Time Estimates endpoint returns ETAs for all products.
@@ -244,7 +244,7 @@ func WrapEstimatesTime(h Handler, w http.ResponseWriter, r *http.Request) {
 		aProductID)
 }
 
-// WrapUpdateMe wraps the path `/me` with the method "patch"
+// WrapUpdateMe wraps the path `/me` with the method "patch".
 //
 // Path description:
 // Update an User Profile.
@@ -283,7 +283,7 @@ func WrapUpdateMe(h Handler, w http.ResponseWriter, r *http.Request) {
 		aUpdateUser)
 }
 
-// WrapUploadInfos wraps the path `/upload_infos` with the method "patch"
+// WrapUploadInfos wraps the path `/upload_infos` with the method "patch".
 //
 // Path description:
 // Upload information about an User.
@@ -291,7 +291,7 @@ func WrapUploadInfos(h Handler, w http.ResponseWriter, r *http.Request) {
 	h.UploadInfos(w, r)
 }
 
-// WrapHistory wraps the path `/history` with the method "get"
+// WrapHistory wraps the path `/history` with the method "get".
 //
 // Path description:
 // The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will

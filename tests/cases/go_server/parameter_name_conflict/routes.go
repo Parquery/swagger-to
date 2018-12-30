@@ -20,7 +20,7 @@ func SetupRouter(h Handler) *mux.Router {
 	return r
 }
 
-// WrapTestMe wraps the path `/products/{some_parameter}` with the method "get"
+// WrapTestMe wraps the path `/products/{some_parameter}` with the method "get".
 //
 // Path description:
 // is a test endpoint.
