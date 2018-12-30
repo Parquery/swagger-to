@@ -112,7 +112,13 @@ class Parameter:
 
     def __init__(self) -> None:
         """Initialize with defaults."""
+        # Original parameter name
         self.name = ''
+
+        # Parameter identifier in the code
+        self.identifier = ''
+
+        self.in_what = ''
         self.typedef = None  # type: Optional[Typedef]
         self.required = False
         self.description = None  # type: Optional[str]
@@ -251,23 +257,6 @@ def to_typedefs(
     return typedefs
 
 
-def _to_parameter(intermediate_parameter: swagger_to.intermediate.Parameter,
-                  typedefs: MutableMapping[str, Typedef]) -> Parameter:
-    """
-    Translate an endpoint parameter from the intermediate to a Python representation.
-
-    :param intermediate_parameter: intermediate representation of a parameter
-    :param typedefs: table of type definitions in Python representation
-    :return: Python representation of the parameter
-    """
-    param = Parameter()
-    param.name = intermediate_parameter.name
-    param.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_parameter.typedef, typedefs=typedefs)
-    param.required = intermediate_parameter.required
-    param.description = intermediate_parameter.description
-    return param
-
-
 def _to_response(intermediate_response: swagger_to.intermediate.Response,
                  typedefs: MutableMapping[str, Typedef]) -> Response:
     """
@@ -310,32 +299,55 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
     req.operation_id = endpoint.operation_id
     req.path = endpoint.path
 
+    ##
+    # Convert parameters
+    ##
+
+    req.parameters = []
     for intermediate_param in endpoint.parameters:
-        param = _to_parameter(intermediate_parameter=intermediate_param, typedefs=typedefs)
-
-        if isinstance(param.typedef, Filedef):
-            req.file_parameters.append(param)
-        elif intermediate_param.in_what == 'body':
-            if req.body_parameter is not None:
-                raise KeyError('Duplicate body parameters in an endpoint: {} {}'.format(
-                    req.body_parameter.name, intermediate_param.name))
-
-            req.body_parameter = param
-        elif intermediate_param.in_what == 'query':
-            req.query_parameters.append(param)
-        elif intermediate_param.in_what == 'path':
-            req.path_parameters.append(param)
-        elif intermediate_param.in_what == 'formData':
-            req.formdata_parameters.append(param)
-        else:
-            raise NotImplementedError("Unsupported parameter 'in' to Python translation: {}".format(
-                intermediate_param.in_what))
+        param = Parameter()
+        param.identifier = swagger_to.snake_case(identifier=intermediate_param.name)
+        param.name = intermediate_param.name
+        param.in_what = intermediate_param.in_what
+        param.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_param.typedef, typedefs=typedefs)
+        param.required = intermediate_param.required
+        param.description = intermediate_param.description
 
         req.parameters.append(param)
 
-    # parameters are sorted so that first come the required ones; python requires the optional parameters to come
+    ##
+    # Check that there is only one body parameter
+    ##
+
+    body_parameter_names = [param.name for param in req.parameters if param.in_what == 'body']
+    if len(body_parameter_names) > 1:
+        raise KeyError('Duplicate body parameters in an endpoint: {}'.format(body_parameter_names))
+
+    ##
+    # Categorize parameters
+    ##
+
+    for param in req.parameters:
+        if isinstance(param.typedef, Filedef):
+            req.file_parameters.append(param)
+        elif param.in_what == 'body':
+            req.body_parameter = param
+        elif param.in_what == 'query':
+            req.query_parameters.append(param)
+        elif param.in_what == 'path':
+            req.path_parameters.append(param)
+        elif param.in_what == 'formData':
+            req.formdata_parameters.append(param)
+        else:
+            raise NotImplementedError("Unsupported parameter 'in' to Python translation: {}".format(param.in_what))
+
+    # Parameters are sorted so that first come the required ones; python requires the optional parameters to come
     # at the end.
     req.parameters.sort(key=lambda param: not param.required)
+
+    ##
+    # Convert responses
+    ##
 
     for code, intermediate_resp in endpoint.responses.items():
         req.responses[code] = _to_response(intermediate_response=intermediate_resp, typedefs=typedefs)
@@ -959,13 +971,13 @@ Send a {{ request.method }} request to {{ request.path }}.
 
 {% for param in request.parameters %}
 {% if not param.description %}
-:param {{ param.name }}:
+:param {{ param.identifier }}:
 {% else %}
 {% if '\\n' in param.description %}
-:param {{ param.name }}:
+:param {{ param.identifier }}:
     {{ param.description|indent }}
 {% else %}
-:param {{ param.name }}: {{ param.description }}
+:param {{ param.identifier }}: {{ param.description }}
 {% endif %}{# /if '\\n' in param.description #}
 {% endif %}{# /if not param.description #}
 {% endfor %}{# /for request.parameters #}
@@ -995,9 +1007,9 @@ def {{ request.operation_id}}(
         self,
         {% for param in request.parameters %}
         {% if not param.required %}
-        {{ param.name }}: Optional[{{ type_expression[param] }}] = None{{ suffix if loop.last else ',' }}
+        {{ param.identifier }}: Optional[{{ type_expression[param] }}] = None{{ suffix if loop.last else ',' }}
         {% else %}
-        {{ param.name }}: {{ type_expression[param] }}{{ suffix if loop.last else ',' }}
+        {{ param.identifier }}: {{ type_expression[param] }}{{ suffix if loop.last else ',' }}
         {% endif %}
         {% endfor %}{# /for param in request.parameters #}
 {% endif %}{# /if not request.parameters #}
@@ -1009,7 +1021,7 @@ def {{ request.operation_id}}(
         self.url_prefix,
     {% for token in path_tokens %}
     {% if token.parameter %}
-        {{ 'str(%s)'|format(token.parameter.name if is_str[token.parameter] else token.parameter.name) }}{#
+        {{ 'str(%s)'|format(token.parameter.identifier if is_str[token.parameter] else token.parameter.identifier) }}{#
             #}{{ '])' if loop.last else ',' }}
     {% else %}
         {{ token.text|repr }}{{ '])' if loop.last else ',' }}
@@ -1021,20 +1033,20 @@ def {{ request.operation_id}}(
     params = {
         {% for param in request.query_parameters %}
         {% if is_primitive[param] %}
-        {{ param.name|repr }}: {{ param.name }}{{ '}' if loop.last else ',' }}
+        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
         {% else %}
         {{ param.name|repr }}: to_jsonable(
-            {{ param.name }}, expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
+            {{ param.identifier }}, expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
         {% endif %}
         {% endfor %}{# /for param in request.query_parameters #}
     {% endif %}{# /if request.query_parameters #}
     {% if request.body_parameter %}{### Body parameter ###}
 
     {% if is_primitive[request.body_parameter] %}
-    data = {{ request.body_parameter.name }}
+    data = {{ request.body_parameter.identifier }}
     {% else %}
     data = to_jsonable(
-        {{ request.body_parameter.name }},
+        {{ request.body_parameter.identifier }},
         expected=[{{ expected_type_expression[request.body_parameter] }}])
     {% endif %}{# /is_primitive[request.body_parameter] #}
     {% endif %}{# /if request.body_parameter #}
@@ -1043,10 +1055,10 @@ def {{ request.operation_id}}(
     data = {
         {% for param in request.formdata_parameters %}
         {% if is_primitive[param] %}
-        {{ param.name|repr }}: {{ param.name }}{{ '}' if loop.last else ',' }}
+        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
         {% else %}
         {{ param.name|repr }}: to_jsonable(
-            {{ param.name }},
+            {{ param.identifier}},
             expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
         {% endif %}{# /if is_primitive[param] #}
         {% endfor %}{# /for param in request.formdata_parameters #}
@@ -1055,7 +1067,7 @@ def {{ request.operation_id}}(
 
     files = {
         {% for param in request.file_parameters %}
-        {{ param.name|repr }}: {{ param.name }}{{ '}' if loop.last else ',' }}
+        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
         {% endfor %}{# /for param in request.file_parameters #}
     {% endif %}{# /if request.file_parameters #}
 
@@ -1120,6 +1132,10 @@ def _generate_request_function(request: Request) -> str:
     :param request: request to the endpoint in Python representation
     :return: Python code
     """
+    ##
+    # Prepare response
+    ##
+
     resp = None  # type: Optional[Response]
     return_type = 'bytes'
 
@@ -1134,9 +1150,16 @@ def _generate_request_function(request: Request) -> str:
                 # but we can at least parse it as JSON.
                 return_type = 'MutableMapping[str, Any]'
 
+    ##
+    # Preapre request docstring
+    ##
+
     request_docstring = _REQUEST_DOCSTRING_TPL.render(request=request, resp=resp).rstrip()
 
+    ##
     # Prepare a representation of path parameters
+    ##
+
     token_pth = swagger_to.tokenize_path(path=request.path)
     name_to_parameters = {param.name: param for param in request.parameters}
 
@@ -1150,6 +1173,10 @@ def _generate_request_function(request: Request) -> str:
 
             path_tokens.append(_Token(text=token_text, parameter=param))
 
+    ##
+    # Prepare expected types
+    ##
+
     expected_type_expression = {
         param: _expected_type_expression(typedef=param.typedef)
         for param in request.parameters if not isinstance(param.typedef, Filedef)
@@ -1157,6 +1184,10 @@ def _generate_request_function(request: Request) -> str:
 
     if return_type not in ['bytes', 'MutableMapping[str, Any]']:
         expected_type_expression[resp] = _expected_type_expression(typedef=resp.typedef)
+
+    ##
+    # Render
+    ##
 
     return _REQUEST_FUNCTION_TPL.render(
         request=request,
