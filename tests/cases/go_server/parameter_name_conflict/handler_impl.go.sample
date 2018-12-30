@@ -1,0 +1,20 @@
+package test
+
+import (
+	"net/http"
+	"log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+	LogErr *log.Logger
+	LogOut *log.Logger}
+
+// TestMe implements Handler.TestMe.
+func (h *HandlerImpl) TestMe(w http.ResponseWriter,
+	r *http.Request,
+	querySomeParameter string,
+	pathSomeParameter string) {
+	http.Error(w, "Not implemented: TestMe", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: TestMe")
+}
