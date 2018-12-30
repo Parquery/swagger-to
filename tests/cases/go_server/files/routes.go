@@ -25,12 +25,12 @@ func SetupRouter(h Handler) *mux.Router {
 	return r
 }
 
-// WrapUpload wraps the path `/upload` with the method "put"
+// WrapUpload wraps the path `/upload` with the method "put".
 func WrapUpload(h Handler, w http.ResponseWriter, r *http.Request) {
 	h.Upload(w, r)
 }
 
-// WrapStatic wraps the path `/{path:.+}` with the method "get"
+// WrapStatic wraps the path `/{path:.+}` with the method "get".
 //
 // Path description:
 // serves a static file that matches the path.
