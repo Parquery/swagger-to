@@ -549,7 +549,7 @@ def _write_request(request: Request, fid: TextIO) -> None:
     # pylint: disable=too-many-locals
     # pylint: disable=too-many-statements
     # pylint: disable=too-many-branches
-    description = 'Contains a "{}" request to the endpoint: {}, to be sent with Http.send'.format(
+    description = 'Contains a "{}" request to the endpoint: `{}`, to be sent with Http.send'.format(
         request.method, request.path)
     if request.description:
         description += '\n\n' + request.description
