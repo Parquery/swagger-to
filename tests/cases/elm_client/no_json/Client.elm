@@ -20,7 +20,7 @@ import Time
 
 
 
-{-| Contains a "patch" request to the endpoint: /me, to be sent with Http.send
+{-| Contains a "patch" request to the endpoint: `/me`, to be sent with Http.send
     
     Update an User Profile.
 -}
@@ -46,7 +46,7 @@ updateMeRequest prefix maybeTimeout withCredentials username =
         }
 
 
-{-| Contains a "delete" request to the endpoint: /history, to be sent with Http.send
+{-| Contains a "delete" request to the endpoint: `/history`, to be sent with Http.send
     
     Instructs the Back End to delete all the history about a user.
 -}

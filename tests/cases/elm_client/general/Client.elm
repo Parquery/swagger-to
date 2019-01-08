@@ -275,7 +275,7 @@ decodeActivities =
 
 
 
-{-| Contains a "get" request to the endpoint: /products, to be sent with Http.send
+{-| Contains a "get" request to the endpoint: `/products`, to be sent with Http.send
     
     The Products endpoint returns information about the Uber products offered at a given location.
 -}
@@ -302,7 +302,7 @@ productsRequest prefix maybeTimeout withCredentials latitude longitude =
         }
 
 
-{-| Contains a "get" request to the endpoint: /estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}, to be sent with Http.send
+{-| Contains a "get" request to the endpoint: `/estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}`, to be sent with Http.send
     
     The Price Estimates endpoint returns an estimated price range for each product offered at a given
     location. The price estimate is provided as a formatted string with the full price range and the localized
@@ -355,7 +355,7 @@ estimatesPriceRequest
             }
 
 
-{-| Contains a "get" request to the endpoint: /estimates/time, to be sent with Http.send
+{-| Contains a "get" request to the endpoint: `/estimates/time`, to be sent with Http.send
     
     The Time Estimates endpoint returns ETAs for all products.
 -}
@@ -392,7 +392,7 @@ estimatesTimeRequest prefix maybeTimeout withCredentials startLatitude startLong
         }
 
 
-{-| Contains a "patch" request to the endpoint: /me, to be sent with Http.send
+{-| Contains a "patch" request to the endpoint: `/me`, to be sent with Http.send
     
     Update an User Profile.
 -}
@@ -412,7 +412,7 @@ updateMeRequest prefix maybeTimeout withCredentials updateUser =
         }
 
 
-{-| Contains a "get" request to the endpoint: /history, to be sent with Http.send
+{-| Contains a "get" request to the endpoint: `/history`, to be sent with Http.send
     
     The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
     include pickup locations and times, dropoff locations and times, the distance of past requests, and
