@@ -37,8 +37,9 @@ class RemoteCaller:
             '/products/',
             str(path_some_parameter)])
 
-        params = {
-            'some_parameter': query_some_parameter}
+        params = {}  # type: Dict[str, str]
+
+        params['some_parameter'] = str(query_some_parameter)
 
         resp = requests.request(
             method='get',

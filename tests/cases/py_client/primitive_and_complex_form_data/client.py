@@ -242,15 +242,15 @@ class RemoteCaller:
         url = self.url_prefix + '/products'
 
         data = {}  # type: Dict[str, str]
-            
+
         if some_complex_parameter is not None:
             data['some_complex_parameter'] = json.dumps(
                 to_jsonable(
                     some_complex_parameter,
                     expected=[Profile]))
-            
+
         data['some_str_parameter'] = str(some_str_parameter)
-            
+
         if some_int_parameter is not None:
             data['some_int_parameter'] = str(some_int_parameter)
 

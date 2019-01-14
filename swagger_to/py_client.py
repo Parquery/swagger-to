@@ -1079,43 +1079,74 @@ def {{ request.operation_id}}(
     {% endif %}{# /if not path_tokens #}
     {% if request.header_parameters %}{### Header parameters ###}
 
-    headers = {
+    headers = {}  # type: Dict[str, str]
         {% for param in request.header_parameters %}
-        {% if is_primitive[param] %}
-        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
-        {% else %}
-        {{ param.name|repr }}: to_jsonable(
-            {{ param.identifier }}, expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
-        {% endif %}
+
+            {% set set_header_item %}
+                {% if is_primitive[param] %}
+headers[{{ param.name|repr }}] = str({{ param.identifier }})
+                {% else %}
+headers[{{ param.name|repr }}] = json.dumps(
+    to_jsonable(
+        {{ param.identifier }},
+        expected=[{{ expected_type_expression[param] }}]))
+                {% endif %}{# /if is_primitive[param] #}
+            {% endset %}
+            {% if param.required %}
+    {{ set_header_item|trim|indent }}
+            {% else %}
+    if {{ param.identifier }} is not None:
+        {{ set_header_item|trim|indent|indent }}
+            {% endif %}{# /if param.required #}
         {% endfor %}{# /for param in request.header_parameters #}
     {% endif %}{# /if request.header_parameters #}
     {% if request.query_parameters %}{### Query parameters ###}
 
-    params = {
+    params = {}  # type: Dict[str, str]
         {% for param in request.query_parameters %}
-        {% if is_primitive[param] %}
-        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
-        {% else %}
-        {{ param.name|repr }}: to_jsonable(
-            {{ param.identifier }}, expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
-        {% endif %}
+
+            {% set set_params_item %}
+                {% if is_primitive[param] %}
+params[{{ param.name|repr }}] = str({{ param.identifier }})
+                {% else %}
+params[{{ param.name|repr }}] = json.dumps(
+    to_jsonable(
+        {{ param.identifier }},
+        expected=[{{ expected_type_expression[param] }}]))
+                {% endif %}{# /if is_primitive[param] #}
+            {% endset %}
+            {% if param.required %}
+    {{ set_params_item|trim|indent }}
+            {% else %}
+    if {{ param.identifier }} is not None:
+        {{ set_params_item|trim|indent|indent }}
+            {% endif %}{# /if param.required #}
         {% endfor %}{# /for param in request.query_parameters #}
     {% endif %}{# /if request.query_parameters #}
     {% if request.body_parameter %}{### Body parameter ###}
 
-    {% if is_primitive[request.body_parameter] %}
-    data = {{ request.body_parameter.identifier }}
+    {% set set_body %}
+        {% if is_primitive[request.body_parameter] %}
+data = {{ request.body_parameter.identifier }}
+        {% else %}
+data = to_jsonable(
+    {{ request.body_parameter.identifier }},
+    expected=[{{ expected_type_expression[request.body_parameter] }}])
+        {% endif %}{# /is_primitive[request.body_parameter] #}
+    {% endset %}
+    {% if request.body_parameter.required %}
+    {{ set_body|indent }}
     {% else %}
-    data = to_jsonable(
-        {{ request.body_parameter.identifier }},
-        expected=[{{ expected_type_expression[request.body_parameter] }}])
-    {% endif %}{# /is_primitive[request.body_parameter] #}
+    data = None  # type: Optional[Any]
+    if {{ request.body_parameter.identifier }} != None:
+        {{ set_body|trim|indent|indent }}
+    {% endif %}{# /if request.body_parameter.required #}
     {% endif %}{# /if request.body_parameter #}
     {% if request.formdata_parameters %}{### Form-data parameters ###}
 
     data = {}  # type: Dict[str, str]
     {% for param in request.formdata_parameters %}
-        
+
         {% set set_data_item %}
             {% if is_primitive[param] %}
 data[{{ param.name|repr }}] = str({{ param.identifier }})
@@ -1134,11 +1165,17 @@ data[{{ param.name|repr }}] = json.dumps(
         {% endif %}{# /if param.required #}
     {% endfor %}{# /for param in request.formdata_parameters #}
     {% endif %}{# /if request.formdata_parameters #}
-    {% if request.file_parameters %}
+    {% if request.file_parameters %}{### File parameters ###}
 
-    files = {
+    files = {}  # type: Dict[str, BinaryIO]
         {% for param in request.file_parameters %}
-        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
+
+            {% if param.required %}
+    files[{{ param.name|repr }}] = {{ param.identifier }}
+            {% else %}
+    if {{ param.identifier }} is not None:
+        files[{{ param.name|repr }}] = {{ param.identifier }}
+            {% endif %}{# /if param.required #}
         {% endfor %}{# /for param in request.file_parameters #}
     {% endif %}{# /if request.file_parameters #}
 

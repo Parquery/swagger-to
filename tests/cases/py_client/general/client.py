@@ -828,9 +828,11 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/products'
 
-        params = {
-            'latitude': latitude,
-            'longitude': longitude}
+        params = {}  # type: Dict[str, str]
+
+        params['latitude'] = str(latitude)
+
+        params['longitude'] = str(longitude)
 
         resp = requests.request(
             method='get',
@@ -875,8 +877,10 @@ class RemoteCaller:
             '/',
             str(end_longitude)])
 
-        params = {
-            'max_lines': max_lines}
+        params = {}  # type: Dict[str, str]
+
+        if max_lines is not None:
+            params['max_lines'] = str(max_lines)
 
         resp = requests.request(
             method='get',
@@ -908,11 +912,17 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/estimates/time'
 
-        params = {
-            'start_latitude': start_latitude,
-            'start_longitude': start_longitude,
-            'customer_uuid': customer_uuid,
-            'product_id': product_id}
+        params = {}  # type: Dict[str, str]
+
+        params['start_latitude'] = str(start_latitude)
+
+        params['start_longitude'] = str(start_longitude)
+
+        if customer_uuid is not None:
+            params['customer_uuid'] = str(customer_uuid)
+
+        if product_id is not None:
+            params['product_id'] = str(product_id)
 
         resp = requests.request(
             method='get',
@@ -941,6 +951,7 @@ class RemoteCaller:
         data = to_jsonable(
             update_user,
             expected=[Profile])
+
 
         resp = requests.request(
             method='patch',
@@ -971,14 +982,15 @@ class RemoteCaller:
         url = self.url_prefix + '/upload_infos'
 
         data = {}  # type: Dict[str, str]
-            
+
         data['user_id'] = str(user_id)
-            
+
         if birthday is not None:
             data['birthday'] = str(birthday)
 
-        files = {
-            'profile_picture': profile_picture}
+        files = {}  # type: Dict[str, BinaryIO]
+
+        files['profile_picture'] = profile_picture
 
         resp = requests.request(
             method='patch',
@@ -1007,9 +1019,13 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/history'
 
-        params = {
-            'offset': offset,
-            'limit': limit}
+        params = {}  # type: Dict[str, str]
+
+        if offset is not None:
+            params['offset'] = str(offset)
+
+        if limit is not None:
+            params['limit'] = str(limit)
 
         resp = requests.request(
             method='get',
