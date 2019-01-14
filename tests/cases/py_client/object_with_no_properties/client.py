@@ -200,9 +200,11 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/products'
 
-        data = to_jsonable(
-            empty_object,
-            expected=[EmptyObject])
+        data = None  # type: Optional[Any]
+        if empty_object != None:
+            data = to_jsonable(
+                empty_object,
+                expected=[EmptyObject])
 
         resp = requests.request(
             method='get',

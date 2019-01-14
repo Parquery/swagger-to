@@ -35,11 +35,13 @@ class RemoteCaller:
         url = self.url_prefix + '/upload'
 
         data = {}  # type: Dict[str, str]
-            
+
         data['file_nme'] = str(file_nme)
 
-        files = {
-            'reference_image': reference_image}
+        files = {}  # type: Dict[str, BinaryIO]
+
+
+        files['reference_image'] = reference_image
 
         resp = requests.request(
             method='put',

@@ -36,10 +36,12 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/products'
 
-        headers = {
-            'Some-parameter': some_parameter,
-            'Some-optional': some_optional,
-            'X-Some-Custom-Parameter': x_some_custom_parameter}
+        headers = {}  # type: Dict[str, str]
+
+        headers['Some-parameter'] = str(some_parameter)
+        if some_optional is not None:
+            headers['Some-optional'] = str(some_optional)
+        headers['X-Some-Custom-Parameter'] = str(x_some_custom_parameter)
 
         resp = requests.request(
             method='get',

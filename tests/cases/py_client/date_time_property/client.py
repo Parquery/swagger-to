@@ -223,9 +223,11 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/products'
 
-        data = to_jsonable(
-            test_object,
-            expected=[TestObject])
+        data = None  # type: Optional[Any]
+        if test_object != None:
+            data = to_jsonable(
+                test_object,
+                expected=[TestObject])
 
         resp = requests.request(
             method='get',
