@@ -1,7 +1,7 @@
 -- Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
 
 
-module Client 
+module Client
     exposing
         ( Activities
         , Activity
@@ -46,7 +46,7 @@ import Time
 -- Models
 
 
-type alias Product = 
+type alias Product =
     -- Unique identifier representing a specific product for a given latitude & longitude.
     -- For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.
     { productID : String
@@ -61,17 +61,17 @@ type alias Product =
     }
 
 
-type alias ProductList = 
+type alias ProductList =
     -- Contains the list of products
     { products : List Product
     }
 
 
-type alias ProductMap = 
+type alias ProductMap =
     Dict String Product
 
 
-type alias PriceEstimate = 
+type alias PriceEstimate =
     -- Unique identifier representing a specific product for a given latitude & longitude. For example,
     -- uberX in San Francisco will have a different product_id than uberX in Los Angeles
     { productID : String
@@ -92,11 +92,11 @@ type alias PriceEstimate =
     }
 
 
-type alias PriceEstimateArray = 
+type alias PriceEstimateArray =
     List Product
 
 
-type alias Profile = 
+type alias Profile =
     -- First name of the Uber user.
     { firstName : Maybe (String)
     -- Last name of the Uber user.
@@ -110,13 +110,13 @@ type alias Profile =
     }
 
 
-type alias Activity = 
+type alias Activity =
     -- Unique identifier for the activity
     { uuid : String
     }
 
 
-type alias Activities = 
+type alias Activities =
     -- Position in pagination.
     { offset : Int
     -- Number of items to retrieve (100 max).
@@ -148,7 +148,7 @@ encodeProductList aProductList =
         ]
 
 
-encodeProductMap : (Dict String Product) -> Json.Encode.Value 
+encodeProductMap : (Dict String Product) -> Json.Encode.Value
 encodeProductMap aProductMap =
     Json.Encode.Extra.dict identity encodeProduct <| aProductMap
 
@@ -166,7 +166,7 @@ encodePriceEstimate aPriceEstimate =
         ]
 
 
-encodePriceEstimateArray : (List Product) -> Json.Encode.Value 
+encodePriceEstimateArray : (List Product) -> Json.Encode.Value
 encodePriceEstimateArray aPriceEstimateArray =
     Json.Encode.list <| List.map encodeProduct <| aPriceEstimateArray
 
@@ -276,14 +276,14 @@ decodeActivities =
 
 
 {-| Contains a "get" request to the endpoint: `/products`, to be sent with Http.send
-    
+
     The Products endpoint returns information about the Uber products offered at a given location.
 -}
 productsRequest : String -> Maybe Time.Time -> Bool -> Float -> Float -> Http.Request (Dict String Product)
 productsRequest prefix maybeTimeout withCredentials latitude longitude =
     let
         baseUrl = prefix ++ "products"
-        queryString = 
+        queryString =
             paramsToQuery
                 [ ("latitude", (toString latitude))
                 , ("longitude", (toString longitude))
@@ -303,7 +303,7 @@ productsRequest prefix maybeTimeout withCredentials latitude longitude =
 
 
 {-| Contains a "get" request to the endpoint: `/estimates/price/{start_latitude}/{start_longitude}/{end_latitude}/{end_longitude}`, to be sent with Http.send
-    
+
     The Price Estimates endpoint returns an estimated price range for each product offered at a given
     location. The price estimate is provided as a formatted string with the full price range and the localized
     currency symbol.
@@ -337,7 +337,7 @@ estimatesPriceRequest
                 ++ (toString endLatitude)
                 ++ "/"
                 ++ (toString endLongitude)
-            queryString = 
+            queryString =
                 paramsToQuery
                     []
                     [ ("max_lines", (Maybe.map toString maybeMaxLines))
@@ -356,7 +356,7 @@ estimatesPriceRequest
 
 
 {-| Contains a "get" request to the endpoint: `/estimates/time`, to be sent with Http.send
-    
+
     The Time Estimates endpoint returns ETAs for all products.
 -}
 estimatesTimeRequest :
@@ -371,7 +371,7 @@ estimatesTimeRequest :
 estimatesTimeRequest prefix maybeTimeout withCredentials startLatitude startLongitude maybeCustomerUuid maybeProductID =
     let
         baseUrl = prefix ++ "estimates/time"
-        queryString = 
+        queryString =
             paramsToQuery
                 [ ("start_latitude", (toString startLatitude))
                 , ("start_longitude", (toString startLongitude))
@@ -393,7 +393,7 @@ estimatesTimeRequest prefix maybeTimeout withCredentials startLatitude startLong
 
 
 {-| Contains a "patch" request to the endpoint: `/me`, to be sent with Http.send
-    
+
     Update an User Profile.
 -}
 updateMeRequest : String -> Maybe Time.Time -> Bool -> Profile -> Http.Request Profile
@@ -413,7 +413,7 @@ updateMeRequest prefix maybeTimeout withCredentials updateUser =
 
 
 {-| Contains a "get" request to the endpoint: `/history`, to be sent with Http.send
-    
+
     The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
     include pickup locations and times, dropoff locations and times, the distance of past requests, and
     information about which products were requested.
@@ -422,7 +422,7 @@ historyRequest : String -> Maybe Time.Time -> Bool -> Maybe Int -> Maybe Int -> 
 historyRequest prefix maybeTimeout withCredentials maybeOffset maybeLimit =
     let
         baseUrl = prefix ++ "history"
-        queryString = 
+        queryString =
             paramsToQuery
                 []
                 [ ("offset", (Maybe.map toString maybeOffset))

@@ -5,9 +5,12 @@ import pathlib
 import json
 from typing import TextIO, cast
 
-import swagger_to.elm_client
+import swagger_to.elm_client_18
+import swagger_to.elm_client_19
 import swagger_to.intermediate
 import swagger_to.swagger
+
+SUPPORTED_ELM_VERSIONS = ["0.18.0", "0.19.0"]
 
 
 def main() -> None:
@@ -17,6 +20,9 @@ def main() -> None:
     parser.add_argument("--swagger_path", help="path to the swagger file", required=True)
     parser.add_argument("--outdir", help="path to the output directory", required=True)
     parser.add_argument("--no_samples", help="if set, do not generate sample files", action="store_true")
+    parser.add_argument("--elm_version", help="elm version to be used. "
+                                              "Supported versions: {}".format(SUPPORTED_ELM_VERSIONS),
+                        default="0.19.0")
     parser.add_argument("--force", help="overwrite existing files", action="store_true")
     args = parser.parse_args()
 
@@ -24,6 +30,7 @@ def main() -> None:
     assert isinstance(args.no_samples, bool)
     assert isinstance(args.outdir, str)
     assert isinstance(args.swagger_path, str)
+    assert isinstance(args.elm_version, str)
 
     swagger_path = pathlib.Path(args.swagger_path)
     outdir = pathlib.Path(args.outdir)
@@ -35,8 +42,12 @@ def main() -> None:
     if not outdir.exists():
         pathlib.Path.mkdir(outdir)
 
+    if args.elm_version not in SUPPORTED_ELM_VERSIONS:
+        raise AttributeError("Unsupported elm version {}. "
+                             "Supported versions: {}".format(args.elm_version, SUPPORTED_ELM_VERSIONS))
+
     if not force:
-        for fname in ['Client.elm', 'elm-package.sample.json']:
+        for fname in ['Client.elm', 'elm-package.sample.json', 'elm.sample.json']:
             pth = outdir / fname
             if pth.exists():
                 raise FileExistsError("File exists, but --force was not specified: {!r}".format(pth))
@@ -52,19 +63,33 @@ def main() -> None:
     endpoints = swagger_to.intermediate.to_endpoints(
         swagger=swagger, typedefs=intermediate_typedefs, params=intermediate_params)
 
-    elm_typedefs = swagger_to.elm_client.to_typedefs(intermediate_typedefs=intermediate_typedefs)
-    elm_requests = swagger_to.elm_client.to_requests(endpoints=endpoints, typedefs=elm_typedefs)
+    if args.elm_version == "0.18.0":
+        elm_typedefs = swagger_to.elm_client_18.to_typedefs(intermediate_typedefs=intermediate_typedefs)
+        elm_requests = swagger_to.elm_client_18.to_requests(endpoints=endpoints, typedefs=elm_typedefs)
+        src_pth = outdir / 'Client.elm'
+        with src_pth.open('wt') as fid:
+            fid_textio = cast(TextIO, fid)
+            swagger_to.elm_client_18.write_client_elm(typedefs=elm_typedefs, requests=elm_requests,
+                                                   fid=fid_textio)
+        if not args.no_samples:
+            pkg_pth = outdir / 'elm-package.sample.json'
+            elm_package_json = swagger_to.elm_client_18.elm_package_json()
+            with pkg_pth.open('wt') as fid:
+                json.dump(elm_package_json, fp=fid, indent=2, sort_keys=False)
 
-    src_pth = outdir / 'Client.elm'
-    with src_pth.open('wt') as fid:
-        fid_textio = cast(TextIO, fid)
-        swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=fid_textio)
-
-    if not args.no_samples:
-        pkg_pth = outdir / 'elm-package.sample.json'
-        elm_package_json = swagger_to.elm_client.elm_package_json()
-        with pkg_pth.open('wt') as fid:
-            json.dump(elm_package_json, fp=fid, indent=2, sort_keys=False)
+    elif args.elm_version == "0.19.0":
+        elm_typedefs = swagger_to.elm_client_19.to_typedefs(intermediate_typedefs=intermediate_typedefs)
+        elm_requests = swagger_to.elm_client_19.to_requests(endpoints=endpoints, typedefs=elm_typedefs)
+        src_pth = outdir / 'Client.elm'
+        with src_pth.open('wt') as fid:
+            fid_textio = cast(TextIO, fid)
+            swagger_to.elm_client_19.write_client_elm(typedefs=elm_typedefs, requests=elm_requests,
+                                                      fid=fid_textio)
+        if not args.no_samples:
+            pkg_pth = outdir / 'elm.sample.json'
+            elm_json = swagger_to.elm_client_19.elm_json()
+            with pkg_pth.open('wt') as fid:
+                json.dump(elm_json, fp=fid, indent=2, sort_keys=False)
 
     print("Generated Elm client code in: {}".format(outdir))
 
