@@ -31,14 +31,16 @@ Missing Features
 Due to the lack of time, we can not cover all of the Swagger specification. The current generators work well for all of
 our simple and not-so-simple use cases. We believe they can also cover most of the other people's needs as well.
 
-Here is a non-comprehensive list.
+Here is a non-comprehensive list:
 
 * **anoynimous objects**. We do not support anonymous objects in the definitions. Please define all objects as top level
   definitions.
 
-* **parameters**. Most generators cover only query, body and path parameters.
+* **parameters**. Go server and Python client support query, body, path and header parameters.
+  Elm and Typescript + Angular clients support only query, body and path parameters.
+  Cookie parameters are not supported.
 
-* **default values**. We do not support default values due to impedance mismatch between JSON and the target languages.
+* **default values**. We do not support default values due to the impedance mismatch between JSON and the target languages.
 
 * **validation of responses**. Responses from the server are not validated due to the complexity and the run-time overhead.
 

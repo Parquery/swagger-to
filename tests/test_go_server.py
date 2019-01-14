@@ -63,21 +63,16 @@ class TestGoServer(unittest.TestCase):
 
             package = swagger.name
 
-            got = collections.OrderedDict([("types.go",
-                                            swagger_to.go_server.generate_types_go(
-                                                package=package,
-                                                typedefs=go_typedefs)), ("routes.go",
-                                                                         swagger_to.go_server.generate_routes_go(
-                                                                             package=package, routes=go_routes)),
-                                           ("handler_impl.go.sample",
-                                            swagger_to.go_server.generate_handler_impl_go(
-                                                package=package,
-                                                routes=go_routes)), ("handler.go",
-                                                                     swagger_to.go_server.generate_handler_go(
-                                                                         package=package, routes=go_routes)),
-                                           ("jsonschemas.go",
-                                            swagger_to.go_server.generate_json_schemas_go(
-                                                package=package, routes=go_routes, typedefs=go_typedefs))])
+            # yapf: disable
+            got = collections.OrderedDict([
+                ("types.go", swagger_to.go_server.generate_types_go(package=package, typedefs=go_typedefs)),
+                ("routes.go", swagger_to.go_server.generate_routes_go(package=package, routes=go_routes)),
+                ("handler_impl.go.sample", swagger_to.go_server.generate_handler_impl_go(
+                    package=package, routes=go_routes)),
+                ("handler.go", swagger_to.go_server.generate_handler_go(package=package, routes=go_routes)),
+                ("jsonschemas.go", swagger_to.go_server.generate_json_schemas_go(
+                     package=package, routes=go_routes, typedefs=go_typedefs))])
+            # yapf: enable
 
             for filename, text in got.items():
                 expected_pth = case_dir / filename

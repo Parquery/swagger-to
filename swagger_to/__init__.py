@@ -1,9 +1,9 @@
 """Parse Swagger specification and generates server and client stubs."""
-import collections
 import re
 import string
 from typing import List, MutableMapping
 
+import collections
 import icontract
 
 # pylint: disable=missing-docstring
@@ -76,6 +76,7 @@ def camel_case_split(identifier: str) -> List[str]:
 
 @icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
 @icontract.ensure(lambda result: '_' not in result)
+@icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result[0].isupper())
 @icontract.ensure(lambda result: result != '')
 def capital_camel_case(identifier: str) -> str:
@@ -88,17 +89,26 @@ def capital_camel_case(identifier: str) -> str:
     >>> capital_camel_case(identifier='snake_case')
     'SnakeCase'
 
+    >>> capital_camel_case(identifier='Dash-Case')
+    'DashCase'
+
+    >>> capital_camel_case(identifier='dash-case')
+    'DashCase'
+
     :param identifier: arbitrary identifier
     :return: identifier as CamelCase
     """
-    parts = identifier.split("_")
-
-    camel_parts = []  # type: List[str]
-    for part in parts:
-        camel_parts.extend(camel_case_split(identifier=part))
+    # yapf: disable
+    parts = [
+        part
+        for underscore_part in identifier.split("_")
+        for dash_part in underscore_part.split("-")
+        for part in camel_case_split(identifier=dash_part)
+    ]
+    # yapf: enable
 
     new_parts = []  # type: List[str]
-    for part in camel_parts:
+    for part in parts:
         part = part.lower()
 
         if part in ['url', 'id']:
@@ -115,6 +125,7 @@ def capital_camel_case(identifier: str) -> str:
 
 @icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
 @icontract.ensure(lambda result: '_' not in result)
+@icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result[0].islower())
 @icontract.ensure(lambda result: result != '')
 def camel_case(identifier: str) -> str:
@@ -130,18 +141,27 @@ def camel_case(identifier: str) -> str:
     >>> camel_case(identifier='Snake_case')
     'snakeCase'
 
+    >>> camel_case(identifier='Dash-Case')
+    'dashCase'
+
+    >>> camel_case(identifier='dash-case')
+    'dashCase'
+
     :param identifier: arbitrary identifier
     :return: identifier as camelCase
     """
-    parts = identifier.split("_")
+    # yapf: disable
+    parts = [
+        part
+        for underscore_part in identifier.split("_")
+        for dash_part in underscore_part.split("-")
+        for part in camel_case_split(identifier=dash_part)
+    ]
+    # yapf: enable
 
-    camel_parts = []  # type: List[str]
-    for part in parts:
-        camel_parts.extend(camel_case_split(identifier=part))
+    new_parts = [parts[0].lower()]  # type: List[str]
 
-    new_parts = [camel_parts[0].lower()]  # type: List[str]
-
-    for part in camel_parts[1:]:
+    for part in parts[1:]:
         part = part.lower()
 
         if part in ['url', 'id']:
@@ -156,6 +176,9 @@ def camel_case(identifier: str) -> str:
     return "".join(new_parts)
 
 
+@icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
+@icontract.ensure(lambda result: '-' not in result)
+@icontract.ensure(lambda result: result.islower())
 def snake_case(identifier: str) -> str:
     """
     Convert an indentifier to a lowercase snake case.
@@ -172,13 +195,23 @@ def snake_case(identifier: str) -> str:
     >>> snake_case(identifier='Snake_case')
     'snake_case'
 
+    >>> snake_case(identifier='Dash-Case')
+    'dash_case'
+
+    >>> snake_case(identifier='dash-case')
+    'dash_case'
+
     :param identifier: to be converted
     :return: lowercase snake_case identifier
     """
-    if identifier == '':
-        return ''
-
-    parts = camel_case_split(identifier=identifier)
+    # yapf: disable
+    parts = [
+        part
+        for underscore_part in identifier.split("_")
+        for dash_part in underscore_part.split("-")
+        for part in camel_case_split(identifier=dash_part)
+    ]
+    # yapf: enable
 
     result = '_'.join(parts)
     return result.lower()
