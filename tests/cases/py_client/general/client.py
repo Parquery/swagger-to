@@ -990,7 +990,6 @@ class RemoteCaller:
 
         files = {}  # type: Dict[str, BinaryIO]
 
-
         files['profile_picture'] = profile_picture
 
         resp = requests.request(

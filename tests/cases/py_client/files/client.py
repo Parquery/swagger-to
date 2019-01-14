@@ -40,7 +40,6 @@ class RemoteCaller:
 
         files = {}  # type: Dict[str, BinaryIO]
 
-
         files['reference_image'] = reference_image
 
         resp = requests.request(

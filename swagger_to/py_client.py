@@ -1080,8 +1080,8 @@ def {{ request.operation_id}}(
     {% if request.header_parameters %}{### Header parameters ###}
 
     headers = {}  # type: Dict[str, str]
-
         {% for param in request.header_parameters %}
+
             {% set set_header_item %}
                 {% if is_primitive[param] %}
 headers[{{ param.name|repr }}] = str({{ param.identifier }})
@@ -1168,7 +1168,6 @@ data[{{ param.name|repr }}] = json.dumps(
     {% if request.file_parameters %}{### File parameters ###}
 
     files = {}  # type: Dict[str, BinaryIO]
-
         {% for param in request.file_parameters %}
 
             {% if param.required %}
