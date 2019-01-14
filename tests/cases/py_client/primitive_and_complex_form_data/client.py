@@ -64,8 +64,8 @@ def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
 
         return adict
 
-    if exp == EmptyObject:
-        return empty_object_from_obj(obj, path=path)
+    if exp == Profile:
+        return profile_from_obj(obj, path=path)
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))
 
@@ -130,55 +130,92 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
 
         return adict
 
-    if exp == EmptyObject:
-        assert isinstance(obj, EmptyObject)
-        return empty_object_to_jsonable(obj, path=path)
+    if exp == Profile:
+        assert isinstance(obj, Profile)
+        return profile_to_jsonable(obj, path=path)
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))
 
 
-class EmptyObject:
-    """Is an empty object without properties."""
+class Profile:
+    def __init__(
+            self,
+            last_name: str,
+            first_name: Optional[str] = None) -> None:
+        """Initializes with the given values."""
+        # Last name of the user.
+        self.last_name = last_name
+
+        # First name of the user.
+        self.first_name = first_name
 
     def to_jsonable(self) -> MutableMapping[str, Any]:
         """
-        Dispatches the conversion to empty_object_to_jsonable.
+        Dispatches the conversion to profile_to_jsonable.
 
-        :return: a JSON-able representation
+        :return: JSON-able representation
         """
-        return empty_object_to_jsonable(self)
+        return profile_to_jsonable(self)
 
 
-def new_empty_object() -> EmptyObject:
-    """Generates an instance of EmptyObject with default values."""
-    return EmptyObject()
+def new_profile() -> Profile:
+    """Generates an instance of Profile with default values."""
+    return Profile(
+        last_name='')
 
 
-def empty_object_from_obj(obj: Any, path: str = "") -> EmptyObject:
+def profile_from_obj(obj: Any, path: str = "") -> Profile:
     """
-    Generates an instance of EmptyObject from a dictionary object.
+    Generates an instance of Profile from a dictionary object.
 
-    :param obj: a JSON-ed dictionary object representing an instance of EmptyObject
+    :param obj: a JSON-ed dictionary object representing an instance of Profile
     :param path: path to the object used for debugging
-    :return: parsed instance of EmptyObject
+    :return: parsed instance of Profile
     """
     if not isinstance(obj, dict):
         raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
 
-    return EmptyObject()
+    for key in obj:
+        if not isinstance(key, str):
+            raise ValueError(
+                'Expected a key of type str at path {}, but got: {}'.format(path, type(key)))
+
+    last_name_from_obj = from_obj(
+        obj['last_name'],
+        expected=[str],
+        path=path + '.last_name')  # type: str
+
+    if 'first_name' in obj:
+        first_name_from_obj = from_obj(
+            obj['first_name'],
+            expected=[str],
+            path=path + '.first_name')  # type: Optional[str]
+    else:
+        first_name_from_obj = None
+
+    return Profile(
+        last_name=last_name_from_obj,
+        first_name=first_name_from_obj)
 
 
-def empty_object_to_jsonable(
-        empty_object: EmptyObject,
+def profile_to_jsonable(
+        profile: Profile,
         path: str = "") -> MutableMapping[str, Any]:
     """
-    Generates a JSON-able mapping from an instance of EmptyObject.
+    Generates a JSON-able mapping from an instance of Profile.
 
-    :param empty_object: instance of EmptyObject to be JSON-ized
-    :param path: path to the empty_object used for debugging
+    :param profile: instance of Profile to be JSON-ized
+    :param path: path to the profile used for debugging
     :return: a JSON-able representation
     """
-    return dict()
+    res = dict()  # type: Dict[str, Any]
+
+    res['last_name'] = profile.last_name
+
+    if profile.first_name is not None:
+        res['first_name'] = profile.first_name
+
+    return res
 
 
 class RemoteCaller:
@@ -190,31 +227,42 @@ class RemoteCaller:
 
     def test_me(
             self,
-            empty_object: Optional[EmptyObject] = None) -> EmptyObject:
+            some_str_parameter: str,
+            some_complex_parameter: Optional[Profile] = None,
+            some_int_parameter: Optional[int] = None) -> bytes:
         """
         Is a test endpoint.
 
-        :param empty_object:
+        :param some_str_parameter:
+        :param some_complex_parameter:
+        :param some_int_parameter:
 
-        :return: an empty object
+        :return: a confirmation
         """
         url = self.url_prefix + '/products'
 
-        data = to_jsonable(
-            empty_object,
-            expected=[EmptyObject])
+        data = {}  # type: Dict[str, str]
+            
+        if some_complex_parameter is not None:
+            data['some_complex_parameter'] = json.dumps(
+                to_jsonable(
+                    some_complex_parameter,
+                    expected=[Profile]))
+            
+        data['some_str_parameter'] = str(some_str_parameter)
+            
+        if some_int_parameter is not None:
+            data['some_int_parameter'] = str(some_int_parameter)
 
         resp = requests.request(
             method='get',
             url=url,
-            json=data,
+            data=data,
             auth=self.auth)
 
         with contextlib.closing(resp):
             resp.raise_for_status()
-            return from_obj(
-                obj=resp.json(),
-                expected=[EmptyObject])
+            return resp.content
 
 
 # Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

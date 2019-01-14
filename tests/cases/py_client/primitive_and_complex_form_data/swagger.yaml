@@ -1,0 +1,49 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test
+paths:
+  /products:
+    get:
+      operationId: test_me
+      tags:
+        - test
+      description: is a test endpoint.
+      parameters:
+        - name: some_complex_parameter
+          in: formData
+          schema:
+            $ref: "#/definitions/Profile"
+        - name: some_str_parameter
+          in: formData
+          type: string
+          required: true
+        - name: some_int_parameter
+          in: formData
+          type: integer
+          format: int64
+          required: false
+      responses:
+        200:
+          description: a confirmation
+        default:
+          description: Unexpected error
+
+definitions:
+  Profile:
+    type : object
+    properties:
+      first_name:
+        type: string
+        description: First name of the user.
+      last_name:
+        type: string
+        description: Last name of the user.
+    required:
+      - last_name

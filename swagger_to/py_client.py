@@ -1113,16 +1113,26 @@ def {{ request.operation_id}}(
     {% endif %}{# /if request.body_parameter #}
     {% if request.formdata_parameters %}{### Form-data parameters ###}
 
-    data = {
-        {% for param in request.formdata_parameters %}
-        {% if is_primitive[param] %}
-        {{ param.name|repr }}: {{ param.identifier }}{{ '}' if loop.last else ',' }}
+    data = {}  # type: Dict[str, str]
+    {% for param in request.formdata_parameters %}
+        
+        {% set set_data_item %}
+            {% if is_primitive[param] %}
+data[{{ param.name|repr }}] = str({{ param.identifier }})
+            {% else %}
+data[{{ param.name|repr }}] = json.dumps(
+    to_jsonable(
+        {{ param.identifier}},
+        expected=[{{ expected_type_expression[param] }}]))
+            {% endif %}{# /if is_primitive[param] #}
+        {% endset %}
+        {% if param.required %}
+    {{ set_data_item|trim|indent|indent }}
         {% else %}
-        {{ param.name|repr }}: to_jsonable(
-            {{ param.identifier}},
-            expected=[{{ expected_type_expression[param] }}]){{ '}' if loop.last else ',' }}
-        {% endif %}{# /if is_primitive[param] #}
-        {% endfor %}{# /for param in request.formdata_parameters #}
+    if {{ param.identifier }} is not None:
+        {{ set_data_item|trim|indent|indent }}
+        {% endif %}{# /if param.required #}
+    {% endfor %}{# /for param in request.formdata_parameters #}
     {% endif %}{# /if request.formdata_parameters #}
     {% if request.file_parameters %}
 
@@ -1283,6 +1293,7 @@ _CLIENT_PY = _from_string_with_informative_exceptions(
 # pydocstyle: add-ignore=D105,D107,D401
 
 import contextlib
+import json
 from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
 
 import requests
