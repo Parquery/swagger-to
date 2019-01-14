@@ -6,6 +6,7 @@
 # pydocstyle: add-ignore=D105,D107,D401
 
 import contextlib
+import json
 from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
 
 import requests
@@ -33,8 +34,9 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/upload'
 
-        data = {
-            'file_nme': file_nme}
+        data = {}  # type: Dict[str, str]
+            
+        data['file_nme'] = str(file_nme)
 
         files = {
             'reference_image': reference_image}

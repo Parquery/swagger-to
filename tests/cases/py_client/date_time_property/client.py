@@ -6,6 +6,7 @@
 # pydocstyle: add-ignore=D105,D107,D401
 
 import contextlib
+import json
 from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
 
 import requests
