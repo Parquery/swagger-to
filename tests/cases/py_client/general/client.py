@@ -831,6 +831,7 @@ class RemoteCaller:
         params = {}  # type: Dict[str, str]
 
         params['latitude'] = str(latitude)
+
         params['longitude'] = str(longitude)
 
         resp = requests.request(
@@ -914,9 +915,12 @@ class RemoteCaller:
         params = {}  # type: Dict[str, str]
 
         params['start_latitude'] = str(start_latitude)
+
         params['start_longitude'] = str(start_longitude)
+
         if customer_uuid is not None:
             params['customer_uuid'] = str(customer_uuid)
+
         if product_id is not None:
             params['product_id'] = str(product_id)
 
@@ -1020,6 +1024,7 @@ class RemoteCaller:
 
         if offset is not None:
             params['offset'] = str(offset)
+
         if limit is not None:
             params['limit'] = str(limit)
 

@@ -1103,8 +1103,8 @@ headers[{{ param.name|repr }}] = json.dumps(
     {% if request.query_parameters %}{### Query parameters ###}
 
     params = {}  # type: Dict[str, str]
-
         {% for param in request.query_parameters %}
+
             {% set set_params_item %}
                 {% if is_primitive[param] %}
 params[{{ param.name|repr }}] = str({{ param.identifier }})
