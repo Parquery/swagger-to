@@ -830,9 +830,9 @@ class RemoteCaller:
 
         params = {}  # type: Dict[str, str]
 
-        params['latitude'] = str(latitude)
+        params['latitude'] = json.dumps(latitude)
 
-        params['longitude'] = str(longitude)
+        params['longitude'] = json.dumps(longitude)
 
         resp = requests.request(
             method='get',
@@ -880,7 +880,7 @@ class RemoteCaller:
         params = {}  # type: Dict[str, str]
 
         if max_lines is not None:
-            params['max_lines'] = str(max_lines)
+            params['max_lines'] = json.dumps(max_lines)
 
         resp = requests.request(
             method='get',
@@ -914,15 +914,15 @@ class RemoteCaller:
 
         params = {}  # type: Dict[str, str]
 
-        params['start_latitude'] = str(start_latitude)
+        params['start_latitude'] = json.dumps(start_latitude)
 
-        params['start_longitude'] = str(start_longitude)
+        params['start_longitude'] = json.dumps(start_longitude)
 
         if customer_uuid is not None:
-            params['customer_uuid'] = str(customer_uuid)
+            params['customer_uuid'] = customer_uuid
 
         if product_id is not None:
-            params['product_id'] = str(product_id)
+            params['product_id'] = product_id
 
         resp = requests.request(
             method='get',
@@ -983,10 +983,10 @@ class RemoteCaller:
 
         data = {}  # type: Dict[str, str]
 
-        data['user_id'] = str(user_id)
+        data['user_id'] = user_id
 
         if birthday is not None:
-            data['birthday'] = str(birthday)
+            data['birthday'] = birthday
 
         files = {}  # type: Dict[str, BinaryIO]
 
@@ -1022,10 +1022,10 @@ class RemoteCaller:
         params = {}  # type: Dict[str, str]
 
         if offset is not None:
-            params['offset'] = str(offset)
+            params['offset'] = json.dumps(offset)
 
         if limit is not None:
-            params['limit'] = str(limit)
+            params['limit'] = json.dumps(limit)
 
         resp = requests.request(
             method='get',

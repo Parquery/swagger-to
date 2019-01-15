@@ -36,7 +36,7 @@ class RemoteCaller:
 
         data = {}  # type: Dict[str, str]
 
-        data['file_nme'] = str(file_nme)
+        data['file_nme'] = file_nme
 
         files = {}  # type: Dict[str, BinaryIO]
 

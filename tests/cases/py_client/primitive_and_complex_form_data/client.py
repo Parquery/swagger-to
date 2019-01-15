@@ -249,10 +249,10 @@ class RemoteCaller:
                     some_complex_parameter,
                     expected=[Profile]))
 
-        data['some_str_parameter'] = str(some_str_parameter)
+        data['some_str_parameter'] = some_str_parameter
 
         if some_int_parameter is not None:
-            data['some_int_parameter'] = str(some_int_parameter)
+            data['some_int_parameter'] = json.dumps(some_int_parameter)
 
         resp = requests.request(
             method='get',

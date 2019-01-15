@@ -38,12 +38,12 @@ class RemoteCaller:
 
         headers = {}  # type: Dict[str, str]
 
-        headers['Some-parameter'] = str(some_parameter)
+        headers['Some-parameter'] = some_parameter
 
         if some_optional is not None:
-            headers['Some-optional'] = str(some_optional)
+            headers['Some-optional'] = some_optional
 
-        headers['X-Some-Custom-Parameter'] = str(x_some_custom_parameter)
+        headers['X-Some-Custom-Parameter'] = json.dumps(x_some_custom_parameter)
 
         resp = requests.request(
             method='get',

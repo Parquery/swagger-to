@@ -1083,8 +1083,10 @@ def {{ request.operation_id}}(
         {% for param in request.header_parameters %}
 
             {% set set_header_item %}
-                {% if is_primitive[param] %}
-headers[{{ param.name|repr }}] = str({{ param.identifier }})
+                {% if is_str[param] %}
+headers[{{ param.name|repr }}] = {{ param.identifier }}
+                {% elif is_primitive[param] %}
+headers[{{ param.name|repr }}] = json.dumps({{ param.identifier }})
                 {% else %}
 headers[{{ param.name|repr }}] = json.dumps(
     to_jsonable(
@@ -1106,8 +1108,10 @@ headers[{{ param.name|repr }}] = json.dumps(
         {% for param in request.query_parameters %}
 
             {% set set_params_item %}
-                {% if is_primitive[param] %}
-params[{{ param.name|repr }}] = str({{ param.identifier }})
+                {% if is_str[param] %}
+params[{{ param.name|repr }}] = {{ param.identifier }}
+                {% elif is_primitive[param] %}
+params[{{ param.name|repr }}] = json.dumps({{ param.identifier }})
                 {% else %}
 params[{{ param.name|repr }}] = json.dumps(
     to_jsonable(
@@ -1148,8 +1152,10 @@ data = to_jsonable(
     {% for param in request.formdata_parameters %}
 
         {% set set_data_item %}
-            {% if is_primitive[param] %}
-data[{{ param.name|repr }}] = str({{ param.identifier }})
+            {% if is_str[param] %}
+data[{{ param.name|repr }}] = {{ param.identifier }}
+            {% elif is_primitive[param] %}
+data[{{ param.name|repr }}] = json.dumps({{ param.identifier }})
             {% else %}
 data[{{ param.name|repr }}] = json.dumps(
     to_jsonable(
@@ -1310,7 +1316,7 @@ def _generate_request_function(request: Request) -> str:
             for param in request.parameters
         },
         path_tokens=path_tokens,
-        is_str={param: isinstance(param, Strdef)
+        is_str={param: isinstance(param.typedef, Strdef)
                 for param in request.parameters},
         is_primitive={
             param: isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef))
