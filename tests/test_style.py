@@ -66,28 +66,49 @@ class TestStyleCheck(unittest.TestCase):
 class TestDescription(unittest.TestCase):
     def test_that_it_works(self):
         # Good: empty string
-        self.assertEqual(swagger_to.style._check_description(""), None)
+        self.assertEqual(swagger_to.style._check_description(description="", starts_with_verb=True), None)
         # Good: lower case first letter and ends with period
-        self.assertEqual(swagger_to.style._check_description("is a well-formatted description."), None)
+        self.assertEqual(
+            swagger_to.style._check_description(description="is a well-formatted description.", starts_with_verb=True),
+            None)
         # Good: description and paragraph
         self.assertEqual(
-            swagger_to.style._check_description("is a well-formatted description.\n\nit really is a "
-                                                "well-formatted thing"), None)
+            swagger_to.style._check_description(
+                description="is a well-formatted description.\n\nit really is a "
+                "well-formatted thing",
+                starts_with_verb=True), None)
         # Good: description and paragraphs
         self.assertEqual(
-            swagger_to.style._check_description("is a well-formatted description.\n\nit really is a "
-                                                "well-formatted thing\n\nit really is"), None)
+            swagger_to.style._check_description(
+                description="is a well-formatted description.\n\nit really is a "
+                "well-formatted thing\n\nit really is",
+                starts_with_verb=True), None)
 
         # Bad: everything else
-        self.assertNotEqual(swagger_to.style._check_description("isnt a not-so-well-formatted description"), None)
-        self.assertNotEqual(swagger_to.style._check_description("Has a not-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style._check_description("has a not-so-well-formatted description"), None)
-        self.assertNotEqual(swagger_to.style._check_description("123e1dt-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style._check_description("    is not-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style._check_description("\tis not-so-well-formatted description."), None)
-        self.assertNotEqual(swagger_to.style._check_description("\nis not-so-well-formatted description."), None)
         self.assertNotEqual(
-            swagger_to.style._check_description("is not-so-well-formatted description.\nnot at all."), None)
+            swagger_to.style._check_description(
+                description="isnt a not-so-well-formatted description", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="Has a not-so-well-formatted description.", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="has a not-so-well-formatted description", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="123e1dt-so-well-formatted description.", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="    is not-so-well-formatted description.", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="\tis not-so-well-formatted description.", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="\nis not-so-well-formatted description.", starts_with_verb=True), None)
+        self.assertNotEqual(
+            swagger_to.style._check_description(
+                description="is not-so-well-formatted description.\nnot at all.", starts_with_verb=True), None)
 
 
 if __name__ == '__main__':

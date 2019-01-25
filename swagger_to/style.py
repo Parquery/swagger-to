@@ -133,26 +133,26 @@ def _check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoi
     complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
-        if _check_description(endpoint.description):
+        if _check_description(description=endpoint.description, starts_with_verb=True):
             complaints.append(
                 Complaint(
-                    message=_check_description(endpoint.description),
+                    message=_check_description(description=endpoint.description, starts_with_verb=True),
                     what=endpoint.description,
                     where="In endpoint {}".format(endpoint.operation_id),
                     line=endpoint.line))
         for param in endpoint.parameters:
-            if _check_description(param.description):
+            if _check_description(description=param.description, starts_with_verb=True):
                 complaints.append(
                     Complaint(
-                        message=_check_description(param.description),
+                        message=_check_description(description=param.description, starts_with_verb=True),
                         what=param.description,
                         where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
                         line=param.line))
         for _, resp in enumerate(endpoint.responses.values()):
-            if _check_description(resp.description):
+            if _check_description(description=resp.description, starts_with_verb=False):
                 complaints.append(
                     Complaint(
-                        message=_check_description(resp.description),
+                        message=_check_description(description=resp.description, starts_with_verb=False),
                         what=resp.description,
                         where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code),
                         line=resp.line))
@@ -240,40 +240,40 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
         pass
 
     elif isinstance(typedef, swagger_to.intermediate.Arraydef):
-        if _check_description(typedef.description):
+        if _check_description(description=typedef.description, starts_with_verb=True):
             complaints.append(
                 Complaint(
-                    message=_check_description(typedef.description),
+                    message=_check_description(description=typedef.description, starts_with_verb=True),
                     what=typedef.description,
                     where="In array {}".format(typedef.identifier),
                     line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
-        if _check_description(typedef.description):
+        if _check_description(description=typedef.description, starts_with_verb=True):
             complaints.append(
                 Complaint(
                     what=typedef.description,
-                    message=_check_description(typedef.description),
+                    message=_check_description(description=typedef.description, starts_with_verb=True),
                     where="In map {}".format(typedef.identifier),
                     line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
-        if _check_description(typedef.description):
+        if _check_description(description=typedef.description, starts_with_verb=True):
             complaints.append(
                 Complaint(
                     what=typedef.description,
-                    message=_check_description(typedef.description),
+                    message=_check_description(description=typedef.description, starts_with_verb=True),
                     where="In object {}".format(typedef.identifier),
                     line=typedef.line))
 
         for prop in typedef.properties.values():
-            if _check_description(prop.description):
+            if _check_description(description=prop.description, starts_with_verb=True):
                 complaints.append(
                     Complaint(
                         what=prop.description,
-                        message=_check_description(prop.description),
+                        message=_check_description(description=prop.description, starts_with_verb=True),
                         where="In object {}, property {}".format(typedef.identifier, prop.name),
                         line=typedef.line))
                 complaints.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
@@ -330,31 +330,31 @@ def _check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> L
     return complaints
 
 
-def _check_description(description: str) -> Optional[str]:
+def _check_description(description: str, starts_with_verb: bool) -> Optional[str]:
     """
     Check whether a description is well-styled.
 
     :param description: the description
+    :param starts_with_verb:
+        if True, check that the description should start with a verb in third person singular (stem -s).
     :return: the failed check, if any
     """
     # pylint: disable=too-many-return-statements, too-many-branches
     if description == "":
         return None
 
-    without_pipe = description.replace("|", "")
-
-    if not without_pipe[:1].isalpha():
+    if not description[:1].isalpha():
         return "description should start with alphanumeric character"
 
-    if without_pipe[:1].isupper():
+    if description[:1].isupper():
         return "description should start with lower case character"
 
-    words = without_pipe.split(' ')
+    words = description.split(' ')
 
-    if not words[0].endswith('s'):
+    if starts_with_verb and not words[0].endswith('s'):
         return "description should start with verb in present tense (stem + \"-s\")"
 
-    lines = without_pipe.splitlines()
+    lines = description.splitlines()
 
     if not lines[0].endswith('.'):
         return "description's first line should end with a period"
@@ -375,7 +375,7 @@ def _check_description(description: str) -> Optional[str]:
         else:
             one_empty_line = False
 
-    if without_pipe.strip() != without_pipe:
+    if description.strip() != description:
         return "description should not contain leading or trailing whitespaces"
 
     return None
