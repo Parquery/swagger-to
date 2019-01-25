@@ -133,26 +133,26 @@ def _check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoi
     complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
-        if _check_description(endpoint.description):
+        if _check_description(endpoint.description, True):
             complaints.append(
                 Complaint(
-                    message=_check_description(endpoint.description),
+                    message=_check_description(endpoint.description, True),
                     what=endpoint.description,
                     where="In endpoint {}".format(endpoint.operation_id),
                     line=endpoint.line))
         for param in endpoint.parameters:
-            if _check_description(param.description):
+            if _check_description(param.description, True):
                 complaints.append(
                     Complaint(
-                        message=_check_description(param.description),
+                        message=_check_description(param.description, True),
                         what=param.description,
                         where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
                         line=param.line))
         for _, resp in enumerate(endpoint.responses.values()):
-            if _check_description(resp.description):
+            if _check_description(resp.description, False):
                 complaints.append(
                     Complaint(
-                        message=_check_description(resp.description),
+                        message=_check_description(resp.description, False),
                         what=resp.description,
                         where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code),
                         line=resp.line))
@@ -240,40 +240,40 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
         pass
 
     elif isinstance(typedef, swagger_to.intermediate.Arraydef):
-        if _check_description(typedef.description):
+        if _check_description(typedef.description, True):
             complaints.append(
                 Complaint(
-                    message=_check_description(typedef.description),
+                    message=_check_description(typedef.description, True),
                     what=typedef.description,
                     where="In array {}".format(typedef.identifier),
                     line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
-        if _check_description(typedef.description):
+        if _check_description(typedef.description, True):
             complaints.append(
                 Complaint(
                     what=typedef.description,
-                    message=_check_description(typedef.description),
+                    message=_check_description(typedef.description, True),
                     where="In map {}".format(typedef.identifier),
                     line=typedef.line))
         complaints.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
-        if _check_description(typedef.description):
+        if _check_description(typedef.description, True):
             complaints.append(
                 Complaint(
                     what=typedef.description,
-                    message=_check_description(typedef.description),
+                    message=_check_description(typedef.description, True),
                     where="In object {}".format(typedef.identifier),
                     line=typedef.line))
 
         for prop in typedef.properties.values():
-            if _check_description(prop.description):
+            if _check_description(prop.description, True):
                 complaints.append(
                     Complaint(
                         what=prop.description,
-                        message=_check_description(prop.description),
+                        message=_check_description(prop.description, True),
                         where="In object {}, property {}".format(typedef.identifier, prop.name),
                         line=typedef.line))
                 complaints.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
@@ -330,11 +330,12 @@ def _check_endpoint_path(endpoints: List[swagger_to.intermediate.Endpoint]) -> L
     return complaints
 
 
-def _check_description(description: str) -> Optional[str]:
+def _check_description(description: str, starting_verb_check: bool) -> Optional[str]:
     """
     Check whether a description is well-styled.
 
     :param description: the description
+    :param starting_verb_check: if true, the description should start with a verb in third person singular (stem -s)
     :return: the failed check, if any
     """
     # pylint: disable=too-many-return-statements, too-many-branches
@@ -351,7 +352,7 @@ def _check_description(description: str) -> Optional[str]:
 
     words = without_pipe.split(' ')
 
-    if not words[0].endswith('s'):
+    if starting_verb_check and not words[0].endswith('s'):
         return "description should start with verb in present tense (stem + \"-s\")"
 
     lines = without_pipe.splitlines()
