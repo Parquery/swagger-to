@@ -1,3 +1,8 @@
+3.1.1
+=====
+* swagger-style exempts descriptions of responses to start with a verb. This is necessary since certain clients produce
+  illegible descriptions in their code (*e.g.*, Python client).
+
 3.1.0
 =====
 * swagger-to-go-server and py-client support header parameters.
