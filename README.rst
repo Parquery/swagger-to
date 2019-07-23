@@ -33,7 +33,7 @@ our simple and not-so-simple use cases. We believe they can also cover most of t
 
 Here is a non-comprehensive list:
 
-* **anoynimous objects**. We do not support anonymous objects in the definitions. Please define all objects as top level
+* **anonymous objects**. We do not support anonymous objects in the definitions. Please define all objects as top level
   definitions.
 
 * **parameters**. Go server and Python client support query, body, path and header parameters.
@@ -230,6 +230,19 @@ The following checks are performed:
 * Endpoint paths start with a slash, and the responses contain "200" and "default".
 
 The script call returns 0 in case of no violations found, 1 in case of failed checks or 2 in case of illegal usage.
+
+Examples
+========
+
+You can find the following examples useful for development:
+
+* Swagger API documentation: https://docs.swagger.io/spec.html
+
+* Go Server generated code: https://github.com/Parquery/swagger-to/tree/master/tests/cases/go_server/general
+
+* Py Client generated code: https://github.com/Parquery/swagger-to/blob/master/tests/cases/py_client/general/client.py
+
+* Elm client generated code: https://github.com/Parquery/swagger-to/blob/master/tests/cases/elm_client/general/Client.elm
 
 
 Development
