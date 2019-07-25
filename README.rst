@@ -236,7 +236,7 @@ Examples
 
 You can find the following examples useful for development:
 
-* Swagger API documentation: https://docs.swagger.io/spec.html
+* Swagger API: https://github.com/Parquery/swagger-to/blob/master/tests/cases/go_server/general/swagger.yaml
 
 * Go Server generated code: https://github.com/Parquery/swagger-to/tree/master/tests/cases/go_server/general
 
