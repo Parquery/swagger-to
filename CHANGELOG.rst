@@ -1,3 +1,8 @@
+3.1.2
+=====
+* fixed a bug when generating python code for a request which does not provide any parameters. From now on, authentication is provided in such requests.
+
+
 3.1.1
 =====
 * swagger-style exempts descriptions of responses to start with a verb. This is necessary since certain clients produce
