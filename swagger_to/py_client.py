@@ -1186,7 +1186,7 @@ data[{{ param.name|repr }}] = json.dumps(
     {% endif %}{# /if request.file_parameters #}
 
     {% if not request.parameters %}
-    resp = requests.request(method={{ request.method|repr }}, url=url)
+    resp = requests.request(method={{ request.method|repr }}, url=url, auth=self.auth)
     {% else %}
     resp = requests.request(
         method={{ request.method|repr }},
