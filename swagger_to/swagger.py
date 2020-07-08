@@ -365,10 +365,6 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
 
         ordered_hook = object_pairs_hook(mapping)
 
-        # assert not hasattr(ordered_hook, "__lineno__"), \
-        #     "Expected ordered mapping to have no __lineno__ attribute set before"
-        # setattr(ordered_hook, "__lineno__", node.__lineno__)
-
         return RawDict(adict=ordered_hook, source=stream.name, lineno=node.__lineno__)
 
     OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)

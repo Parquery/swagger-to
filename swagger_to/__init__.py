@@ -1,7 +1,7 @@
 """Parse Swagger specification and generates server and client stubs."""
 import re
 import string
-from typing import List, MutableMapping
+from typing import List, MutableMapping, Tuple
 
 import collections
 import icontract
@@ -74,8 +74,48 @@ def camel_case_split(identifier: str) -> List[str]:
     return parts
 
 
+_NONLETTER_PREFIX_RE = re.compile(r'^[^a-zA-Z]+')
+_NONLETTER_SUFFIX_RE = re.compile(r'[^a-zA-Z]+$')
+
+
+def _trim_nonletters(identifier: str) -> Tuple[str, str, str]:
+    """
+    Trim the non-letter prefix and suffix from the identifier.
+
+    >>> _trim_nonletters('_1some_text23_')
+    ('_1', 'some_text', '23_')
+
+    >>> _trim_nonletters('_1some_text')
+    ('_1', 'some_text', '')
+
+    >>> _trim_nonletters('some_text23_')
+    ('', 'some_text', '23_')
+
+    >>> _trim_nonletters('')
+    ('', '', '')
+
+    :param identifier: to be converted
+    :return: lowercase snake_case identifier
+    """
+    if not identifier:
+        return '', identifier, ''
+
+    prefix = ''
+    prefix_mtch = _NONLETTER_PREFIX_RE.search(identifier)
+    if prefix_mtch:
+        prefix = prefix_mtch.group(0)
+
+    suffix = ''
+    suffix_mtch = _NONLETTER_SUFFIX_RE.search(identifier)
+    if suffix_mtch:
+        suffix = suffix_mtch.group(0)
+
+    trimmed = identifier[len(prefix):len(identifier) - len(suffix)]
+
+    return prefix, trimmed, suffix
+
+
 @icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
-@icontract.ensure(lambda result: '_' not in result)
 @icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result[0] == result[0].upper())
 @icontract.ensure(lambda result: result != '')
@@ -95,13 +135,27 @@ def capital_camel_case(identifier: str) -> str:
     >>> capital_camel_case(identifier='dash-case')
     'DashCase'
 
+    >>> capital_camel_case(identifier='_snake_case')
+    '_SnakeCase'
+
+    >>> capital_camel_case(identifier='snake_case_')
+    'SnakeCase_'
+
+    >>> capital_camel_case(identifier='__')
+    '__'
+
     :param identifier: arbitrary identifier
     :return: identifier as CamelCase
     """
+    prefix, trimmed, suffix = _trim_nonletters(identifier=identifier)
+
+    if not trimmed:
+        return identifier
+
     # yapf: disable
     parts = [
         part
-        for underscore_part in identifier.split("_")
+        for underscore_part in trimmed.split("_")
         for dash_part in underscore_part.split("-")
         for part in camel_case_split(identifier=dash_part)
     ]
@@ -120,11 +174,10 @@ def capital_camel_case(identifier: str) -> str:
         else:
             new_parts.append(part[0].upper() + part[1:].lower())
 
-    return "".join(new_parts)
+    return "".join([prefix] + new_parts + [suffix])
 
 
 @icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
-@icontract.ensure(lambda result: '_' not in result)
 @icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result[0] == result[0].lower())
 @icontract.ensure(lambda result: result != '')
@@ -147,13 +200,27 @@ def camel_case(identifier: str) -> str:
     >>> camel_case(identifier='dash-case')
     'dashCase'
 
+    >>> camel_case(identifier='_snake_case')
+    '_snakeCase'
+
+    >>> camel_case(identifier='snake_case_')
+    'snakeCase_'
+
+    >>> camel_case(identifier='__')
+    '__'
+
     :param identifier: arbitrary identifier
     :return: identifier as camelCase
     """
+    prefix, trimmed, suffix = _trim_nonletters(identifier=identifier)
+
+    if not trimmed:
+        return identifier
+
     # yapf: disable
     parts = [
         part
-        for underscore_part in identifier.split("_")
+        for underscore_part in trimmed.split("_")
         for dash_part in underscore_part.split("-")
         for part in camel_case_split(identifier=dash_part)
     ]
@@ -173,7 +240,7 @@ def camel_case(identifier: str) -> str:
         else:
             new_parts.append(part[0].upper() + part[1:].lower())
 
-    return "".join(new_parts)
+    return "".join([prefix] + new_parts + [suffix])
 
 
 @icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
@@ -181,7 +248,7 @@ def camel_case(identifier: str) -> str:
 @icontract.ensure(lambda result: result == result.lower())
 def snake_case(identifier: str) -> str:
     """
-    Convert an indentifier to a lowercase snake case.
+    Convert an identifier to a lowercase snake case.
 
     >>> snake_case(identifier='CamelCase')
     'camel_case'
@@ -201,20 +268,44 @@ def snake_case(identifier: str) -> str:
     >>> snake_case(identifier='dash-case')
     'dash_case'
 
+    >>> snake_case(identifier='_CamelCase')
+    '_camel_case'
+
+    >>> snake_case(identifier='CamelCase_')
+    'camel_case_'
+
+    >>> snake_case(identifier='__')
+    '__'
+
     :param identifier: to be converted
     :return: lowercase snake_case identifier
     """
+    prefix = ''
+    prefix_mtch = _NONLETTER_PREFIX_RE.search(identifier)
+    if prefix_mtch:
+        prefix = prefix_mtch.group(0)
+
+    suffix = ''
+    suffix_mtch = _NONLETTER_SUFFIX_RE.search(identifier)
+    if suffix_mtch:
+        suffix = suffix_mtch.group(0)
+
+    trimmed = identifier[len(prefix):len(identifier) - len(suffix)]
+
+    if not trimmed:
+        return identifier
+
     # yapf: disable
     parts = [
         part
-        for underscore_part in identifier.split("_")
+        for underscore_part in trimmed.split("_")
         for dash_part in underscore_part.split("-")
         for part in camel_case_split(identifier=dash_part)
     ]
     # yapf: enable
 
     result = '_'.join(parts)
-    return result.lower()
+    return ''.join([prefix, result.lower(), suffix])
 
 
 def upper_first(text: str) -> str:
@@ -229,6 +320,9 @@ def upper_first(text: str) -> str:
 
     >>> upper_first(text='')
     ''
+
+    >>> upper_first(text='_some text')
+    '_some text'
 
     :param text: to be capitalized
     :return: text with the first letter capitalized

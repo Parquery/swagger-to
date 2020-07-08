@@ -274,7 +274,6 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
     resp.description = intermediate_response.description
     return resp
 
-
 @icontract.ensure(
     lambda result:
     sorted(result.parameters, key=id) == sorted([
@@ -304,6 +303,11 @@ def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMap
     ##
     # Generate identifiers corresponding to the parameters.
     ##
+
+    for intermediate_param in endpoint.parameters:
+        if intermediate_param.name == "":
+            raise ValueError("Unexpected empty intermediate parameter name in the endpoint: {}".format(
+                endpoint.operation_id))
 
     param_to_identifier = {
         intermediate_param: swagger_to.snake_case(identifier=intermediate_param.name)
