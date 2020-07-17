@@ -133,29 +133,44 @@ def _check_descriptions_endpoints(endpoints: List[swagger_to.intermediate.Endpoi
     complaints = []  # type: List[Complaint]
 
     for endpoint in endpoints:
+        if endpoint.description is None:
+            raise ValueError('Unexpected None description in endpoint: {!r}'.format(endpoint.operation_id))
+
         if _check_description(description=endpoint.description, starts_with_verb=True):
-            complaints.append(
-                Complaint(
-                    message=_check_description(description=endpoint.description, starts_with_verb=True),
-                    what=endpoint.description,
-                    where="In endpoint {}".format(endpoint.operation_id),
-                    line=endpoint.line))
-        for param in endpoint.parameters:
-            if _check_description(description=param.description, starts_with_verb=True):
+            msg = _check_description(description=endpoint.description, starts_with_verb=True)
+            if msg is not None:
                 complaints.append(
                     Complaint(
-                        message=_check_description(description=param.description, starts_with_verb=True),
-                        what=param.description,
-                        where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
-                        line=param.line))
+                        message=msg,
+                        what=endpoint.description,
+                        where="In endpoint {}".format(endpoint.operation_id),
+                        line=endpoint.line))
+
+        for param in endpoint.parameters:
+            if param.description is None:
+                raise ValueError('Unexpected None description of param {!r} in endpoint {!r}'.format(
+                    param.name, endpoint.operation_id))
+
+            if _check_description(description=param.description, starts_with_verb=True):
+                msg = _check_description(description=param.description, starts_with_verb=True)
+                if msg is not None:
+                    complaints.append(
+                        Complaint(
+                            message=msg,
+                            what=param.description,
+                            where="In endpoint {}, parameter {}".format(endpoint.operation_id, param.name),
+                            line=param.line))
+
         for _, resp in enumerate(endpoint.responses.values()):
             if _check_description(description=resp.description, starts_with_verb=False):
-                complaints.append(
-                    Complaint(
-                        message=_check_description(description=resp.description, starts_with_verb=False),
-                        what=resp.description,
-                        where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code),
-                        line=resp.line))
+                msg = _check_description(description=resp.description, starts_with_verb=False)
+                if msg is not None:
+                    complaints.append(
+                        Complaint(
+                            message=msg,
+                            what=resp.description,
+                            where="In endpoint {}, response {}".format(endpoint.operation_id, resp.code),
+                            line=resp.line))
 
     return complaints
 
@@ -230,6 +245,7 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
     :param visited: already seen typedefs
     :return: the list of failed checks
     """
+    # pylint: disable=too-many-branches
     complaints = []  # type: List[Complaint]
     if typedef in visited:
         return complaints
@@ -241,41 +257,52 @@ def _check_recursively_descriptions(typedef: swagger_to.intermediate.Typedef,
 
     elif isinstance(typedef, swagger_to.intermediate.Arraydef):
         if _check_description(description=typedef.description, starts_with_verb=True):
-            complaints.append(
-                Complaint(
-                    message=_check_description(description=typedef.description, starts_with_verb=True),
-                    what=typedef.description,
-                    where="In array {}".format(typedef.identifier),
-                    line=typedef.line))
+            msg = _check_description(description=typedef.description, starts_with_verb=True)
+            if msg is not None:
+                complaints.append(
+                    Complaint(
+                        message=msg,
+                        what=typedef.description,
+                        where="In array {}".format(typedef.identifier),
+                        line=typedef.line))
+
         complaints.extend(_check_recursively_descriptions(typedef=typedef.items, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Mapdef):
         if _check_description(description=typedef.description, starts_with_verb=True):
-            complaints.append(
-                Complaint(
-                    what=typedef.description,
-                    message=_check_description(description=typedef.description, starts_with_verb=True),
-                    where="In map {}".format(typedef.identifier),
-                    line=typedef.line))
+            msg = _check_description(description=typedef.description, starts_with_verb=True)
+            if msg is not None:
+                complaints.append(
+                    Complaint(
+                        what=typedef.description,
+                        message=msg,
+                        where="In map {}".format(typedef.identifier),
+                        line=typedef.line))
+
         complaints.extend(_check_recursively_descriptions(typedef=typedef.values, visited=visited))
 
     elif isinstance(typedef, swagger_to.intermediate.Objectdef):
         if _check_description(description=typedef.description, starts_with_verb=True):
-            complaints.append(
-                Complaint(
-                    what=typedef.description,
-                    message=_check_description(description=typedef.description, starts_with_verb=True),
-                    where="In object {}".format(typedef.identifier),
-                    line=typedef.line))
+            msg = _check_description(description=typedef.description, starts_with_verb=True)
+            if msg is not None:
+                complaints.append(
+                    Complaint(
+                        what=typedef.description,
+                        message=msg,
+                        where="In object {}".format(typedef.identifier),
+                        line=typedef.line))
 
         for prop in typedef.properties.values():
             if _check_description(description=prop.description, starts_with_verb=True):
-                complaints.append(
-                    Complaint(
-                        what=prop.description,
-                        message=_check_description(description=prop.description, starts_with_verb=True),
-                        where="In object {}, property {}".format(typedef.identifier, prop.name),
-                        line=typedef.line))
+                msg = _check_description(description=prop.description, starts_with_verb=True)
+                if msg is not None:
+                    complaints.append(
+                        Complaint(
+                            what=prop.description,
+                            message=msg,
+                            where="In object {}, property {}".format(typedef.identifier, prop.name),
+                            line=typedef.line))
+
                 complaints.extend(_check_recursively_descriptions(typedef=prop.typedef, visited=visited))
 
     return complaints

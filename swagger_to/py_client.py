@@ -554,8 +554,14 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Filedef):
         return 'BinaryIO'
     elif isinstance(typedef, Listdef):
+        if typedef.items is None:
+            raise ValueError('Unexpected None items in typedef: {!r}'.format(typedef.identifier))
+
         return 'List[' + _type_expression(typedef=typedef.items, path=str(path) + '.items') + ']'
     elif isinstance(typedef, Dictdef):
+        if typedef.values is None:
+            raise ValueError('Unexpected None values in typedef: {!r}'.format(typedef.identifier))
+
         return 'Dict[str, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + ']'
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
@@ -634,12 +640,16 @@ def _generate_class_definition(classdef: Classdef) -> str:
     if len(classdef.attributes) == 0:
         return _CLASS_DEF_WO_ATTRIBUTES.render(classdef=classdef)
 
-    return _CLASS_DEF_WITH_ATTRIBUTES_TPL.render(
-        classdef=classdef,
-        attribute_type={
-            attr: _type_expression(typedef=attr.typedef, path='{}.{}'.format(attr.classdef.identifier, attr.name))
-            for attr in classdef.attributes.values()
-        })
+    attribute_type = dict()
+    for attr in classdef.attributes.values():
+        if attr.typedef is None:
+            raise ValueError('Unexpected None typedef of attr {!r} in class {!r}'.format(
+                attr.name, classdef.identifier))
+
+        attribute_type[attr] = _type_expression(
+            typedef=attr.typedef, path='{}.{}'.format(classdef.identifier, attr.name))
+
+    return _CLASS_DEF_WITH_ATTRIBUTES_TPL.render(classdef=classdef, attribute_type=attribute_type)
 
 
 def _default_value(typedef: Typedef) -> str:
@@ -694,11 +704,17 @@ def _generate_factory_method(classdef: Classdef) -> str:
     :param classdef: class definition in Python representation
     :return: Python code
     """
+    default_value = dict()
+    for attr in classdef.attributes.values():
+        if attr.typedef is None:
+            raise ValueError('Unexpected None typedef of attr {!r}'.format(attr.name))
+
+        default_value[attr] = _default_value(typedef=attr.typedef)
+
     return _FACTORY_METHOD_TPL.render(
         classdef=classdef,
         required_attributes=[attr for attr in classdef.attributes.values() if attr.required],
-        default_value={attr: _default_value(typedef=attr.typedef)
-                       for attr in classdef.attributes.values()}).strip()
+        default_value=default_value).strip()
 
 
 _FROM_OBJ_TPL = _from_string_with_informative_exceptions(
@@ -793,8 +809,14 @@ def _expected_type_expression(typedef: Typedef) -> str:
     elif isinstance(typedef, Bytesdef):
         return 'bytes'
     elif isinstance(typedef, Listdef):
+        if typedef.items is None:
+            raise ValueError('Unexpected None items in typedef: {!r}'.format(typedef.identifier))
+
         return 'list, {}'.format(_expected_type_expression(typedef=typedef.items))
     elif isinstance(typedef, Dictdef):
+        if typedef.values is None:
+            raise ValueError('Unexpected None values in typedef: {!r}'.format(typedef.identifier))
+
         return 'dict, {}'.format(_expected_type_expression(typedef=typedef.values))
     elif isinstance(typedef, Classdef):
         return typedef.identifier
@@ -856,16 +878,18 @@ def _generate_class_from_obj(classdef: Classdef) -> str:
     :param classdef: class definition in Python representation
     :return: Python code
     """
+    expected_type_expression = dict()
+    type_expression = dict()
+    for attr in classdef.attributes.values():
+        if attr.typedef is None:
+            raise ValueError('Unexpected None typedef of attr {!r} in class {!r}'.format(
+                attr.name, classdef.identifier))
+
+        expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
+        type_expression[attr] = _type_expression(typedef=attr.typedef, path=classdef.identifier + '.' + attr.name)
+
     return _CLASS_FROM_OBJ_TPL.render(
-        classdef=classdef,
-        expected_type_expression={
-            attr: _expected_type_expression(typedef=attr.typedef)
-            for attr in classdef.attributes.values()
-        },
-        type_expression={
-            attr: _type_expression(typedef=attr.typedef, path=attr.classdef.identifier + '.' + attr.name)
-            for attr in classdef.attributes.values()
-        }).strip()
+        classdef=classdef, expected_type_expression=expected_type_expression, type_expression=type_expression).strip()
 
 
 _TO_JSONABLE_TPL = _from_string_with_informative_exceptions(
@@ -1000,16 +1024,19 @@ def _generate_class_to_jsonable(classdef: Classdef) -> str:
     :param classdef: class definition in Python representation
     :return: Python code
     """
+    is_primitive = dict()
+    expected_type_expression = dict()
+
+    for attr in classdef.attributes.values():
+        if attr.typedef is None:
+            raise ValueError('Unexpected None typedef of attr {!r} in class {!r}'.format(
+                attr.name, classdef.identifier))
+
+        is_primitive[attr] = isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef))
+        expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
+
     return _CLASS_TO_JSONABLE_TPL.render(
-        classdef=classdef,
-        is_primitive={
-            attr: isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef))
-            for attr in classdef.attributes.values()
-        },
-        expected_type_expression={
-            attr: _expected_type_expression(typedef=attr.typedef)
-            for attr in classdef.attributes.values()
-        }).strip()
+        classdef=classdef, is_primitive=is_primitive, expected_type_expression=expected_type_expression).strip()
 
 
 _REQUEST_DOCSTRING_TPL = _from_string_with_informative_exceptions(
@@ -1298,27 +1325,47 @@ def _generate_request_function(request: Request) -> str:
     # Prepare expected types
     ##
 
-    expected_type_expression = {
-        param: _expected_type_expression(typedef=param.typedef)
-        for param in request.parameters if not isinstance(param.typedef, Filedef)
-    }  # type: Dict[Union[Parameter, Response], str]
+    expected_type_expression = dict()  # type: Dict[Union[Parameter, Response], str]
+    for param in request.parameters:
+        if isinstance(param.typedef, Filedef):
+            continue
+
+        if param.typedef is None:
+            raise ValueError('Unexpected None typedef in param {!r} of request {!r}'.format(
+                param.name, request.operation_id))
+
+        expected_type_expression[param] = _expected_type_expression(typedef=param.typedef)
 
     if return_type not in ['bytes', 'MutableMapping[str, Any]']:
+        if resp is None:
+            raise ValueError('Unexpected None resp with return_type {!r} in request {!r}'.format(
+                return_type, request.operation_id))
+
+        if resp.typedef is None:
+            raise ValueError('Unexpected None resp.typedef with return_type {!r} in request {!r}'.format(
+                return_type, request.operation_id))
+
         expected_type_expression[resp] = _expected_type_expression(typedef=resp.typedef)
 
     ##
     # Render
     ##
 
+    type_expression = dict()
+    for param in request.parameters:
+        if param.typedef is None:
+            raise ValueError('Unexpected None typedef of param {!r} in request {!r}'.format(
+                param.name, request.operation_id))
+
+        type_expression[param] = _type_expression(
+            typedef=param.typedef, path='{}.{}'.format(request.operation_id, param.name))
+
     return _REQUEST_FUNCTION_TPL.render(
         request=request,
         return_type=return_type,
         resp=resp,
         request_docstring=request_docstring,
-        type_expression={
-            param: _type_expression(typedef=param.typedef, path='{}.{}'.format(request.operation_id, param.name))
-            for param in request.parameters
-        },
+        type_expression=type_expression,
         path_tokens=path_tokens,
         is_str={param: isinstance(param.typedef, Strdef)
                 for param in request.parameters},

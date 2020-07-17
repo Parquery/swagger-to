@@ -190,9 +190,15 @@ def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: 
         pass
 
     elif isinstance(typedef, Arraydef):
+        if definition.typedef.items is None:
+            raise ValueError("Unexpected None definition.typedef.items in an Arraydef")
+
         typedef.items = _anonymous_or_get_typedef(original_typedef=definition.typedef.items, typedefs=typedefs)
 
     elif isinstance(typedef, Mapdef):
+        if definition.typedef.additional_properties is None:
+            raise ValueError("Unexpected None definition.typedef.additional_properties in a Mapdef")
+
         typedef.values = _anonymous_or_get_typedef(
             original_typedef=definition.typedef.additional_properties, typedefs=typedefs)
 
@@ -431,7 +437,7 @@ def _to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutabl
     else:
         raise ValueError(
             "Could not resolve the type of the parameter, neither 'type' nor 'schema' defined: {!r}".format(
-                original_param.raw_dict.adict))
+                original_param.raw_dict.adict if original_param.raw_dict is not None else None))
 
     typedef = _anonymous_or_get_typedef(original_typedef=original_typedef, typedefs=typedefs)
 
@@ -460,7 +466,7 @@ def to_parameters(swagger: swagger_to.swagger.Swagger,
     for original_param in swagger.parameters.values():
         if original_param.ref != '':
             raise ValueError("Expected no 'ref' property in a parameter definition {!r}, but got: {!r}".format(
-                original_param.name, original_param.raw_dict.adict))
+                original_param.name, original_param.raw_dict.adict if original_param.raw_dict is not None else None))
 
         param = _to_parameter(original_param=original_param, typedefs=typedefs)
         params[param.name] = param
@@ -482,7 +488,7 @@ def _anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, ty
         param_ref_name = swagger_to.parse_parameter_ref(ref=original_param.ref)
         if param_ref_name not in params:
             raise ValueError("The parameter referenced by the parameter {!r} has not been defined: {!r}".format(
-                original_param.raw_dict.adict, original_param.ref))
+                original_param.raw_dict.adict if original_param.raw_dict is not None else None, original_param.ref))
 
         return params[param_ref_name]
 
@@ -536,6 +542,12 @@ def _to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str
     :param params: table of parameter definitions in intermediate representation
     :return: intermediate representation of an endpoint
     """
+    if method.path is None:
+        raise ValueError("Unexpected None method.path")
+
+    if method.path.swagger is None:
+        raise ValueError("Unexpected None method.path.swagger")
+
     base_path = method.path.swagger.base_path
     if base_path != '':
         pth = '{}/{}'.format(base_path.rstrip('/'), method.path.identifier.lstrip('/'))
@@ -556,9 +568,17 @@ def _to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str
 
         if param.in_what == 'body':
             if param.typedef.identifier == '':
+                if original_param.method is None:
+                    raise ValueError("Unexpected None method in original_param {} on path {}".format(
+                        original_param.name, pth))
+
                 json_schema_identifier = original_param.method.operation_id + "_" + param.name
             else:
                 json_schema_identifier = param.typedef.identifier
+
+            if original_param.schema is None:
+                raise ValueError('Unexpected None schema in original_param {} on path {}'.format(
+                    original_param.name, pth))
 
             param.json_schema = _to_json_schema(
                 identifier=json_schema_identifier,

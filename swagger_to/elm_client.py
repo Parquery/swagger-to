@@ -427,6 +427,10 @@ def _write_type_definition(typedef: Typedef, fid: TextIO) -> None:
                 _write_description(description=prop.description, indent=INDENT, fid=fid)
                 fid.write("\n")
 
+            if prop.typedef is None:
+                raise ValueError("Unexpected None typedef of prop {!r} in type {!r}".format(
+                    prop.name, typedef.identifier))
+
             type_expr = _type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
             camel_case_name = swagger_to.camel_case(identifier=prop.name)
             if not prop.required:
@@ -460,6 +464,10 @@ def _write_encoder(typedef: Typedef, fid: TextIO) -> None:
         prefix = 2 * INDENT + '[ '
         for prop in typedef.properties.values():
             fid.write(prefix + '( "{}", '.format(swagger_to.snake_case(identifier=prop.name)))
+
+            if prop.typedef is None:
+                raise ValueError("Unexpected None typedef of prop {!r} in type {!r}".format(
+                    prop.name, typedef.identifier))
 
             encoder = _type_encoder(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
             if not prop.required:
@@ -504,6 +512,11 @@ def _write_decoder(typedef: Typedef, fid: TextIO) -> None:
 
         for prop in typedef.properties.values():
             snake_case_name = swagger_to.snake_case(identifier=prop.name)
+
+            if prop.typedef is None:
+                raise ValueError("Unexpected None typedef of prop {!r} in type {!r}".format(
+                    prop.name, typedef.identifier))
+
             decoder = _argument_decoder_expression(typedef=prop.typedef, path='{}.{}'.format(record_id, prop.name))
             if prop.required:
                 fid.write(prefix + 'Json.Decode.Pipeline.required "{}" {}\n'.format(snake_case_name, decoder))
@@ -559,6 +572,10 @@ def _write_request(request: Request, fid: TextIO) -> None:
     types = []  # type List[str]
     names = []  # type List[str]
     for param in request.parameters:
+        if param.typedef is None:
+            raise ValueError("Unexpected None typedef of param {!r} in request {!r}".format(
+                param.name, request.operation_id))
+
         if param.required:
             types.append(_type_expression(typedef=param.typedef))
             names.append(swagger_to.camel_case(identifier=param.name))
@@ -700,6 +717,9 @@ def _write_request(request: Request, fid: TextIO) -> None:
     fid.write(INDENT * indent + 'Http.request\n')
     fid.write(INDENT * (indent + 1) + '{ body = ')
     if request.body_parameter is not None:
+        if request.body_parameter.typedef is None:
+            raise ValueError("Unexpected None typedef of body_parameter in request {!r}".format(request.operation_id))
+
         if not request.body_parameter.required:
             fid.write('Json.Encode.Extra.maybe ({}'.format(_type_encoder(request.body_parameter.typedef)))
         fid.write('({}'.format(_type_encoder(request.body_parameter.typedef)))
@@ -892,8 +912,14 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'String'
     elif isinstance(typedef, Listdef):
+        if typedef.items is None:
+            raise ValueError("Unexpected None items in typedef {!r}".format(typedef.identifier))
+
         return 'List ' + _type_expression(typedef=typedef.items, path=str(path) + '.items')
     elif isinstance(typedef, Dictdef):
+        if typedef.values is None:
+            raise ValueError("Unexpected None values in typedef {!r}".format(typedef.identifier))
+
         return 'Dict String ' + _type_expression(typedef=typedef.values, path=str(path) + '.values')
     elif isinstance(typedef, Recorddef):
         if typedef.identifier == '':
@@ -925,8 +951,14 @@ def _type_encoder(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'Json.Encode.string'
     elif isinstance(typedef, Listdef):
+        if typedef.items is None:
+            raise ValueError("Unexpected None items in typedef {!r}".format(typedef.identifier))
+
         return 'Json.Encode.list <| List.map ' + _type_encoder(typedef=typedef.items, path=str(path) + '.items')
     elif isinstance(typedef, Dictdef):
+        if typedef.values is None:
+            raise ValueError("Unexpected None values in typedef {!r}".format(typedef.identifier))
+
         return 'Json.Encode.Extra.dict identity ' + _type_encoder(typedef=typedef.values, path=str(path) + '.values')
     elif isinstance(typedef, Recorddef):
         if typedef.identifier == '':
@@ -958,8 +990,14 @@ def _type_decoder(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'Json.Decode.string'
     elif isinstance(typedef, Listdef):
+        if typedef.items is None:
+            raise ValueError("Unexpected None items in typedef {!r}".format(typedef.identifier))
+
         return 'Json.Decode.list <| ' + _type_decoder(typedef=typedef.items, path=str(path) + '.items')
     elif isinstance(typedef, Dictdef):
+        if typedef.values is None:
+            raise ValueError("Unexpected None values in typedef {!r}".format(typedef.identifier))
+
         return 'Json.Decode.dict <| ' + _type_decoder(typedef=typedef.values, path=str(path) + '.values')
     elif isinstance(typedef, Recorddef):
         if typedef.identifier == '':
