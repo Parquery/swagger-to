@@ -1,6 +1,10 @@
 Swagger-to
 ==========
 
+.. image:: https://github.com/Parquery/swagger-to/workflows/Check/badge.svg
+    :target: https://github.com/Parquery/swagger-to/actions?query=workflow%3ACheck
+    :alt: Check status
+
 .. image:: https://badge.fury.io/py/swagger-to.svg
     :target: https://pypi.org/project/swagger-to/
     :alt: PyPI - version
