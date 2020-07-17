@@ -115,7 +115,8 @@ def _trim_nonletters(identifier: str) -> Tuple[str, str, str]:
     return prefix, trimmed, suffix
 
 
-@icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
+@icontract.require(
+    lambda identifier: identifier != '', error=lambda: ValueError("Unexpected empty identifier"), enabled=True)
 @icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result[0] == result[0].upper())
 @icontract.ensure(lambda result: result != '')
@@ -177,7 +178,8 @@ def capital_camel_case(identifier: str) -> str:
     return "".join([prefix] + new_parts + [suffix])
 
 
-@icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
+@icontract.require(
+    lambda identifier: identifier != '', error=lambda: ValueError("Unexpected empty identifier"), enabled=True)
 @icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result[0] == result[0].lower())
 @icontract.ensure(lambda result: result != '')
@@ -243,7 +245,8 @@ def camel_case(identifier: str) -> str:
     return "".join([prefix] + new_parts + [suffix])
 
 
-@icontract.require(lambda identifier: identifier != '', error=ValueError("Unexpected empty identifier"), enabled=True)
+@icontract.require(
+    lambda identifier: identifier != '', error=lambda: ValueError("Unexpected empty identifier"), enabled=True)
 @icontract.ensure(lambda result: '-' not in result)
 @icontract.ensure(lambda result: result == result.lower())
 def snake_case(identifier: str) -> str:

@@ -249,16 +249,29 @@ def _walk(typedef: Typedef, parent: Optional[Typedef] = None) -> Iterable[Tuple[
         pass
 
     elif isinstance(typedef, Pointerdef):
+        if typedef.pointed is None:
+            raise ValueError("Unexpected None pointed in typedef: {!r}".format(typedef.identifier))
+
         yield from _walk(typedef=typedef.pointed, parent=typedef)
 
     elif isinstance(typedef, Arraydef):
+        if typedef.items is None:
+            raise ValueError("Unexpected None items in typedef: {!r}".format(typedef.identifier))
+
         yield from _walk(typedef=typedef.items, parent=typedef)
 
     elif isinstance(typedef, Mapdef):
+        if typedef.values is None:
+            raise ValueError("Unexpected None values in typedef: {!r}".format(typedef.identifier))
+
         yield from _walk(typedef=typedef.values, parent=typedef)
 
     elif isinstance(typedef, Structdef):
         for fielddef in typedef.fields.values():
+            if fielddef.typedef is None:
+                raise ValueError("Unexpected None typedef in fielddef {!r} of type {!r}".format(
+                    fielddef.name, typedef.identifier))
+
             yield from _walk(typedef=fielddef.typedef, parent=typedef)
 
     else:
@@ -560,22 +573,36 @@ def _express_type(typedef: Typedef) -> str:
         return typedef.type
 
     if isinstance(typedef, Pointerdef):
+        if typedef.pointed is None:
+            raise ValueError("Unexpected None pointed in typedef: {!r}".format(typedef.identifier))
+
         return "*{}".format(_express_or_identify_type(typedef.pointed))
 
     if isinstance(typedef, Arraydef):
+        if typedef.items is None:
+            raise ValueError("Unexpected None items in typedef: {!r}".format(typedef.identifier))
+
         return "[]{}".format(_express_or_identify_type(typedef.items))
 
     if isinstance(typedef, Mapdef):
+        if typedef.values is None:
+            raise ValueError("Unexpected None values in typedef: {!r}".format(typedef.identifier))
+
         return "map[string]{}".format(_express_or_identify_type(typedef.values))
 
     if isinstance(typedef, Structdef):
         if len(typedef.fields) == 0:
             return "struct {}"
 
-        return _STRUCT_TPL.render(
-            typedef=typedef,
-            field_type={fielddef: _express_or_identify_type(fielddef.typedef)
-                        for fielddef in typedef.fields.values()}).strip()
+        field_type = dict()
+        for fielddef in typedef.fields.values():
+            if fielddef.typedef is None:
+                raise ValueError('Unexpected None typedef of fielddef {!r} in typedef {!r}'.format(
+                    fielddef.name, typedef.identifier))
+
+            field_type[fielddef] = _express_or_identify_type(fielddef.typedef)
+
+        return _STRUCT_TPL.render(typedef=typedef, field_type=field_type).strip()
 
     else:
         raise NotImplementedError("No Go type writing defined for typedef of type: {!r}".format(type(typedef)))

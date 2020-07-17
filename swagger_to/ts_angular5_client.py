@@ -379,8 +379,14 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
     elif isinstance(typedef, Stringdef):
         return 'string'
     elif isinstance(typedef, Arraydef):
+        if typedef.items is None:
+            raise ValueError('Unexpected None items in typedef: {!r}'.format(typedef.identifier))
+
         return 'Array<' + _type_expression(typedef=typedef.items, path=str(path) + '.items') + ">"
     elif isinstance(typedef, Mapdef):
+        if typedef.values is None:
+            raise ValueError('Unexpected None values in typedef: {!r}'.format(typedef.identifier))
+
         return 'Map<string, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + ">"
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
@@ -438,6 +444,9 @@ def _write_type_definition(typedef: Typedef, fid: TextIO) -> None:
             if prop.description:
                 _write_description(description=prop.description, indent=INDENT, fid=fid)
                 fid.write("\n")
+
+            if prop.typedef is None:
+                raise ValueError('Unexpected typedef of prop {!r} in class {!r}'.format(prop.name, typedef.identifier))
 
             type_expr = _type_expression(typedef=prop.typedef, path='{}.{}'.format(typedef.identifier, prop.name))
 
@@ -502,6 +511,10 @@ def _write_request(request: Request, fid: TextIO) -> None:
 
     args = []  # type: List[str]
     for param in request.parameters:
+        if param.typedef is None:
+            raise ValueError('Unexpected None typedef in param {!r} of request {!r}'.format(
+                param.name, request.operation_id))
+
         args.append('{}{}: {}'.format(
             param.name, '?' if not param.required else '', _type_expression(typedef=param.typedef)))
 
@@ -553,6 +566,10 @@ def _write_request(request: Request, fid: TextIO) -> None:
                     param_name = token_pth.token_index_to_parameter[i]
                     param = name_to_parameters[param_name]
 
+                    if param.typedef is None:
+                        raise ValueError('Unexpected None typedef in param {!r} and request {!r}'.format(
+                            param.name, request.operation_id))
+
                     fid.write(INDENT * 2 + 'url += encodeURIComponent({});'.format(
                         _to_string_expression(typedef=param.typedef, variable=param.name)))
                 else:
@@ -572,6 +589,10 @@ def _write_request(request: Request, fid: TextIO) -> None:
             if i > 0:
                 fid.write("\n\n")
                 amp = '&'
+
+            if param.typedef is None:
+                raise ValueError('Unexpected None typedef in param {!r} and request {!r}'.format(
+                    param.name, request.operation_id))
 
             if param.required:
                 fid.write(INDENT * 2 + 'url += "{}{}=" + encodeURIComponent({});'.format(

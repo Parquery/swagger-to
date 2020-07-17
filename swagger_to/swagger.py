@@ -44,14 +44,17 @@ class Typedef:
 class Definition:
     """Represent an identifiable data type from the Swagger spec."""
 
-    def __init__(self):
-        """Initialize with defaults."""
-        self.identifier = ''
-        self.typedef = None  # type: Optional[Typedef]
-        self.swagger = None  # type: Optional[Swagger]
+    def __init__(self, identifier: str, typedef: Typedef, swagger: 'Swagger'):
+        """
+        Initialize with the given values.
 
-        # original specification dictionary, if available; not deep-copied, do not modify
-        self.raw_dict = None  # type: Optional[RawDict]
+        :param identifier: identifies the definition
+        :param typedef: parsed type definition
+        :param swagger: original Swagger spec
+        """
+        self.identifier = identifier
+        self.typedef = typedef
+        self.swagger = swagger
 
 
 class Parameter:
@@ -401,13 +404,8 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
 
         errors.extend(['in definition {!r}: {}'.format(def_id, error) for error in def_errors])
 
-        adef = Definition()
-        adef.swagger = swagger
-        adef.identifier = def_id
-        adef.typedef = typedef
-
         if not def_errors:
-            swagger.definitions[def_id] = adef
+            swagger.definitions[def_id] = Definition(identifier=def_id, typedef=typedef, swagger=swagger)
 
     for param_id, param_dict in adict.get('parameters', RawDict()).adict.items():
         param, param_errors = _parse_parameter(raw_dict=param_dict)
