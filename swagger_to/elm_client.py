@@ -614,7 +614,7 @@ def _write_request(request: Request, fid: TextIO) -> None:
             fid.write(line2)
     fid.write('\n')
 
-    name_to_parameters = dict([(param.name, param) for param in request.parameters])
+    name_to_parameters = {param.name: param for param in request.parameters}
 
     rel_path = request.path[1:] if request.path.startswith('/') else request.path
 

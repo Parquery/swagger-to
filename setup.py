@@ -35,7 +35,7 @@ setup(
     install_requires=['pyyaml>=3.12', 'jinja2>=2.10,<3', 'icontract>=2.0.1,<3'],
     extras_require={'dev': [
         'mypy==0.560',
-        'pylint==1.8.2',
+        'pylint==2.5.3',
         'yapf==0.20.2',
         'pydocstyle>=3.0.0,<4',
     ]},
