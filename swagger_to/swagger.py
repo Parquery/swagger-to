@@ -14,10 +14,9 @@ from yaml.constructor import Constructor
 class RawDict:
     """Represent a raw dictionary from a Swagger spec file."""
 
-    def __init__(self, adict: MutableMapping[str, Any] = collections.OrderedDict(), source: str = '',
-                 lineno: int = 0) -> None:
+    def __init__(self, adict: MutableMapping[str, Any] = None, source: str = '', lineno: int = 0) -> None:
         """Initialize with the given values."""
-        self.adict = adict
+        self.adict = adict if adict is not None else collections.OrderedDict()
         self.source = source
         self.lineno = lineno
 

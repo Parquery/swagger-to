@@ -58,7 +58,7 @@ class Hasher:
         if not hash_dir.exists():
             return True
 
-        prev_hashes = set([pth.name for pth in hash_dir.iterdir()])
+        prev_hashes = {pth.name for pth in hash_dir.iterdir()}
 
         new_hsh = compute_hash(text=path.read_text())
 

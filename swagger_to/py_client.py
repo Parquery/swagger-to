@@ -276,14 +276,14 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
 
 @icontract.ensure(
     lambda result:
-    sorted(result.parameters, key=id) == sorted([
+    sorted(result.parameters, key=id) == sorted((
         param
         for param in ([result.body_parameter] if result.body_parameter else []) +
                      result.query_parameters +
                      result.header_parameters +
                      result.path_parameters +
                      result.formdata_parameters +
-                     result.file_parameters], key=id),
+                     result.file_parameters), key=id),
     enabled=icontract.SLOW)
 @icontract.ensure(lambda result: all(isinstance(param.typedef, Filedef) for param in result.file_parameters))
 def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
