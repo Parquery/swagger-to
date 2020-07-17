@@ -1,6 +1,14 @@
 Swagger-to
 ==========
 
+.. image:: https://badge.fury.io/py/swagger-to.svg
+    :target: https://pypi.org/project/swagger-to/
+    :alt: PyPI - version
+
+.. image:: https://img.shields.io/pypi/pyversions/swagger-to.svg
+    :target: https://pypi.org/project/swagger-to/
+    :alt: PyPI - Python Version
+
 Swagger-to generates server and client code from Swagger (OpenAPI 2.0) specification; written in Python 3.
 
 We wanted a code generator that is 1) easy to write, maintain and extend and that 2) produces readable code.
@@ -88,7 +96,7 @@ Usage
 To generate code, you need to invoke one of the ``swagger_to_*.py`` scripts. If the generated code exists, you need to
 specify ``--force`` command-line argument in order to overwrite the existing files.
 
-We use the tag `name` to designate the generate code (*e.g.*, package name in the Go server or service name in the 
+We use the tag `name` to designate the generate code (*e.g.*, package name in the Go server or service name in the
 Python client code). See `this example <tests/cases/py_client/general/swagger.yaml#L10>`_ from the test cases.
 
 Elm Client
