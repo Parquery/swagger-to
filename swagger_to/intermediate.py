@@ -463,13 +463,13 @@ def to_parameters(swagger: swagger_to.swagger.Swagger,
     """
     params = collections.OrderedDict()  # type: MutableMapping[str, Parameter]
 
-    for original_param in swagger.parameters.values():
+    for key, original_param in swagger.parameters.items():
         if original_param.ref != '':
             raise ValueError("Expected no 'ref' property in a parameter definition {!r}, but got: {!r}".format(
                 original_param.name, original_param.raw_dict.adict if original_param.raw_dict is not None else None))
 
         param = _to_parameter(original_param=original_param, typedefs=typedefs)
-        params[param.name] = param
+        params[key] = param
 
     return params
 
