@@ -1,6 +1,18 @@
+3.1.4
+=====
+* fixed JSON pointer representation.
+* tested against multiple Python version (3.5, 3.6, 3.7 and 3.8).
+* upgraded mypy to 0.782 and pylint to 2.5.3 and fixed the resulting issues.
+
+3.1.3
+=====
+* made py-client more robust to parameter names (e.g., those with non-letter prefix or suffix such as _fields)
+
+
 3.1.2
 =====
-* fixed a bug when generating python code for a request which does not provide any parameters. From now on, authentication is provided in such requests.
+* fixed a bug when generating python code for a request which does not provide any parameters. 
+  From now on, authentication is provided in such requests.
 
 
 3.1.1
