@@ -1,0 +1,27 @@
+package product
+
+import (
+	"net/http"
+	"log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+	LogErr *log.Logger
+	LogOut *log.Logger}
+
+// ListProducts implements Handler.ListProducts.
+func (h *HandlerImpl) ListProducts(w http.ResponseWriter,
+	r *http.Request,
+	withAttributes *bool) {
+	http.Error(w, "Not implemented: ListProducts", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: ListProducts")
+}
+
+// GetProduct implements Handler.GetProduct.
+func (h *HandlerImpl) GetProduct(w http.ResponseWriter,
+	r *http.Request,
+	id string) {
+	http.Error(w, "Not implemented: GetProduct", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: GetProduct")
+}

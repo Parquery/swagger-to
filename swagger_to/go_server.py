@@ -111,6 +111,16 @@ class Primitivedef(Typedef):
         self.type = ''
 
 
+class Interfacedef(Typedef):
+    """Represent a interface{} type."""
+
+    def __init__(self):
+        """Initialize with default values."""
+        super().__init__()
+
+        self.type = 'interface{}'
+
+
 def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
     """Convert intermediate type definition into a type definition suitable for Go code generation."""
     typedef = None  # type: Union[None, Typedef]
@@ -187,6 +197,9 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
             if propdef.name in intermediate_typedef.required:
                 typedef.required.append(field.name)
 
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.AnyValuedef):
+        typedef = Interfacedef()
+
     else:
         raise NotImplementedError("Unhandled translation of an intermediate type to Go: {!r}".format(
             type(intermediate_typedef)))
@@ -245,7 +258,7 @@ def _walk(typedef: Typedef, parent: Optional[Typedef] = None) -> Iterable[Tuple[
     """Walk the tree of nested type definitions as (nesting type definition, nested type definition)."""
     yield parent, typedef
 
-    if isinstance(typedef, Primitivedef):
+    if isinstance(typedef, (Primitivedef, Interfacedef)):
         pass
 
     elif isinstance(typedef, Pointerdef):
@@ -569,7 +582,7 @@ struct {
 @icontract.ensure(lambda result: result == result.strip())
 def _express_type(typedef: Typedef) -> str:
     """Express the type in Golang corresponding to the type definition."""
-    if isinstance(typedef, Primitivedef):
+    if isinstance(typedef, (Primitivedef, Interfacedef)):
         return typedef.type
 
     if isinstance(typedef, Pointerdef):

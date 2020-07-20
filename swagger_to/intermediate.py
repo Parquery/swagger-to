@@ -87,6 +87,10 @@ class Primitivedef(Typedef):
         self.pattern = ''
 
 
+class AnyValuedef(Typedef):
+    """Represent a any value type for empty schema."""
+
+
 class JsonSchema:
     """Represent a schema for validation of JSON."""
 
@@ -255,6 +259,8 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
 
             typedef.values = _anonymous_or_get_typedef(
                 original_typedef=original_typedef.additional_properties, typedefs=typedefs)
+        elif len(original_typedef.properties) < 1:
+            typedef = AnyValuedef()
         else:
             typedef = Objectdef()
             typedef.required = original_typedef.required
@@ -268,6 +274,10 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
                 propdef.line = propdef.typedef.line
 
                 typedef.properties[prop_name] = propdef
+
+    elif original_typedef.type == '':
+        typedef = AnyValuedef()
+        typedef.line = original_typedef.__lineno__
 
     else:
         raise ValueError("Unexpected definition: {!r}".format(original_typedef.raw_dict.adict))

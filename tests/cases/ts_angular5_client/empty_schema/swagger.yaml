@@ -1,0 +1,93 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: product
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /products:
+    get:
+      operationId: list_products
+      tags:
+        - product
+      description: describe products
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: with_attributes
+          in: query
+          type: boolean
+          required: false
+      responses:
+        200:
+          description: product summaries
+          schema:
+            $ref: '#/definitions/ProductSummary'
+        default:
+          description: Unexpected error
+  /products/{id}:
+    get:
+      operationId: get_product
+      tags:
+        - product
+      description: product detail
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: id
+          in: path
+          type: string
+          required: true
+      responses:
+        200:
+          description: a product object
+          schema:
+            $ref: '#/definitions/ProductDetail'
+        default:
+          description: Unexpected error
+
+definitions:
+  Capacity:
+    type: integer
+    format: int32
+    description: is an identifiable primitive definition.
+  ProductSummary:
+    description: is a product summary object.
+    type : object
+    properties:
+      product_id:
+        type: string
+        description: is a test string property.
+      metadata: {}
+      capacity:
+        $ref: "#/definitions/Capacity"
+    required:
+      - product_id
+  ProductDetail:
+    description: is a product detail
+    type: object
+    properties:
+      product_id:
+        type: string
+        description: is a test string property.
+      capacity:
+        $ref: "#/definitions/Capacity"
+      metadata: {}
+      data:
+        type: object
+    required:
+      - product_id
+      - metadata
+      - data
