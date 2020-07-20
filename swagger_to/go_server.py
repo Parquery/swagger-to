@@ -778,6 +778,22 @@ _FLOAT64_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
 {% endif %}
 }''')
 
+_BOOLEAN_ARGUMENT_FROM_STRING_TPL = ENV.from_string('''\
+{
+    parsed, err := strconv.ParseBool({{ string_identifier }})
+    if err != nil {
+{% set msg = "Parameter '%s': "|format(argument.parameter_name)|escaped_str %}
+        http.Error(w, {{ msg }}+err.Error(), http.StatusBadRequest)
+        return
+    }
+{% if is_pointerdef(argument.typedef) %}
+    {{ target_identifier }} = &parsed
+{% else %}
+    {{ target_identifier }} = parsed
+{% endif %}
+}
+''')
+
 
 @icontract.require(lambda string_identifier: string_identifier == string_identifier.strip())
 @icontract.ensure(lambda result: not result.endswith('\n'))
@@ -820,6 +836,10 @@ def _argument_from_string(argument: Argument, string_identifier: str) -> str:
 
     elif tajp == 'float64':
         return _FLOAT64_ARGUMENT_FROM_STRING_TPL.render(
+            argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
+
+    elif tajp == 'bool':
+        return _BOOLEAN_ARGUMENT_FROM_STRING_TPL.render(
             argument=argument, string_identifier=string_identifier, target_identifier=target_identifier)
 
     else:
