@@ -552,7 +552,6 @@ struct {
 {% for fielddef in typedef.fields.values() %}
 {% if not loop.first %}
 
-
 {% endif %}
 {% if fielddef.description %}
     {{ fielddef.description|comment|indent }}
@@ -561,8 +560,9 @@ struct {
 {% if fielddef.name not in typedef.required %}
 {% set json_tags = json_tags + ',omitempty' %}
 {% endif %}
-    {{ fielddef.name }} {{ field_type[fielddef] }} `json:{{ json_tags|escaped_str }}`{% if loop.last %}}{% endif %}
+    {{ fielddef.name }} {{ field_type[fielddef] }} `json:{{ json_tags|escaped_str }}`
 {% endfor %}
+}
 ''')
 
 
@@ -592,7 +592,7 @@ def _express_type(typedef: Typedef) -> str:
 
     if isinstance(typedef, Structdef):
         if len(typedef.fields) == 0:
-            return "struct {}"
+            return "struct{}"
 
         field_type = dict()
         for fielddef in typedef.fields.values():
