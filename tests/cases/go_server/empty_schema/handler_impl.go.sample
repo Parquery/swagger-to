@@ -1,0 +1,19 @@
+package product
+
+import (
+	"net/http"
+	"log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+	LogErr *log.Logger
+	LogOut *log.Logger}
+
+// TestEndpoint implements Handler.TestEndpoint.
+func (h *HandlerImpl) TestEndpoint(w http.ResponseWriter,
+	r *http.Request,
+	requiredEmptyParameter EmptyParameter) {
+	http.Error(w, "Not implemented: TestEndpoint", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: TestEndpoint")
+}

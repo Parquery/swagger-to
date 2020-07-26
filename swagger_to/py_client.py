@@ -5,7 +5,7 @@
 # pylint: disable=too-many-statements,too-many-lines
 
 import collections
-from typing import MutableMapping, Union, List, Optional, Dict  # pylint: disable=unused-import
+from typing import MutableMapping, Union, List, Optional, Dict, Any  # pylint: disable=unused-import
 
 import icontract
 import jinja2
@@ -61,6 +61,12 @@ class Bytesdef(Typedef):
 
 class Filedef(Typedef):
     """Represents a Python file type in form-data parameters."""
+
+    pass
+
+
+class Anydef(Typedef):
+    """Represent a definition of Python Any object."""
 
     pass
 
@@ -211,6 +217,9 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
         typedef = Dictdef()
         typedef.values = _to_typedef(intermediate_typedef=intermediate_typedef.values)
+
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.AnyValuedef):
+        typedef = Anydef()
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
         typedef = Classdef()
@@ -563,6 +572,10 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
             raise ValueError('Unexpected None values in typedef: {!r}'.format(typedef.identifier))
 
         return 'Dict[str, ' + _type_expression(typedef=typedef.values, path=str(path) + '.values') + ']'
+
+    elif isinstance(typedef, Anydef):
+        return 'Any'
+
     elif isinstance(typedef, Classdef):
         if typedef.identifier == '':
             raise NotImplementedError(('Translating an anonymous class to a type expression '
@@ -674,6 +687,8 @@ def _default_value(typedef: Typedef) -> str:
         return '[]'
     elif isinstance(typedef, Dictdef):
         return 'dict()'
+    elif isinstance(typedef, Anydef):
+        return 'None'
     elif isinstance(typedef, Classdef):
         return 'new_{}()'.format(swagger_to.snake_case(identifier=typedef.identifier))
     else:
@@ -848,16 +863,24 @@ def {{ classdef.identifier|snake_case }}_from_obj(obj: Any, path: str = "") -> {
     {% for attr in classdef.attributes.values() %}
 
     {% if attr.required %}
+    {% if attr in expected_type_expression %}
     {{ attr.name }}_from_obj = from_obj(
         obj[{{ attr.name|repr }}],
         expected=[{{ expected_type_expression[attr] }}],
         path=path + {{ '.%s'|format(attr.name)|repr }})  # type: {{ type_expression[attr] }}
     {% else %}
+    {{ attr.name }}_from_obj = obj[{{ attr.name|repr }}]
+    {% endif %}{# /if attr in expected_type_expression #}
+    {% else %}
     if {{ attr.name|repr }} in obj:
+    {% if attr in expected_type_expression %}
         {{ attr.name }}_from_obj = from_obj(
             obj[{{ attr.name|repr }}],
             expected=[{{ expected_type_expression[attr] }}],
             path=path + {{ '.%s'|format(attr.name)|repr }})  # type: Optional[{{ type_expression[attr] }}]
+    {% else %}
+        {{ attr.name }}_from_obj = obj[{{ attr.name|repr }}]
+    {% endif %}{# /if attr in expected_type_expression #}
     else:
         {{ attr.name }}_from_obj = None
     {% endif %}{# /if attr.required #}
@@ -885,7 +908,8 @@ def _generate_class_from_obj(classdef: Classdef) -> str:
             raise ValueError('Unexpected None typedef of attr {!r} in class {!r}'.format(
                 attr.name, classdef.identifier))
 
-        expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
+        if not isinstance(attr.typedef, Anydef):
+            expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
         type_expression[attr] = _type_expression(typedef=attr.typedef, path=classdef.identifier + '.' + attr.name)
 
     return _CLASS_FROM_OBJ_TPL.render(
@@ -1032,8 +1056,9 @@ def _generate_class_to_jsonable(classdef: Classdef) -> str:
             raise ValueError('Unexpected None typedef of attr {!r} in class {!r}'.format(
                 attr.name, classdef.identifier))
 
-        is_primitive[attr] = isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef))
-        expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
+        is_primitive[attr] = isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef, Anydef))
+        if not isinstance(attr.typedef, Anydef):
+            expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
 
     return _CLASS_TO_JSONABLE_TPL.render(
         classdef=classdef, is_primitive=is_primitive, expected_type_expression=expected_type_expression).strip()

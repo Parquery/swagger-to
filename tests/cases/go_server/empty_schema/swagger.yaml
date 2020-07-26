@@ -1,0 +1,51 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: product
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /test_endpoint:
+    get:
+      operationId: test_endpoint
+      tags:
+        - product
+      description: test empty schema
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: required_empty_parameter
+          in: body
+          schema:
+            $ref: '#/definitions/EmptyParameter'
+          required: true
+      responses:
+        200:
+          description: a product object
+          schema:
+            $ref: '#/definitions/WithEmptyProperties'
+        default:
+          description: Unexpected error
+definitions:
+  EmptyParameter:
+    description: defines an empty parameter.
+    type: object
+  WithEmptyProperties:
+    description: is a product detail.
+    type: object
+    properties:
+      required_empty_property: {}
+      optional_empty_property:
+        type: object
+    required:
+      - required_empty_property

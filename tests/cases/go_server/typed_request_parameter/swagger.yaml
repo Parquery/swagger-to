@@ -1,0 +1,57 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: product
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /test_endpoint:
+    get:
+      operationId: test_endpoint
+      tags:
+        - product
+      description: test typed request parameter
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: string_param
+          in: query
+          type: string
+          required: true
+        - name: string_optional_param
+          in: query
+          type: string
+          required: false
+        - name: int32_param
+          in: query
+          type: integer
+          format: int32
+          required: false
+        - name: int64_param
+          in: query
+          type: integer
+          format: int64
+          required: false
+        - name: float_param
+          in: query
+          type: number
+          format: float
+        - name: boolean_param
+          in: query
+          type: boolean
+          required: false
+      responses:
+        200:
+          description: empty response
+        default:
+          description: Unexpected error

@@ -6,3 +6,5 @@ venv3/
 *.egg-info
 dist/
 venv/
+.tox/
+.python-version

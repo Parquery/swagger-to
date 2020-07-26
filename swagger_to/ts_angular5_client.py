@@ -44,6 +44,12 @@ class Stringdef(Typedef):
     pass
 
 
+class Unknwondef(Typedef):
+    """Represent a Typescript unknown."""
+
+    pass
+
+
 class Arraydef(Typedef):
     """Represents a Typescript array."""
 
@@ -180,6 +186,9 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
             prop.required = intermediate_prop.required
 
             typedef.properties[prop.name] = prop
+
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.AnyValuedef):
+        typedef = Unknwondef()
     else:
         raise NotImplementedError("Converting intermediate typedef to Typescript is not supported: {!r}".format(
             type(intermediate_typedef)))
@@ -394,6 +403,8 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
                 "Translating an anonymous class to a Typescript type expression is not supported: {}".format(path))
 
         return typedef.identifier
+    elif isinstance(typedef, Unknwondef):
+        return 'unknown'
     else:
         raise NotImplementedError("Translating the typedef to a type expression is not supported: {!r}: {}".format(
             type(typedef), path))
