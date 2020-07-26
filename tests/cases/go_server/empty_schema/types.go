@@ -3,27 +3,12 @@ package product
 
 // Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
 
-// Capacity is an identifiable primitive definition.
-type Capacity int32
+// EmptyParameter defines an empty parameter.
+type EmptyParameter struct{}
 
-// ProductSummary is a product summary object.
-type ProductSummary struct {
-	// is a test string property.
-	ProductID string `json:"product_id"`
+// WithEmptyProperties is a product detail.
+type WithEmptyProperties struct {
+	RequiredEmptyProperty interface{} `json:"required_empty_property"`
 
-	Metadata interface{} `json:"metadata,omitempty"`
-
-	Capacity *Capacity `json:"capacity,omitempty"`
-}
-
-// ProductDetail is a product detail
-type ProductDetail struct {
-	// is a test string property.
-	ProductID string `json:"product_id"`
-
-	Capacity *Capacity `json:"capacity,omitempty"`
-
-	Metadata interface{} `json:"metadata"`
-
-	Data interface{} `json:"data"`
+	OptionalEmptyProperty interface{} `json:"optional_empty_property,omitempty"`
 }

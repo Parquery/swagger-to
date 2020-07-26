@@ -64,11 +64,11 @@ def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
 
         return adict
 
-    if exp == ProductSummary:
-        return product_summary_from_obj(obj, path=path)
+    if exp == EmptyParameter:
+        return empty_parameter_from_obj(obj, path=path)
 
-    if exp == ProductDetail:
-        return product_detail_from_obj(obj, path=path)
+    if exp == WithEmptyProperties:
+        return with_empty_properties_from_obj(obj, path=path)
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))
 
@@ -133,55 +133,95 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
 
         return adict
 
-    if exp == ProductSummary:
-        assert isinstance(obj, ProductSummary)
-        return product_summary_to_jsonable(obj, path=path)
+    if exp == EmptyParameter:
+        assert isinstance(obj, EmptyParameter)
+        return empty_parameter_to_jsonable(obj, path=path)
 
-    if exp == ProductDetail:
-        assert isinstance(obj, ProductDetail)
-        return product_detail_to_jsonable(obj, path=path)
+    if exp == WithEmptyProperties:
+        assert isinstance(obj, WithEmptyProperties)
+        return with_empty_properties_to_jsonable(obj, path=path)
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))
 
 
-class ProductSummary:
-    """Is a product summary object."""
-
-    def __init__(
-            self,
-            product_id: str,
-            metadata: Optional[Any] = None,
-            capacity: Optional[int] = None) -> None:
-        """Initializes with the given values."""
-        # is a test string property.
-        self.product_id = product_id
-
-        self.metadata = metadata
-
-        self.capacity = capacity
+class EmptyParameter:
+    """Defines an empty parameter."""
 
     def to_jsonable(self) -> MutableMapping[str, Any]:
         """
-        Dispatches the conversion to product_summary_to_jsonable.
+        Dispatches the conversion to empty_parameter_to_jsonable.
+
+        :return: a JSON-able representation
+        """
+        return empty_parameter_to_jsonable(self)
+
+
+def new_empty_parameter() -> EmptyParameter:
+    """Generates an instance of EmptyParameter with default values."""
+    return EmptyParameter()
+
+
+def empty_parameter_from_obj(obj: Any, path: str = "") -> EmptyParameter:
+    """
+    Generates an instance of EmptyParameter from a dictionary object.
+
+    :param obj: a JSON-ed dictionary object representing an instance of EmptyParameter
+    :param path: path to the object used for debugging
+    :return: parsed instance of EmptyParameter
+    """
+    if not isinstance(obj, dict):
+        raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
+
+    return EmptyParameter()
+
+
+def empty_parameter_to_jsonable(
+        empty_parameter: EmptyParameter,
+        path: str = "") -> MutableMapping[str, Any]:
+    """
+    Generates a JSON-able mapping from an instance of EmptyParameter.
+
+    :param empty_parameter: instance of EmptyParameter to be JSON-ized
+    :param path: path to the empty_parameter used for debugging
+    :return: a JSON-able representation
+    """
+    return dict()
+
+
+class WithEmptyProperties:
+    """Is a product detail."""
+
+    def __init__(
+            self,
+            required_empty_property: Any,
+            optional_empty_property: Optional[Any] = None) -> None:
+        """Initializes with the given values."""
+        self.required_empty_property = required_empty_property
+
+        self.optional_empty_property = optional_empty_property
+
+    def to_jsonable(self) -> MutableMapping[str, Any]:
+        """
+        Dispatches the conversion to with_empty_properties_to_jsonable.
 
         :return: JSON-able representation
         """
-        return product_summary_to_jsonable(self)
+        return with_empty_properties_to_jsonable(self)
 
 
-def new_product_summary() -> ProductSummary:
-    """Generates an instance of ProductSummary with default values."""
-    return ProductSummary(
-        product_id='')
+def new_with_empty_properties() -> WithEmptyProperties:
+    """Generates an instance of WithEmptyProperties with default values."""
+    return WithEmptyProperties(
+        required_empty_property=None)
 
 
-def product_summary_from_obj(obj: Any, path: str = "") -> ProductSummary:
+def with_empty_properties_from_obj(obj: Any, path: str = "") -> WithEmptyProperties:
     """
-    Generates an instance of ProductSummary from a dictionary object.
+    Generates an instance of WithEmptyProperties from a dictionary object.
 
-    :param obj: a JSON-ed dictionary object representing an instance of ProductSummary
+    :param obj: a JSON-ed dictionary object representing an instance of WithEmptyProperties
     :param path: path to the object used for debugging
-    :return: parsed instance of ProductSummary
+    :return: parsed instance of WithEmptyProperties
     """
     if not isinstance(obj, dict):
         raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
@@ -191,149 +231,34 @@ def product_summary_from_obj(obj: Any, path: str = "") -> ProductSummary:
             raise ValueError(
                 'Expected a key of type str at path {}, but got: {}'.format(path, type(key)))
 
-    product_id_from_obj = from_obj(
-        obj['product_id'],
-        expected=[str],
-        path=path + '.product_id')  # type: str
+    required_empty_property_from_obj = obj['required_empty_property']
 
-    if 'metadata' in obj:
-        metadata_from_obj = obj['metadata']
+    if 'optional_empty_property' in obj:
+        optional_empty_property_from_obj = obj['optional_empty_property']
     else:
-        metadata_from_obj = None
+        optional_empty_property_from_obj = None
 
-    if 'capacity' in obj:
-        capacity_from_obj = from_obj(
-            obj['capacity'],
-            expected=[int],
-            path=path + '.capacity')  # type: Optional[int]
-    else:
-        capacity_from_obj = None
-
-    return ProductSummary(
-        product_id=product_id_from_obj,
-        metadata=metadata_from_obj,
-        capacity=capacity_from_obj)
+    return WithEmptyProperties(
+        required_empty_property=required_empty_property_from_obj,
+        optional_empty_property=optional_empty_property_from_obj)
 
 
-def product_summary_to_jsonable(
-        product_summary: ProductSummary,
+def with_empty_properties_to_jsonable(
+        with_empty_properties: WithEmptyProperties,
         path: str = "") -> MutableMapping[str, Any]:
     """
-    Generates a JSON-able mapping from an instance of ProductSummary.
+    Generates a JSON-able mapping from an instance of WithEmptyProperties.
 
-    :param product_summary: instance of ProductSummary to be JSON-ized
-    :param path: path to the product_summary used for debugging
+    :param with_empty_properties: instance of WithEmptyProperties to be JSON-ized
+    :param path: path to the with_empty_properties used for debugging
     :return: a JSON-able representation
     """
     res = dict()  # type: Dict[str, Any]
 
-    res['product_id'] = product_summary.product_id
+    res['required_empty_property'] = with_empty_properties.required_empty_property
 
-    if product_summary.metadata is not None:
-        res['metadata'] = product_summary.metadata
-
-    if product_summary.capacity is not None:
-        res['capacity'] = product_summary.capacity
-
-    return res
-
-
-class ProductDetail:
-    """Is a product detail"""
-
-    def __init__(
-            self,
-            product_id: str,
-            metadata: Any,
-            data: Any,
-            capacity: Optional[int] = None) -> None:
-        """Initializes with the given values."""
-        # is a test string property.
-        self.product_id = product_id
-
-        self.metadata = metadata
-
-        self.data = data
-
-        self.capacity = capacity
-
-    def to_jsonable(self) -> MutableMapping[str, Any]:
-        """
-        Dispatches the conversion to product_detail_to_jsonable.
-
-        :return: JSON-able representation
-        """
-        return product_detail_to_jsonable(self)
-
-
-def new_product_detail() -> ProductDetail:
-    """Generates an instance of ProductDetail with default values."""
-    return ProductDetail(
-        product_id='',
-        metadata=None,
-        data=None)
-
-
-def product_detail_from_obj(obj: Any, path: str = "") -> ProductDetail:
-    """
-    Generates an instance of ProductDetail from a dictionary object.
-
-    :param obj: a JSON-ed dictionary object representing an instance of ProductDetail
-    :param path: path to the object used for debugging
-    :return: parsed instance of ProductDetail
-    """
-    if not isinstance(obj, dict):
-        raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
-
-    for key in obj:
-        if not isinstance(key, str):
-            raise ValueError(
-                'Expected a key of type str at path {}, but got: {}'.format(path, type(key)))
-
-    product_id_from_obj = from_obj(
-        obj['product_id'],
-        expected=[str],
-        path=path + '.product_id')  # type: str
-
-    metadata_from_obj = obj['metadata']
-
-    data_from_obj = obj['data']
-
-    if 'capacity' in obj:
-        capacity_from_obj = from_obj(
-            obj['capacity'],
-            expected=[int],
-            path=path + '.capacity')  # type: Optional[int]
-    else:
-        capacity_from_obj = None
-
-    return ProductDetail(
-        product_id=product_id_from_obj,
-        metadata=metadata_from_obj,
-        data=data_from_obj,
-        capacity=capacity_from_obj)
-
-
-def product_detail_to_jsonable(
-        product_detail: ProductDetail,
-        path: str = "") -> MutableMapping[str, Any]:
-    """
-    Generates a JSON-able mapping from an instance of ProductDetail.
-
-    :param product_detail: instance of ProductDetail to be JSON-ized
-    :param path: path to the product_detail used for debugging
-    :return: a JSON-able representation
-    """
-    res = dict()  # type: Dict[str, Any]
-
-    res['product_id'] = product_detail.product_id
-
-    res['metadata'] = product_detail.metadata
-
-    res['data'] = product_detail.data
-
-    if product_detail.capacity is not None:
-        res['capacity'] = product_detail.capacity
+    if with_empty_properties.optional_empty_property is not None:
+        res['optional_empty_property'] = with_empty_properties.optional_empty_property
 
     return res
 
@@ -345,60 +270,34 @@ class RemoteCaller:
         self.url_prefix = url_prefix
         self.auth = auth
 
-    def list_products(
+    def test_endpoint(
             self,
-            with_attributes: Optional[bool] = None) -> ProductSummary:
+            required_empty_parameter: EmptyParameter) -> WithEmptyProperties:
         """
-        Describe products
+        Test empty schema
 
-        :param with_attributes:
-
-        :return: product summaries
-        """
-        url = self.url_prefix + '/products'
-
-        params = {}  # type: Dict[str, str]
-
-        if with_attributes is not None:
-            params['with_attributes'] = json.dumps(with_attributes)
-
-        resp = requests.request(
-            method='get',
-            url=url,
-            params=params,
-            auth=self.auth)
-
-        with contextlib.closing(resp):
-            resp.raise_for_status()
-            return from_obj(
-                obj=resp.json(),
-                expected=[ProductSummary])
-
-    def get_product(
-            self,
-            id: str) -> ProductDetail:
-        """
-        Product detail
-
-        :param id:
+        :param required_empty_parameter:
 
         :return: a product object
         """
-        url = "".join([
-            self.url_prefix,
-            '/products/',
-            str(id)])
+        url = self.url_prefix + '/test_endpoint'
+
+        data = to_jsonable(
+            required_empty_parameter,
+            expected=[EmptyParameter])
+
 
         resp = requests.request(
             method='get',
             url=url,
+            json=data,
             auth=self.auth)
 
         with contextlib.closing(resp):
             resp.raise_for_status()
             return from_obj(
                 obj=resp.json(),
-                expected=[ProductDetail])
+                expected=[WithEmptyProperties])
 
 
 # Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

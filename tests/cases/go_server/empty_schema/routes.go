@@ -4,7 +4,9 @@ package product
 // Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
 
 import (
+	"encoding/json"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -13,62 +15,51 @@ import (
 func SetupRouter(h Handler) *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc(`/products`,
+	r.HandleFunc(`/test_endpoint`,
 		func(w http.ResponseWriter, r *http.Request) {
-			WrapListProducts(h, w, r)
-		}).Methods("get")
-
-	r.HandleFunc(`/products/{id}`,
-		func(w http.ResponseWriter, r *http.Request) {
-			WrapGetProduct(h, w, r)
+			WrapTestEndpoint(h, w, r)
 		}).Methods("get")
 
 	return r
 }
 
-// WrapListProducts wraps the path `/products` with the method "get".
+// WrapTestEndpoint wraps the path `/test_endpoint` with the method "get".
 //
 // Path description:
-// describe products
-func WrapListProducts(h Handler, w http.ResponseWriter, r *http.Request) {
-	var aWithAttributes *bool
+// test empty schema
+func WrapTestEndpoint(h Handler, w http.ResponseWriter, r *http.Request) {
+	var aRequiredEmptyParameter EmptyParameter
 
-	q := r.URL.Query()
+	if r.Body == nil {
+		http.Error(w, "Parameter 'required_empty_parameter' expected in body, but got no body", http.StatusBadRequest)
+		return
+	}
+	{
+		var err error
+		r.Body = http.MaxBytesReader(w, r.Body, 1024*1024)
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Body unreadable: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 
-	if _, ok := q["with_attributes"]; ok {
-		{
-			parsed, err := strconv.ParseBool(q.Get("with_attributes"))
-			if err != nil {
-				http.Error(w, "Parameter 'with_attributes': "+err.Error(), http.StatusBadRequest)
-				return
-			}
-			aWithAttributes = &parsed
+		err = ValidateAgainstEmptyParameterSchema(body)
+		if err != nil {
+			http.Error(w, "Failed to validate against schema: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = json.Unmarshal(body, &aRequiredEmptyParameter)
+		if err != nil {
+			http.Error(w, "Error JSON-decoding body parameter 'required_empty_parameter': "+err.Error(),
+				http.StatusBadRequest)
+			return
 		}
 	}
 
-	h.ListProducts(w,
+	h.TestEndpoint(w,
 		r,
-		aWithAttributes)
-}
-
-// WrapGetProduct wraps the path `/products/{id}` with the method "get".
-//
-// Path description:
-// product detail
-func WrapGetProduct(h Handler, w http.ResponseWriter, r *http.Request) {
-	var aID string
-
-	vars := mux.Vars(r)
-
-	if _, ok := vars["id"]; !ok {
-		http.Error(w, "Parameter 'id' expected in path", http.StatusBadRequest)
-		return
-	}
-	aID = vars["id"]
-
-	h.GetProduct(w,
-		r,
-		aID)
+		aRequiredEmptyParameter)
 }
 
 // Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

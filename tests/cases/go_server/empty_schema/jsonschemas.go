@@ -18,89 +18,46 @@ func mustNewJSONSchema(text string, name string) *gojsonschema.Schema {
 	return schema
 }
 
-var jsonSchemaCapacityText = `{
-  "title": "Capacity",
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "integer",
-  "format": "int32",
-  "description": "is an identifiable primitive definition."
-}`
-
-var jsonSchemaProductSummaryText = `{
-  "title": "ProductSummary",
+var jsonSchemaEmptyParameterText = `{
+  "title": "EmptyParameter",
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
-    "Capacity": {
-      "type": "integer",
-      "format": "int32",
-      "description": "is an identifiable primitive definition."
+    "EmptyParameter": {
+      "description": "defines an empty parameter.",
+      "type": "object"
     }
   },
-  "description": "is a product summary object.",
-  "type": "object",
-  "properties": {
-    "product_id": {
-      "type": "string",
-      "description": "is a test string property."
-    },
-    "metadata": {},
-    "capacity": {
-      "$ref": "#/definitions/Capacity"
-    }
-  },
-  "required": [
-    "product_id"
-  ]
+  "$ref": "#/definitions/EmptyParameter"
 }`
 
-var jsonSchemaProductDetailText = `{
-  "title": "ProductDetail",
+var jsonSchemaWithEmptyPropertiesText = `{
+  "title": "WithEmptyProperties",
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "definitions": {
-    "Capacity": {
-      "type": "integer",
-      "format": "int32",
-      "description": "is an identifiable primitive definition."
-    }
-  },
-  "description": "is a product detail",
+  "description": "is a product detail.",
   "type": "object",
   "properties": {
-    "product_id": {
-      "type": "string",
-      "description": "is a test string property."
-    },
-    "capacity": {
-      "$ref": "#/definitions/Capacity"
-    },
-    "metadata": {},
-    "data": {
+    "required_empty_property": {},
+    "optional_empty_property": {
       "type": "object"
     }
   },
   "required": [
-    "product_id",
-    "metadata",
-    "data"
+    "required_empty_property"
   ]
 }`
 
-var jsonSchemaCapacity = mustNewJSONSchema(
-	jsonSchemaCapacityText,
-	"Capacity")
+var jsonSchemaEmptyParameter = mustNewJSONSchema(
+	jsonSchemaEmptyParameterText,
+	"EmptyParameter")
 
-var jsonSchemaProductSummary = mustNewJSONSchema(
-	jsonSchemaProductSummaryText,
-	"ProductSummary")
+var jsonSchemaWithEmptyProperties = mustNewJSONSchema(
+	jsonSchemaWithEmptyPropertiesText,
+	"WithEmptyProperties")
 
-var jsonSchemaProductDetail = mustNewJSONSchema(
-	jsonSchemaProductDetailText,
-	"ProductDetail")
-
-// ValidateAgainstCapacitySchema validates a message coming from the client against Capacity schema.
-func ValidateAgainstCapacitySchema(bb []byte) error {
+// ValidateAgainstEmptyParameterSchema validates a message coming from the client against EmptyParameter schema.
+func ValidateAgainstEmptyParameterSchema(bb []byte) error {
 	loader := gojsonschema.NewStringLoader(string(bb))
-	result, err := jsonSchemaCapacity.Validate(loader)
+	result, err := jsonSchemaEmptyParameter.Validate(loader)
 	if err != nil {
 		return err
 	}
@@ -119,32 +76,10 @@ func ValidateAgainstCapacitySchema(bb []byte) error {
 	return errors.New(msg)
 }
 
-// ValidateAgainstProductSummarySchema validates a message coming from the client against ProductSummary schema.
-func ValidateAgainstProductSummarySchema(bb []byte) error {
+// ValidateAgainstWithEmptyPropertiesSchema validates a message coming from the client against WithEmptyProperties schema.
+func ValidateAgainstWithEmptyPropertiesSchema(bb []byte) error {
 	loader := gojsonschema.NewStringLoader(string(bb))
-	result, err := jsonSchemaProductSummary.Validate(loader)
-	if err != nil {
-		return err
-	}
-
-	if result.Valid() {
-		return nil
-	}
-
-	msg := ""
-	for i, valErr := range result.Errors() {
-		if i > 0 {
-			msg += ", "
-		}
-		msg += valErr.String()
-	}
-	return errors.New(msg)
-}
-
-// ValidateAgainstProductDetailSchema validates a message coming from the client against ProductDetail schema.
-func ValidateAgainstProductDetailSchema(bb []byte) error {
-	loader := gojsonschema.NewStringLoader(string(bb))
-	result, err := jsonSchemaProductDetail.Validate(loader)
+	result, err := jsonSchemaWithEmptyProperties.Validate(loader)
 	if err != nil {
 		return err
 	}

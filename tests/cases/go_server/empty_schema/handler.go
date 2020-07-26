@@ -7,21 +7,13 @@ import "net/http"
 
 // Handler defines an interface to handling the routes.
 type Handler interface {
-	// ListProducts handles the path `/products` with the method "get".
+	// TestEndpoint handles the path `/test_endpoint` with the method "get".
 	//
 	// Path description:
-	// describe products
-	ListProducts(w http.ResponseWriter,
+	// test empty schema
+	TestEndpoint(w http.ResponseWriter,
 		r *http.Request,
-		withAttributes *bool)
-
-	// GetProduct handles the path `/products/{id}` with the method "get".
-	//
-	// Path description:
-	// product detail
-	GetProduct(w http.ResponseWriter,
-		r *http.Request,
-		id string)
+		requiredEmptyParameter EmptyParameter)
 }
 
 // Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
