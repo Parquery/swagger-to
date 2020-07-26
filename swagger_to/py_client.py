@@ -23,7 +23,6 @@ class Typedef:
         """Initialize with defaults."""
         self.description = ''
         self.identifier = ''
-        self.skip_type_conversion = False
 
     def __str__(self) -> str:
         """Represent the type definition as its class name and the identifier."""
@@ -69,10 +68,7 @@ class Filedef(Typedef):
 class Anydef(Typedef):
     """Represent a definition of Python Any object."""
 
-    def __init__(self):
-        """Initialize with defaults."""
-        super().__init__()
-        self.skip_type_conversion = True
+    pass
 
 
 class Attribute:
@@ -912,7 +908,7 @@ def _generate_class_from_obj(classdef: Classdef) -> str:
             raise ValueError('Unexpected None typedef of attr {!r} in class {!r}'.format(
                 attr.name, classdef.identifier))
 
-        if not attr.typedef.skip_type_conversion:
+        if not isinstance(attr.typedef, Anydef):
             expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
         type_expression[attr] = _type_expression(typedef=attr.typedef, path=classdef.identifier + '.' + attr.name)
 
@@ -1061,7 +1057,7 @@ def _generate_class_to_jsonable(classdef: Classdef) -> str:
                 attr.name, classdef.identifier))
 
         is_primitive[attr] = isinstance(attr.typedef, (Booldef, Intdef, Floatdef, Strdef, Anydef))
-        if not attr.typedef.skip_type_conversion:
+        if not isinstance(attr.typedef, Anydef):
             expected_type_expression[attr] = _expected_type_expression(typedef=attr.typedef)
 
     return _CLASS_TO_JSONABLE_TPL.render(
