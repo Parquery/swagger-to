@@ -7,7 +7,7 @@
 
 import contextlib
 import json
-from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
+from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional, cast
 
 import requests
 import requests.auth
@@ -47,7 +47,8 @@ class RemoteCaller:
             url=url,
             data=data,
             files=files,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -71,7 +72,8 @@ class RemoteCaller:
         resp = requests.request(
             method='get',
             url=url,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()

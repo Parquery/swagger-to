@@ -7,12 +7,11 @@
 
 import contextlib
 import json
-from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
+from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional, cast
 
 import requests
 import requests.auth
 
-from typing import cast
 from http.client import HTTPResponse
 
 import urllib3
