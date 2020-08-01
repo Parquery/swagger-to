@@ -203,7 +203,10 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
         elif intermediate_typedef.type == 'number':
             typedef = Floatdef()
         elif intermediate_typedef.type == 'string':
-            typedef = Strdef()
+            if intermediate_typedef.format == 'binary':
+                typedef = Filedef()
+            else:
+                typedef = Strdef()
         elif intermediate_typedef.type == 'file':
             typedef = Filedef()
         else:
@@ -282,6 +285,7 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
         _anonymous_or_get_typedef(intermediate_typedef=intermediate_response.typedef, typedefs=typedefs)
     resp.description = intermediate_response.description
     return resp
+
 
 @icontract.ensure(
     lambda result:
@@ -1262,9 +1266,17 @@ data[{{ param.name|repr }}] = json.dumps(
         {% if request.file_parameters %}
         files=files,
         {% endif %}
-        auth=self.auth)
+        auth=self.auth,
+        {% if return_type == 'BinaryIO' %}
+        stream=True,
+        {% endif %}
+    )
     {% endif %}{# /if not request.parameters #}
 
+    {% if return_type == 'BinaryIO' %}
+    resp.raise_for_status()
+    return _wrap_response(resp)
+    {% else %}
     with contextlib.closing(resp):
         resp.raise_for_status()
         {% if return_type == 'bytes' %}
@@ -1275,7 +1287,8 @@ data[{{ param.name|repr }}] = json.dumps(
         return from_obj(
             obj=resp.json(),
             expected=[{{ expected_type_expression[resp] }}])
-        {% endif %}''')
+        {% endif %}
+    {% endif %}''')
 
 
 class _Token:
@@ -1322,6 +1335,8 @@ def _generate_request_function(request: Request) -> str:
                 # The schema for the response has not been defined. Hence we can not parse the response to an object,
                 # but we can at least parse it as JSON.
                 return_type = 'MutableMapping[str, Any]'
+        elif resp.typedef is not None:
+            return_type = _type_expression(typedef=resp.typedef, path=request.operation_id + '.' + str(resp.code))
 
     ##
     # Preapre request docstring
@@ -1361,7 +1376,7 @@ def _generate_request_function(request: Request) -> str:
 
         expected_type_expression[param] = _expected_type_expression(typedef=param.typedef)
 
-    if return_type not in ['bytes', 'MutableMapping[str, Any]']:
+    if return_type not in ['bytes', 'MutableMapping[str, Any]', 'BinaryIO']:
         if resp is None:
             raise ValueError('Unexpected None resp with return_type {!r} in request {!r}'.format(
                 return_type, request.operation_id))
@@ -1395,7 +1410,7 @@ def _generate_request_function(request: Request) -> str:
         is_str={param: isinstance(param.typedef, Strdef)
                 for param in request.parameters},
         is_primitive={
-            param: isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef))
+            param: isinstance(param.typedef, (Booldef, Intdef, Floatdef, Strdef, Filedef))
             for param in request.parameters
         },
         expected_type_expression=expected_type_expression).strip()
@@ -1413,10 +1428,38 @@ _CLIENT_PY = _from_string_with_informative_exceptions(
 
 import contextlib
 import json
-from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
+from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional, cast
 
 import requests
 import requests.auth
+{% if file_responses %}
+
+from http.client import HTTPResponse
+
+import urllib3
+
+
+class _WrappedResponse(urllib3.HTTPResponse):
+    # noinspection PyMissingConstructor
+    def __init__(self, response: requests.Response):
+        self._response = response
+
+    def __getattr__(self, item):
+        return getattr(self._response.raw, item)
+
+    def close(self):
+        self._response.close()
+
+
+def _wrap_response(resp: requests.Response) -> HTTPResponse:
+    """
+    Wrap HTTPResponse object.
+    """
+
+    # urllib3.HTTPResponse has compatible interface of standard http lib. 
+    # (see docs for urllib3.HTTPResponse)
+    return cast(HTTPResponse, _WrappedResponse(resp))
+{% endif %}{# /if file_responses #}
 {% if classdefs %}
 
 
@@ -1469,6 +1512,10 @@ def generate_client_py(service_name: str, typedefs: MutableMapping[str, Typedef]
     :return: Python code
     """
     classdefs = [typedef for typedef in typedefs.values() if isinstance(typedef, Classdef)]
+    file_responses = [
+        request for request in requests
+        if '200' in request.responses and isinstance(request.responses['200'].typedef, Filedef)
+    ]
 
     assert len(set(classdefs)) == len(classdefs), \
         'All class definitions in Python representation are expected to be unique.'
@@ -1476,6 +1523,7 @@ def generate_client_py(service_name: str, typedefs: MutableMapping[str, Typedef]
     return _CLIENT_PY.render(
         service_name=service_name,
         classdefs=classdefs,
+        file_responses=file_responses,
         from_obj=_generate_from_obj(classdefs=classdefs),
         to_jsonable=_generate_to_jsonable(classdefs=classdefs),
         class_definition={classdef: _generate_class_definition(classdef=classdef)

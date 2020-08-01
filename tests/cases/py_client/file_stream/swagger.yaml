@@ -1,0 +1,31 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test_server
+paths:
+  /{path}:
+    get:
+      operationId: open_file
+      tags:
+        - test_server
+      description: serves a static file that matches the path.
+      parameters:
+        - name: path
+          in: path
+          description: is the path to the file relative to the root.
+          required: true
+          type: string
+          pattern: .+
+      responses:
+        200:
+          description: serves the file content.
+          schema:
+            type: file
+        default:
+          description: contains an unexpected error.

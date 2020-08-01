@@ -41,6 +41,7 @@ setup(
         'pylint==2.5.3',
         'yapf==0.20.2',
         'pydocstyle>=3.0.0,<4',
+        'requests_mock>=1.8.0'
     ]},
     py_modules=['swagger_to'],
     package_data={"swagger_to": ["py.typed"]},
