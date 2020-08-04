@@ -193,7 +193,7 @@ def main() -> int:
     futures_paths = []  # type: List[Tuple[concurrent.futures.Future, pathlib.Path]]
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for pth in pending_pths:
-            future = executor.submit(fn=check, path=pth, py_dir=py_dir, overwrite=overwrite)
+            future = executor.submit(check, path=pth, py_dir=py_dir, overwrite=overwrite)
             futures_paths.append((future, pth))
 
         for future, pth in futures_paths:
