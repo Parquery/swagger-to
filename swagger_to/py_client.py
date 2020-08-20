@@ -1440,6 +1440,17 @@ import urllib3
 
 
 class _WrappedResponse(urllib3.HTTPResponse):
+    """
+    Wrap `requests.Response` so that it fits the `BinaryIO` interface.
+
+    If we directly used `requests.Response`, the user would need to use `requests.Response.raw`,
+    but explicitly close `requests.Response`.
+    This is confusing and error-prone, so we wrap it all together into a `BinaryIO` interface.
+
+    Additionally, `requests` have no official type annotation making it hard
+    for client code to be statically type-checked.
+    """
+
     # noinspection PyMissingConstructor
     def __init__(self, response: requests.Response):
         self._response = response
