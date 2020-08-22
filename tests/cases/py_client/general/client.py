@@ -7,7 +7,7 @@
 
 import contextlib
 import json
-from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional
+from typing import Any, BinaryIO, Dict, List, MutableMapping, Optional, cast
 
 import requests
 import requests.auth
@@ -838,7 +838,8 @@ class RemoteCaller:
             method='get',
             url=url,
             params=params,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -886,7 +887,8 @@ class RemoteCaller:
             method='get',
             url=url,
             params=params,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -928,7 +930,8 @@ class RemoteCaller:
             method='get',
             url=url,
             params=params,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -957,7 +960,8 @@ class RemoteCaller:
             method='patch',
             url=url,
             json=data,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -997,7 +1001,8 @@ class RemoteCaller:
             url=url,
             data=data,
             files=files,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -1006,7 +1011,7 @@ class RemoteCaller:
     def history(
             self,
             offset: Optional[int] = None,
-            limit: Optional[int] = None) -> bytes:
+            limit: Optional[int] = None) -> Activities:
         """
         The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
         include pickup locations and times, dropoff locations and times, the distance of past requests, and
@@ -1031,11 +1036,14 @@ class RemoteCaller:
             method='get',
             url=url,
             params=params,
-            auth=self.auth)
+            auth=self.auth,
+        )
 
         with contextlib.closing(resp):
             resp.raise_for_status()
-            return resp.content
+            return from_obj(
+                obj=resp.json(),
+                expected=[Activities])
 
 
 # Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

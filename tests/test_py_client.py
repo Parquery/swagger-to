@@ -74,5 +74,20 @@ class TestDocstring(unittest.TestCase):
         self.assertEqual('"""\nDo\nreally\nsomething.\n"""', result)
 
 
+# pylint: disable=unused-argument
+def load_tests(loader: unittest.TestLoader, suite: unittest.TestSuite, pattern):
+    tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
+
+    cases_dir = tests_dir / "cases" / "py_client"
+
+    for case_dir in sorted(cases_dir.iterdir()):
+        for test_case in case_dir.glob("test*.py"):
+            mod_name = str(test_case.relative_to(tests_dir)).replace(".py", "").replace("/", ".")
+            tests = unittest.TestLoader().discover(mod_name, top_level_dir=str(tests_dir))
+            suite.addTests(tests)
+
+    return suite
+
+
 if __name__ == '__main__':
     unittest.main()
