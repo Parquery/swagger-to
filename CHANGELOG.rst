@@ -1,3 +1,16 @@
+4.0.0
+=====
+Breaking change:
+
+* made py-client give back streams on file responses
+
+Non-breaking changes:
+
+* added support for empty schema type (*i.e.* arbitrary type)
+* added boolean argument support in go-server
+* added "generated code" comment based on official format of golang
+* fixed indent of structs in go-server
+
 3.1.4
 =====
 * fixed JSON pointer representation.
