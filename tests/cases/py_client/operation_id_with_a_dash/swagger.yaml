@@ -1,0 +1,22 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test
+paths:
+  /test-me:
+    get:
+      operationId: test-me
+      tags:
+        - test
+      description: is a test endpoint.
+      responses:
+        200:
+          description: a confirmation
+        default:
+          description: Unexpected error

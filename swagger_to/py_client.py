@@ -5,7 +5,7 @@
 # pylint: disable=too-many-statements,too-many-lines
 
 import collections
-from typing import MutableMapping, Union, List, Optional, Dict, Any  # pylint: disable=unused-import
+from typing import MutableMapping, Union, List, Optional, Dict  # pylint: disable=unused-import
 
 import icontract
 import jinja2
@@ -1109,7 +1109,7 @@ _REQUEST_FUNCTION_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
 {% if not request.parameters %}
-def {{ request.operation_id}}(self) -> {{ return_type }}:
+def {{ function_name }}(self) -> {{ return_type }}:
 {% else %}
 {% set suffix = ') -> %s:'|format(return_type) %}
 def {{ request.operation_id}}(
@@ -1305,6 +1305,32 @@ class _Token:
         self.parameter = parameter
 
 
+@icontract.require(lambda operation_id: operation_id != '')
+def _request_function_name(operation_id: str) -> str:
+    """
+    Generate the name of the function which will send the request based on the operation ID.
+
+    :param operation_id: ID of the operation from the Swagger spec
+    :return: pep-8 conform name
+
+    >>> _request_function_name('TestMe')
+    'test_me'
+
+    >>> _request_function_name('test_me')
+    'test_me'
+
+    >>> _request_function_name('Test_me')
+    'test_me'
+
+    >>> _request_function_name('test-me')
+    'test_me'
+
+    >>> _request_function_name('test-me')
+    'test_me'
+    """
+    return swagger_to.snake_case(operation_id)
+
+
 @icontract.require(
     lambda request: not request.body_parameter or not request.formdata_parameters,
     'Both body parameter and form-data parameters are specified. '
@@ -1402,6 +1428,7 @@ def _generate_request_function(request: Request) -> str:
 
     return _REQUEST_FUNCTION_TPL.render(
         request=request,
+        function_name=swagger_to.snake_case(request.operation_id),
         return_type=return_type,
         resp=resp,
         request_docstring=request_docstring,
@@ -1530,6 +1557,14 @@ def generate_client_py(service_name: str, typedefs: MutableMapping[str, Typedef]
 
     assert len(set(classdefs)) == len(classdefs), \
         'All class definitions in Python representation are expected to be unique.'
+
+    observed_request_function_names = dict()  # type: Dict[str, Request]
+    for request in requests:
+        function_name = _request_function_name(operation_id=request.operation_id)
+        if function_name in observed_request_function_names:
+            raise KeyError(
+                'The function names for the requests with the operation IDs {!r} and {!r} are identical: {!r}'.format(
+                    request.operation_id, observed_request_function_names[function_name], function_name))
 
     return _CLIENT_PY.render(
         service_name=service_name,
