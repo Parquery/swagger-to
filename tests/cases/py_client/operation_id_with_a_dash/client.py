@@ -34,5 +34,55 @@ class RemoteCaller:
             resp.raise_for_status()
             return resp.content
 
+    def post_test_another_one(
+            self,
+            id: str) -> bytes:
+        """
+        Is another test endpoint.
+
+        :param id:
+
+        :return: a confirmation
+        """
+        url = "".join([
+            self.url_prefix,
+            '/test-another-one/',
+            str(id)])
+
+        resp = requests.request(
+            method='post',
+            url=url,
+            auth=self.auth,
+        )
+
+        with contextlib.closing(resp):
+            resp.raise_for_status()
+            return resp.content
+
+    def delete_test_another_one(
+            self,
+            id: str) -> bytes:
+        """
+        Is yet another test endpoint.
+
+        :param id:
+
+        :return: a confirmation
+        """
+        url = "".join([
+            self.url_prefix,
+            '/test-another-one/',
+            str(id)])
+
+        resp = requests.request(
+            method='delete',
+            url=url,
+            auth=self.auth,
+        )
+
+        with contextlib.closing(resp):
+            resp.raise_for_status()
+            return resp.content
+
 
 # Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!
