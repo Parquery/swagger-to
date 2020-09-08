@@ -1112,7 +1112,7 @@ _REQUEST_FUNCTION_TPL = _from_string_with_informative_exceptions(
 def {{ function_name }}(self) -> {{ return_type }}:
 {% else %}
 {% set suffix = ') -> %s:'|format(return_type) %}
-def {{ request.operation_id}}(
+def {{ function_name }}(
         self,
         {% for param in request.parameters %}
         {% if not param.required %}

@@ -20,3 +20,38 @@ paths:
           description: a confirmation
         default:
           description: Unexpected error
+
+  /test-another-one/{id}:
+    post:
+      operationId: post-test-another-one
+      tags:
+        - test
+      description: is another test endpoint.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: a confirmation
+        default:
+          description: Unexpected error
+
+    delete:
+      operationId: delete-test-another-one
+      tags:
+        - test
+      description: is yet another test endpoint.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: a confirmation
+        default:
+          description: Unexpected error
