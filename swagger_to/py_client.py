@@ -1246,9 +1246,9 @@ data[{{ param.name|repr }}] = json.dumps(
     {% endif %}{# /if request.file_parameters #}
 
     {% if not request.parameters %}
-    resp = requests.request(method={{ request.method|repr }}, url=url, auth=self.auth)
+    resp = self.session.request(method={{ request.method|repr }}, url=url)
     {% else %}
-    resp = requests.request(
+    resp = self.session.request(
         method={{ request.method|repr }},
         url=url,
         {% if request.header_parameters %}
@@ -1266,7 +1266,6 @@ data[{{ param.name|repr }}] = json.dumps(
         {% if request.file_parameters %}
         files=files,
         {% endif %}
-        auth=self.auth,
         {% if return_type == 'BinaryIO' %}
         stream=True,
         {% endif %}
@@ -1525,9 +1524,14 @@ def _wrap_response(resp: requests.Response) -> HTTPResponse:
 class RemoteCaller:
     """Executes the remote calls to the server."""
 
-    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None, session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
+        self.session = session
+
+        if not self.session:
+            self.session = requests.Session()
+            self.session.auth = self.auth
     {% for request in requests %}
 
     {{ request_function[request]|indent }}
