@@ -1,8 +1,8 @@
 Swagger-to
 ==========
 
-.. image:: https://github.com/Parquery/swagger-to/workflows/Check/badge.svg
-    :target: https://github.com/Parquery/swagger-to/actions?query=workflow%3ACheck
+.. image:: https://github.com/Parquery/swagger-to/workflows/Check-push/badge.svg
+    :target: https://github.com/Parquery/swagger-to/actions?query=workflow%3ACheck-push
     :alt: Check status
 
 .. image:: https://badge.fury.io/py/swagger-to.svg
