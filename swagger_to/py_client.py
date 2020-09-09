@@ -1525,9 +1525,9 @@ class RemoteCaller:
     """Executes the remote calls to the server."""
 
     def __init__(
-        self, 
-        url_prefix: str, 
-        auth: Optional[requests.auth.AuthBase] = None, 
+        self,
+        url_prefix: str,
+        auth: Optional[requests.auth.AuthBase] = None,
         session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
