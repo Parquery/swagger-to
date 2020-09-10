@@ -53,9 +53,18 @@ def _wrap_response(resp: requests.Response) -> HTTPResponse:
 class RemoteCaller:
     """Executes the remote calls to the server."""
 
-    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+    def __init__(
+        self,
+        url_prefix: str,
+        auth: Optional[requests.auth.AuthBase] = None,
+        session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
+        self.session = session
+
+        if not self.session:
+            self.session = requests.Session()
+            self.session.auth = self.auth
 
     def open_file(
             self,
@@ -72,10 +81,9 @@ class RemoteCaller:
             '/',
             str(path)])
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
-            auth=self.auth,
             stream=True,
         )
 

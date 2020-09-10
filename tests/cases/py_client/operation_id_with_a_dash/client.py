@@ -16,9 +16,18 @@ import requests.auth
 class RemoteCaller:
     """Executes the remote calls to the server."""
 
-    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+    def __init__(
+        self,
+        url_prefix: str,
+        auth: Optional[requests.auth.AuthBase] = None,
+        session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
+        self.session = session
+
+        if not self.session:
+            self.session = requests.Session()
+            self.session.auth = self.auth
 
     def test_me(self) -> bytes:
         """
@@ -28,7 +37,7 @@ class RemoteCaller:
         """
         url = self.url_prefix + '/test-me'
 
-        resp = requests.request(method='get', url=url, auth=self.auth)
+        resp = self.session.request(method='get', url=url)
 
         with contextlib.closing(resp):
             resp.raise_for_status()
@@ -49,10 +58,9 @@ class RemoteCaller:
             '/test-another-one/',
             str(id)])
 
-        resp = requests.request(
+        resp = self.session.request(
             method='post',
             url=url,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -74,10 +82,9 @@ class RemoteCaller:
             '/test-another-one/',
             str(id)])
 
-        resp = requests.request(
+        resp = self.session.request(
             method='delete',
             url=url,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
