@@ -810,9 +810,18 @@ def activities_to_jsonable(
 class RemoteCaller:
     """Executes the remote calls to the server."""
 
-    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+    def __init__(
+        self,
+        url_prefix: str,
+        auth: Optional[requests.auth.AuthBase] = None,
+        session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
+        self.session = session
+
+        if not self.session:
+            self.session = requests.Session()
+            self.session.auth = self.auth
 
     def products(
             self,
@@ -834,11 +843,10 @@ class RemoteCaller:
 
         params['longitude'] = json.dumps(longitude)
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
             params=params,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -883,11 +891,10 @@ class RemoteCaller:
         if max_lines is not None:
             params['max_lines'] = json.dumps(max_lines)
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
             params=params,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -926,11 +933,10 @@ class RemoteCaller:
         if product_id is not None:
             params['product_id'] = product_id
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
             params=params,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -956,11 +962,10 @@ class RemoteCaller:
             expected=[Profile])
 
 
-        resp = requests.request(
+        resp = self.session.request(
             method='patch',
             url=url,
             json=data,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -996,12 +1001,11 @@ class RemoteCaller:
 
         files['profile_picture'] = profile_picture
 
-        resp = requests.request(
+        resp = self.session.request(
             method='patch',
             url=url,
             data=data,
             files=files,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -1032,11 +1036,10 @@ class RemoteCaller:
         if limit is not None:
             params['limit'] = json.dumps(limit)
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
             params=params,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):

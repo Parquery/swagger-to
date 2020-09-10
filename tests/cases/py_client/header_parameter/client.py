@@ -16,9 +16,18 @@ import requests.auth
 class RemoteCaller:
     """Executes the remote calls to the server."""
 
-    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+    def __init__(
+        self,
+        url_prefix: str,
+        auth: Optional[requests.auth.AuthBase] = None,
+        session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
+        self.session = session
+
+        if not self.session:
+            self.session = requests.Session()
+            self.session.auth = self.auth
 
     def test_me(
             self,
@@ -45,11 +54,10 @@ class RemoteCaller:
 
         headers['X-Some-Custom-Parameter'] = json.dumps(x_some_custom_parameter)
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
             headers=headers,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):

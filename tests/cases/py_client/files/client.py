@@ -16,9 +16,18 @@ import requests.auth
 class RemoteCaller:
     """Executes the remote calls to the server."""
 
-    def __init__(self, url_prefix: str, auth: Optional[requests.auth.AuthBase] = None) -> None:
+    def __init__(
+        self,
+        url_prefix: str,
+        auth: Optional[requests.auth.AuthBase] = None,
+        session: Optional[requests.Session] = None) -> None:
         self.url_prefix = url_prefix
         self.auth = auth
+        self.session = session
+
+        if not self.session:
+            self.session = requests.Session()
+            self.session.auth = self.auth
 
     def upload(
             self,
@@ -42,12 +51,11 @@ class RemoteCaller:
 
         files['reference_image'] = reference_image
 
-        resp = requests.request(
+        resp = self.session.request(
             method='put',
             url=url,
             data=data,
             files=files,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
@@ -69,10 +77,9 @@ class RemoteCaller:
             '/',
             str(path)])
 
-        resp = requests.request(
+        resp = self.session.request(
             method='get',
             url=url,
-            auth=self.auth,
         )
 
         with contextlib.closing(resp):
