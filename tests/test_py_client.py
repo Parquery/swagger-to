@@ -19,8 +19,10 @@ class TestPyClient(unittest.TestCase):
 
         cases_dir = tests_dir / "cases" / "py_client"
 
-        for case_dir in sorted(cases_dir.iterdir()):
+        for case_dir in sorted(pth for pth in cases_dir.iterdir() if pth.is_dir()):
             swagger_path = case_dir / "swagger.yaml"
+            if not swagger_path.exists():
+                continue
 
             swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
             if errs:
@@ -73,21 +75,6 @@ class TestDocstring(unittest.TestCase):
     def test_multiline(self):
         result = swagger_to.py_client._docstring(text='Do\nreally\nsomething.')
         self.assertEqual('"""\nDo\nreally\nsomething.\n"""', result)
-
-
-# pylint: disable=unused-argument
-def load_tests(loader: unittest.TestLoader, suite: unittest.TestSuite, pattern):
-    tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
-
-    cases_dir = tests_dir / "cases" / "py_client"
-
-    for case_dir in sorted(cases_dir.iterdir()):
-        for test_case in case_dir.glob("test*.py"):
-            mod_name = str(test_case.relative_to(tests_dir)).replace(".py", "").replace(os.sep, ".")
-            tests = unittest.TestLoader().discover(mod_name, top_level_dir=str(tests_dir))
-            suite.addTests(tests)
-
-    return suite
 
 
 if __name__ == '__main__':
