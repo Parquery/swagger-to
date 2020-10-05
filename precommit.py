@@ -211,11 +211,13 @@ def main() -> int:
     env = os.environ.copy()
     env['ICONTRACT_SLOW'] = 'true'
 
-    retcode = subprocess.call(['python3', '-m', 'unittest', 'discover', str(source_dir / 'tests')], env=env)
-    success = success and retcode == 0
+    retcode = subprocess.call([sys.executable, '-m', 'unittest', 'discover', str(source_dir / 'tests')], env=env)
+    if retcode != 0:
+        print("Unit tests failed.")
+        success = False
 
     if not success:
-        print("One or more checks failed.")
+        print("One or more checks failed, please see above.")
         return 1
 
     return 0

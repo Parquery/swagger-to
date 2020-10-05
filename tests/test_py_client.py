@@ -45,6 +45,7 @@ class TestPyClient(unittest.TestCase):
 
             expected_pth = case_dir / "client.py"
             expected = expected_pth.read_text()
+
             self.assertEqual(expected, text)
 
 
@@ -82,7 +83,7 @@ def load_tests(loader: unittest.TestLoader, suite: unittest.TestSuite, pattern):
 
     for case_dir in sorted(cases_dir.iterdir()):
         for test_case in case_dir.glob("test*.py"):
-            mod_name = str(test_case.relative_to(tests_dir)).replace(".py", "").replace("/", ".")
+            mod_name = str(test_case.relative_to(tests_dir)).replace(".py", "").replace(os.sep, ".")
             tests = unittest.TestLoader().discover(mod_name, top_level_dir=str(tests_dir))
             suite.addTests(tests)
 
