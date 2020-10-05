@@ -872,21 +872,22 @@ def {{ classdef.identifier|snake_case }}_from_obj(obj: Any, path: str = "") -> {
         obj[{{ attr.name|repr }}],
         expected=[{{ expected_type_expression[attr] }}],
         path=path + {{ '.%s'|format(attr.name)|repr }})  # type: {{ type_expression[attr] }}
-    {% else %}
+    {% else %}{# if attr in expected_type_expression #}
     {{ attr.name }}_from_obj = obj[{{ attr.name|repr }}]
     {% endif %}{# /if attr in expected_type_expression #}
-    {% else %}
-    if {{ attr.name|repr }} in obj:
+    {% else %}{# if attr.required #}
     {% if attr in expected_type_expression %}
+    obj_{{ attr.name }} = obj.get({{ attr.name|repr }}, None)
+    if obj_{{ attr.name }} is not None:
         {{ attr.name }}_from_obj = from_obj(
-            obj[{{ attr.name|repr }}],
+            obj_{{ attr.name }},
             expected=[{{ expected_type_expression[attr] }}],
             path=path + {{ '.%s'|format(attr.name)|repr }})  # type: Optional[{{ type_expression[attr] }}]
-    {% else %}
-        {{ attr.name }}_from_obj = obj[{{ attr.name|repr }}]
-    {% endif %}{# /if attr in expected_type_expression #}
     else:
         {{ attr.name }}_from_obj = None
+    {% else %}{# if attr in expected_type_expression #}
+    {{ attr.name }}_from_obj = obj.get({{ attr.name|repr }}, None)
+    {% endif %}{# /if attr in expected_type_expression #}
     {% endif %}{# /if attr.required #}
     {% endfor %}{# /for attr in classdef.attributes.values() #}
 

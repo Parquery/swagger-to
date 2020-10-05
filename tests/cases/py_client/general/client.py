@@ -447,25 +447,28 @@ def price_estimate_from_obj(obj: Any, path: str = "") -> PriceEstimate:
         expected=[str],
         path=path + '.estimate')  # type: str
 
-    if 'low_estimate' in obj:
+    obj_low_estimate = obj.get('low_estimate', None)
+    if obj_low_estimate is not None:
         low_estimate_from_obj = from_obj(
-            obj['low_estimate'],
+            obj_low_estimate,
             expected=[float],
             path=path + '.low_estimate')  # type: Optional[float]
     else:
         low_estimate_from_obj = None
 
-    if 'high_estimate' in obj:
+    obj_high_estimate = obj.get('high_estimate', None)
+    if obj_high_estimate is not None:
         high_estimate_from_obj = from_obj(
-            obj['high_estimate'],
+            obj_high_estimate,
             expected=[float],
             path=path + '.high_estimate')  # type: Optional[float]
     else:
         high_estimate_from_obj = None
 
-    if 'surge_multiplier' in obj:
+    obj_surge_multiplier = obj.get('surge_multiplier', None)
+    if obj_surge_multiplier is not None:
         surge_multiplier_from_obj = from_obj(
-            obj['surge_multiplier'],
+            obj_surge_multiplier,
             expected=[float],
             path=path + '.surge_multiplier')  # type: Optional[float]
     else:
@@ -585,17 +588,19 @@ def profile_from_obj(obj: Any, path: str = "") -> Profile:
         expected=[str],
         path=path + '.picture')  # type: str
 
-    if 'first_name' in obj:
+    obj_first_name = obj.get('first_name', None)
+    if obj_first_name is not None:
         first_name_from_obj = from_obj(
-            obj['first_name'],
+            obj_first_name,
             expected=[str],
             path=path + '.first_name')  # type: Optional[str]
     else:
         first_name_from_obj = None
 
-    if 'promo_code' in obj:
+    obj_promo_code = obj.get('promo_code', None)
+    if obj_promo_code is not None:
         promo_code_from_obj = from_obj(
-            obj['promo_code'],
+            obj_promo_code,
             expected=[str],
             path=path + '.promo_code')  # type: Optional[str]
     else:

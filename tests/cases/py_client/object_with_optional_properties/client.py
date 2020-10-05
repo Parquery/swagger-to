@@ -180,17 +180,19 @@ def test_object_from_obj(obj: Any, path: str = "") -> TestObject:
             raise ValueError(
                 'Expected a key of type str at path {}, but got: {}'.format(path, type(key)))
 
-    if 'product_id' in obj:
+    obj_product_id = obj.get('product_id', None)
+    if obj_product_id is not None:
         product_id_from_obj = from_obj(
-            obj['product_id'],
+            obj_product_id,
             expected=[str],
             path=path + '.product_id')  # type: Optional[str]
     else:
         product_id_from_obj = None
 
-    if 'capacity' in obj:
+    obj_capacity = obj.get('capacity', None)
+    if obj_capacity is not None:
         capacity_from_obj = from_obj(
-            obj['capacity'],
+            obj_capacity,
             expected=[int],
             path=path + '.capacity')  # type: Optional[int]
     else:
