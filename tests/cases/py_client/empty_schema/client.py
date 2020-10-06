@@ -233,10 +233,7 @@ def with_empty_properties_from_obj(obj: Any, path: str = "") -> WithEmptyPropert
 
     required_empty_property_from_obj = obj['required_empty_property']
 
-    if 'optional_empty_property' in obj:
-        optional_empty_property_from_obj = obj['optional_empty_property']
-    else:
-        optional_empty_property_from_obj = None
+    optional_empty_property_from_obj = obj.get('optional_empty_property', None)
 
     return WithEmptyProperties(
         required_empty_property=required_empty_property_from_obj,

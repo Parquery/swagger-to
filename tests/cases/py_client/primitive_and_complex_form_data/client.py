@@ -185,9 +185,10 @@ def profile_from_obj(obj: Any, path: str = "") -> Profile:
         expected=[str],
         path=path + '.last_name')  # type: str
 
-    if 'first_name' in obj:
+    obj_first_name = obj.get('first_name', None)
+    if obj_first_name is not None:
         first_name_from_obj = from_obj(
-            obj['first_name'],
+            obj_first_name,
             expected=[str],
             path=path + '.first_name')  # type: Optional[str]
     else:
