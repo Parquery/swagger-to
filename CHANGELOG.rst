@@ -1,3 +1,10 @@
+4.0.1
+=====
+* made py_client use `get` for optionals so that None values are treated as
+  unspecified
+* made py_client accept custom requests.Session object
+* fixed py_client for operation IDs with dashes
+
 4.0.0
 =====
 Breaking change:
