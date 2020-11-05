@@ -47,8 +47,12 @@ setup(
     },
     py_modules=['swagger_to'],
     package_data={"swagger_to": ["py.typed"]},
-    scripts=[
-        'bin/swagger_to_go_server.py', 'bin/swagger_to_py_client.py', 'bin/swagger_to_ts_angular5_client.py',
-        'bin/swagger_to_elm_client.py', 'bin/swagger_style.py'
-    ],
-)
+    entry_points={
+        'console_scripts': [
+            'swagger_to_go_server.py = swagger_to.bin.swagger_to_go_server:main',
+            'swagger_to_py_client.py = swagger_to.bin.swagger_to_py_client:main',
+            'swagger_to_ts_angular5_client.py = swagger_to.bin.swagger_to_ts_angular5_client:main',
+            'swagger_to_elm_client.py = swagger_to.bin.swagger_to_elm_client:main',
+            'swagger_style.py = swagger_to.bin.swagger_style:main',
+        ],
+    })
