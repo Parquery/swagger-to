@@ -134,6 +134,11 @@ class Path:
         self.swagger = None  # type: Optional[Swagger]
         self.__lineno__ = 0
 
+        # These are common parameters for all the methods of the path,
+        # see https://swagger.io/docs/specification/2-0/describing-parameters/,
+        # Section "Common Parameters"
+        self.parameters = []  # type: List[Parameter]
+
         # original specification dictionary, if available; not deep-copied, do not modify
         self.raw_dict = None  # type: Optional[RawDict]
 
@@ -329,14 +334,29 @@ def _parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
     pth = Path()
     errors = []  # type: List[str]
 
-    for method_id, method_dict in raw_dict.items():
-        method, method_errors = _parse_method(raw_dict=method_dict)
-        method.identifier = method_id
-        method.path = pth
-        errors.extend(['in method {!r}: {}'.format(method_id, error) for error in method_errors])
+    for key, value in raw_dict.items():
+        # These are common parameters for all the methods of the path,
+        # see https://swagger.io/docs/specification/2-0/describing-parameters/,
+        # Section "Common Parameters"
+        if key == 'parameters':
+            assert isinstance(value, list), \
+                'Expected a list for the common parameters, but got: {}'.format(json.dumps(value))
 
-        if not method_errors:
-            pth.methods.append(method)
+            for i, param_raw_dict in enumerate(value):
+                param, param_errors = _parse_parameter(raw_dict=param_raw_dict)
+                errors.extend([
+                    'in common parameter {} {}: {}'.format(i, json.dumps(param_raw_dict), err) for err in param_errors
+                ])
+                if not param_errors:
+                    pth.parameters.append(param)
+        else:
+            method, method_errors = _parse_method(raw_dict=value)
+            method.identifier = key
+            method.path = pth
+            errors.extend(['in method {!r}: {}'.format(key, error) for error in method_errors])
+
+            if not method_errors:
+                pth.methods.append(method)
 
     pth.raw_dict = raw_dict
 
