@@ -13,6 +13,10 @@ import swagger_to.swagger
 
 
 class TestPyClient(unittest.TestCase):
+    def __init__(self, methodName: str = 'runTest') -> None:
+        self.maxDiff = None  # pylint: disable=invalid-name
+        super().__init__(methodName=methodName)
+
     def test_that_it_works(self):
         # pylint: disable=too-many-locals
         tests_dir = pathlib.Path(os.path.realpath(__file__)).parent

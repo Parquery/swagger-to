@@ -238,13 +238,11 @@ class RemoteCaller:
     def test_me(
             self,
             some_str_parameter: str,
-            some_complex_parameter: Optional[Profile] = None,
             some_int_parameter: Optional[int] = None) -> bytes:
         """
         Is a test endpoint.
 
         :param some_str_parameter:
-        :param some_complex_parameter:
         :param some_int_parameter:
 
         :return: a confirmation
@@ -252,12 +250,6 @@ class RemoteCaller:
         url = self.url_prefix + '/products'
 
         data = {}  # type: Dict[str, str]
-
-        if some_complex_parameter is not None:
-            data['some_complex_parameter'] = json.dumps(
-                to_jsonable(
-                    some_complex_parameter,
-                    expected=[Profile]))
 
         data['some_str_parameter'] = some_str_parameter
 

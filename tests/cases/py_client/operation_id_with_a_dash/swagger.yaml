@@ -31,8 +31,7 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
+          type: string
       responses:
         200:
           description: a confirmation
@@ -48,8 +47,7 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
+          type: string
       responses:
         200:
           description: a confirmation
