@@ -46,7 +46,6 @@ class TestElmClient(unittest.TestCase):
             swagger_to.elm_client.write_client_elm(typedefs=elm_typedefs, requests=elm_requests, fid=buffid)
 
             got = buf.getvalue()
-
             expected = (case_dir / "Client.elm").read_text()
             self.assertEqual(expected, got)
 

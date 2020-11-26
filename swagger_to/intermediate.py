@@ -573,7 +573,10 @@ def _to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str
     endpt.produces = method.produces
     endpt.line = method.__lineno__
 
-    for original_param in method.parameters:
+    # We need to join method parameters with the path's common parameters.
+    # See https://swagger.io/docs/specification/2-0/describing-parameters/,
+    # Section "Common Parameters"
+    for original_param in method.parameters + method.path.parameters:
         param = _anonymous_or_get_parameter(original_param=original_param, typedefs=typedefs, params=params)
 
         if param.in_what == 'body':

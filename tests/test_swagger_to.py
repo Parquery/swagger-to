@@ -9,7 +9,7 @@ import swagger_to.intermediate
 import swagger_to.swagger
 
 
-class TestSwaggerToGo(unittest.TestCase):
+class TestSwaggerTo(unittest.TestCase):
     def test_camel_case_split(self):
         table = [('CvSizeInt', ['Cv', 'Size', 'Int']), ('SomeURLs', ['Some', 'URLs'])]
 
