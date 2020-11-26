@@ -249,7 +249,7 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
         typedef = Arraydef()
 
         if original_typedef.items is None:
-            raise ValueError("Unexpected None items: {!r}".format(original_typedef.raw_dict.adict))
+            raise ValueError("Unexpected None items: {!r}".format(original_typedef.raw_dict))
 
         typedef.items = _anonymous_or_get_typedef(original_typedef=original_typedef.items, typedefs=typedefs)
 
@@ -280,7 +280,7 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
         typedef.line = original_typedef.__lineno__
 
     else:
-        raise ValueError("Unexpected definition: {!r}".format(original_typedef.raw_dict.adict))
+        raise ValueError("Unexpected definition: {!r}".format(original_typedef.raw_dict))
 
     assert typedef is not None
 
@@ -375,7 +375,7 @@ def _recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> Mu
         elif isinstance(value, (dict, collections.OrderedDict)):
             new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value)
         elif isinstance(value, swagger_to.swagger.RawDict):
-            new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value.adict)
+            new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value)
         else:
             new_schema_dict[key] = value
 
@@ -410,12 +410,12 @@ def _to_json_schema(identifier: str, original_typedef: swagger_to.swagger.Typede
         if definition_name in schema_definitions:
             continue
 
-        schema_definitions[definition_name] = definitions[definition_name].typedef.raw_dict.adict
+        schema_definitions[definition_name] = definitions[definition_name].typedef.raw_dict
 
     if len(schema_definitions) > 0:
         schema['definitions'] = schema_definitions
 
-    for key, value in original_typedef.raw_dict.adict.items():
+    for key, value in original_typedef.raw_dict.items():
         schema[key] = value
 
     schema = _recursively_strip_descriptions(schema_dict=schema)
@@ -447,7 +447,7 @@ def _to_parameter(original_param: swagger_to.swagger.Parameter, typedefs: Mutabl
     else:
         raise ValueError(
             "Could not resolve the type of the parameter, neither 'type' nor 'schema' defined: {!r}".format(
-                original_param.raw_dict.adict if original_param.raw_dict is not None else None))
+                original_param.raw_dict))
 
     typedef = _anonymous_or_get_typedef(original_typedef=original_typedef, typedefs=typedefs)
 
@@ -476,7 +476,7 @@ def to_parameters(swagger: swagger_to.swagger.Swagger,
     for key, original_param in swagger.parameters.items():
         if original_param.ref != '':
             raise ValueError("Expected no 'ref' property in a parameter definition {!r}, but got: {!r}".format(
-                original_param.name, original_param.raw_dict.adict if original_param.raw_dict is not None else None))
+                original_param.name, original_param.raw_dict))
 
         param = _to_parameter(original_param=original_param, typedefs=typedefs)
         params[key] = param
@@ -498,7 +498,7 @@ def _anonymous_or_get_parameter(original_param: swagger_to.swagger.Parameter, ty
         param_ref_name = swagger_to.parse_parameter_ref(ref=original_param.ref)
         if param_ref_name not in params:
             raise ValueError("The parameter referenced by the parameter {!r} has not been defined: {!r}".format(
-                original_param.raw_dict.adict if original_param.raw_dict is not None else None, original_param.ref))
+                original_param.raw_dict, original_param.ref))
 
         return params[param_ref_name]
 

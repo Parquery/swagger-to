@@ -1,24 +1,32 @@
 """Parse Swagger spec."""
 
 import collections
+import json
 import pathlib
-from typing import List, Optional, MutableMapping, Any, Tuple, Union  # pylint: disable=unused-import
+from typing import List, Optional, MutableMapping, Any, Tuple, Union, cast  # pylint: disable=unused-import
 
+import jsonschema
 import yaml
 from yaml.composer import Composer
 from yaml.constructor import Constructor
 
+import swagger_to.swaggerjsonschema
+
 # pylint: disable=missing-docstring,too-many-instance-attributes,too-many-locals,too-many-ancestors,too-many-branches
 
 
-class RawDict:
+class RawDict(collections.OrderedDict):
     """Represent a raw dictionary from a Swagger spec file."""
+
+    assert not hasattr(dict, "source"), "dict class has unexpectedly an attribute 'source'."
+    assert not hasattr(dict, "lineno"), "dict class has unexpectedly an attribute 'lineno'."
 
     def __init__(self, adict: MutableMapping[str, Any] = None, source: str = '', lineno: int = 0) -> None:
         """Initialize with the given values."""
-        self.adict = adict if adict is not None else collections.OrderedDict()
         self.source = source
         self.lineno = lineno
+
+        super().__init__(adict if adict is not None else collections.OrderedDict())
 
 
 class Typedef:
@@ -152,40 +160,38 @@ def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
     :param raw_dict: raw dictionary of the Swagger spec
     :return: (parsed type definition, parsing errors if any)
     """
-    adict = raw_dict.adict
-
     typedef = Typedef()
-    typedef.ref = adict.get('$ref', '')
-    typedef.description = adict.get('description', '').strip()
-    typedef.type = adict.get('type', '')
-    typedef.format = adict.get('format', '')
-    typedef.pattern = adict.get('pattern', '')
+    typedef.ref = raw_dict.get('$ref', '')
+    typedef.description = raw_dict.get('description', '').strip()
+    typedef.type = raw_dict.get('type', '')
+    typedef.format = raw_dict.get('format', '')
+    typedef.pattern = raw_dict.get('pattern', '')
     typedef.__lineno__ = raw_dict.lineno
 
     errors = []  # type: List[str]
 
-    for prop_name, prop_dict in adict.get('properties', RawDict()).adict.items():
+    for prop_name, prop_dict in raw_dict.get('properties', RawDict()).items():
         prop_typedef, prop_errors = _parse_typedef(raw_dict=prop_dict)
 
         errors.extend(['in property {!r}: {}'.format(prop_name, error) for error in prop_errors])
         typedef.properties[prop_name] = prop_typedef
 
-    typedef.required = adict.get('required', [])
+    typedef.required = raw_dict.get('required', [])
 
     # check that all the required are well-defined
     for prop_name in typedef.required:
         if prop_name not in typedef.properties:
             errors.append("required property not defined: {!r}".format(prop_name))
 
-    if 'additionalProperties' in adict:
-        add_prop_dict = adict['additionalProperties']
+    if 'additionalProperties' in raw_dict:
+        add_prop_dict = raw_dict['additionalProperties']
         add_prop_typedef, add_prop_errors = _parse_typedef(raw_dict=add_prop_dict)
 
         errors.extend(['in additionalProperties: {}'.format(error) for error in add_prop_errors])
         typedef.additional_properties = add_prop_typedef
 
-    if 'items' in adict:
-        items_dict = adict['items']
+    if 'items' in raw_dict:
+        items_dict = raw_dict['items']
         items_typedef, items_errors = _parse_typedef(raw_dict=items_dict)
 
         errors.extend(['in items: {}'.format(error) for error in items_errors])
@@ -211,23 +217,21 @@ def _parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
     :param raw_dict: raw dictionary of the Swagger spec
     :return: (parsed parameter, parsing errors if any)
     """
-    adict = raw_dict.adict
-
     param = Parameter()
-    param.name = adict.get('name', '')
-    param.in_what = adict.get('in', '')
-    param.description = adict.get('description', '').strip()
-    param.required = adict.get('required', False)
-    param.type = adict.get('type', '')
-    param.format = adict.get('format', '')
-    param.pattern = adict.get('pattern', '')
-    param.ref = adict.get('$ref', '')
+    param.name = raw_dict.get('name', '')
+    param.in_what = raw_dict.get('in', '')
+    param.description = raw_dict.get('description', '').strip()
+    param.required = raw_dict.get('required', False)
+    param.type = raw_dict.get('type', '')
+    param.format = raw_dict.get('format', '')
+    param.pattern = raw_dict.get('pattern', '')
+    param.ref = raw_dict.get('$ref', '')
     param.__lineno__ = raw_dict.lineno
 
     errors = []  # type: List[str]
 
-    if 'schema' in adict:
-        schema_dict = adict['schema']
+    if 'schema' in raw_dict:
+        schema_dict = raw_dict['schema']
 
         typedef, schema_errors = _parse_typedef(raw_dict=schema_dict)
         param.schema = typedef
@@ -238,7 +242,7 @@ def _parse_parameter(raw_dict: RawDict) -> Tuple[Parameter, List[str]]:
     if param.in_what == 'body' and param.schema is None:
         errors.append('parameter in body, but no schema')
 
-    if 'default' in adict:
+    if 'default' in raw_dict:
         errors.append('default values for parameters are not supported')
 
     return param, errors
@@ -251,19 +255,17 @@ def _parse_response(raw_dict: RawDict) -> Tuple[Response, List[str]]:
     :param raw_dict: raw dictionary of the Swagger spec
     :return: (parsed response, parsing errors if any)
     """
-    adict = raw_dict.adict
-
     resp = Response()
     errors = []  # type: List[str]
 
-    resp.description = adict.get('description', '').strip()
-    resp.type = adict.get('type', '')
-    resp.format = adict.get('format', '')
-    resp.pattern = adict.get('pattern', '')
+    resp.description = raw_dict.get('description', '').strip()
+    resp.type = raw_dict.get('type', '')
+    resp.format = raw_dict.get('format', '')
+    resp.pattern = raw_dict.get('pattern', '')
     resp.__lineno__ = raw_dict.lineno
 
-    if 'schema' in adict:
-        schema_dict = adict['schema']
+    if 'schema' in raw_dict:
+        schema_dict = raw_dict['schema']
 
         typedef, schema_errors = _parse_typedef(raw_dict=schema_dict)
         resp.schema = typedef
@@ -283,21 +285,20 @@ def _parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     """
     mth = Method()
     errors = []  # type: List[str]
-    adict = raw_dict.adict
 
-    mth.operation_id = adict.get('operationId', '')
+    mth.operation_id = raw_dict.get('operationId', '')
     if mth.operation_id == '':
         errors.append('missing operationId')
 
-    mth.tags = adict.get('tags', [])
-    mth.description = adict.get('description', '').strip()
-    mth.x_swagger_to_skip = adict.get('x-swagger-to-skip', False)
+    mth.tags = raw_dict.get('tags', [])
+    mth.description = raw_dict.get('description', '').strip()
+    mth.x_swagger_to_skip = raw_dict.get('x-swagger-to-skip', False)
 
-    mth.produces = adict.get('produces', [])
-    mth.consumes = adict.get('consumes', [])
+    mth.produces = raw_dict.get('produces', [])
+    mth.consumes = raw_dict.get('consumes', [])
     mth.__lineno__ = raw_dict.lineno
 
-    for i, param_dict in enumerate(adict.get('parameters', [])):
+    for i, param_dict in enumerate(raw_dict.get('parameters', [])):
         param, param_errors = _parse_parameter(raw_dict=param_dict)
         errors.extend(['in parameter {} (name: {!r}): {}'.format(i, param.name, error) for error in param_errors])
 
@@ -305,7 +306,7 @@ def _parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
 
         mth.parameters.append(param)
 
-    for resp_code, resp_dict in adict.get('responses', RawDict()).adict.items():
+    for resp_code, resp_dict in raw_dict.get('responses', RawDict()).items():
         resp, resp_errors = _parse_response(raw_dict=resp_dict)
         errors.extend(['in response {!r}: {}'.format(resp_code, error) for error in resp_errors])
 
@@ -328,7 +329,7 @@ def _parse_path(raw_dict: RawDict) -> Tuple[Path, List[str]]:
     pth = Path()
     errors = []  # type: List[str]
 
-    for method_id, method_dict in raw_dict.adict.items():
+    for method_id, method_dict in raw_dict.items():
         method, method_errors = _parse_method(raw_dict=method_dict)
         method.identifier = method_id
         method.path = pth
@@ -349,7 +350,7 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     :param stream: YAML representation of the Swagger spec satisfying file interface
     :return: (parsed Swagger specification, parsing errors if any)
     """
-    # adapted from https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
+    # Adapted from https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
     # and https://stackoverflow.com/questions/13319067/parsing-yaml-return-with-line-number
 
     object_pairs_hook = collections.OrderedDict
@@ -365,31 +366,71 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
         loader.flatten_mapping(node)
         mapping = Constructor.construct_pairs(loader, node, deep=deep)
 
-        ordered_hook = object_pairs_hook(mapping)
+        data = object_pairs_hook(mapping)
 
-        return RawDict(adict=ordered_hook, source=stream.name, lineno=node.__lineno__)
+        # Enforce keys to be strings,
+        # see https://stackoverflow.com/questions/50045617/yaml-load-force-dict-keys-to-strings
+
+        assert isinstance(data, collections.OrderedDict)
+        old_keys = list(map(str, data.keys()))
+        data = collections.OrderedDict([(str(k), v) for k, v in data.items()])
+        new_keys = list(map(str, data.keys()))
+
+        # This assertion is necessary to ensure that Python 3.5 does not scramble the order.
+        assert old_keys == new_keys, \
+            "The order of the keys in the object (in {} at {}) changed. Old: {!r}, new: {!r}".format(
+                stream.name, node.__lineno__, old_keys, new_keys)
+
+        return RawDict(adict=data, source=stream.name, lineno=node.__lineno__)
 
     OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
 
-    raw_dict = yaml.load(stream, OrderedLoader)
+    raw_dict = cast(RawDict, yaml.load(stream, OrderedLoader))
+
+    ##
+    # Validate the raw dict against the JSON schema
+    ##
+
+    try:
+        jsonschema.Draft4Validator.check_schema(swagger_to.swaggerjsonschema.SCHEMA)
+        jsonschema.Draft4Validator(swagger_to.swaggerjsonschema.SCHEMA).validate(raw_dict)
+    except jsonschema.exceptions.ValidationError as err:
+        jsonized_parts = map(json.dumps, list(err.relative_path))
+        # yapf: disable
+        return (
+            Swagger(),
+            [
+                '{}:{}\n\n{}'.format(
+                    '/'.join(jsonized_parts), str(err),
+                    ("We used the JSON schema of OpenAPI 2 from: "
+                     "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/"
+                     "88cd94419e117b154b67b834fa8e471bb98bd346/schemas/v2.0/schema.json"
+                    )
+                )
+            ]
+        ) # yapf: enable
+
+    ##
+    # Parse
+    ##
+
     swagger = Swagger()
 
     errors = []  # type: List[str]
 
-    adict = raw_dict.adict
-    if 'tags' in adict:
-        if len(adict['tags']) > 0:
-            for tag in adict['tags']:
-                for key, value in tag.adict.items():
+    if 'tags' in raw_dict:
+        if len(raw_dict['tags']) > 0:
+            for tag in raw_dict['tags']:
+                for key, value in tag.items():
                     if key == 'name':
                         swagger.name = value
 
     if swagger.name == '':
         errors.append('missing tag "name" in the swagger specification')
 
-    swagger.base_path = adict.get('basePath', '')
+    swagger.base_path = raw_dict.get('basePath', '')
 
-    for path_id, path_dict in adict.get('paths', RawDict()).adict.items():
+    for path_id, path_dict in raw_dict.get('paths', RawDict()).items():
         path, path_errors = _parse_path(raw_dict=path_dict)
         path.identifier = path_id
         path.swagger = swagger
@@ -399,7 +440,7 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
         if not path_errors:
             swagger.paths[path_id] = path
 
-    for def_id, def_dict in adict.get('definitions', RawDict()).adict.items():
+    for def_id, def_dict in raw_dict.get('definitions', RawDict()).items():
         typedef, def_errors = _parse_typedef(raw_dict=def_dict)
 
         errors.extend(['in definition {!r}: {}'.format(def_id, error) for error in def_errors])
@@ -407,7 +448,7 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
         if not def_errors:
             swagger.definitions[def_id] = Definition(identifier=def_id, typedef=typedef, swagger=swagger)
 
-    for param_id, param_dict in adict.get('parameters', RawDict()).adict.items():
+    for param_id, param_dict in raw_dict.get('parameters', RawDict()).items():
         param, param_errors = _parse_parameter(raw_dict=param_dict)
 
         errors.extend(['in parameter {!r}: {}'.format(param_id, error) for error in param_errors])

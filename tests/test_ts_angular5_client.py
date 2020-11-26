@@ -6,14 +6,18 @@ import pathlib
 import unittest
 from typing import TextIO, cast
 
-import swagger_to.ts_angular5_client
 import swagger_to.intermediate
 import swagger_to.swagger
+import swagger_to.ts_angular5_client
 
 # pylint: disable=missing-docstring
 
 
 class TestTypescriptClient(unittest.TestCase):
+    def __init__(self, methodName: str = 'runTest') -> None:
+        self.maxDiff = None  # pylint: disable=invalid-name
+        super().__init__(methodName=methodName)
+
     def test_that_it_works(self):
         # pylint: disable=too-many-locals
         tests_dir = pathlib.Path(os.path.realpath(__file__)).parent

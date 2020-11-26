@@ -16,10 +16,15 @@ paths:
         - test
       description: is a test endpoint.
       parameters:
-        - name: some_complex_parameter
-          in: formData
-          schema:
-            $ref: "#/definitions/Profile"
+        # (mristin, 2020-11-26)
+        # Complex data is not supported in OpenAPI 2,
+        # see https://github.com/swagger-api/swagger-ui/issues/4041
+        #
+        # Therefore we have to comment out the following lines since jsonschema will fail.
+        #- name: some_complex_parameter
+        #  in: formData
+        #  schema:
+        #    $ref: "#/definitions/Profile"
         - name: some_str_parameter
           in: formData
           type: string
