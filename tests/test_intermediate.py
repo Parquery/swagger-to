@@ -56,8 +56,6 @@ def jsonize(what: Any) -> Any:
 
 class TestIntermediate(unittest.TestCase):
     def test_that_it_does_not_break(self):
-        self.maxDiff = None
-
         tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
 
         cases_dir = tests_dir / "cases" / "intermediate"
@@ -88,13 +86,11 @@ class TestIntermediate(unittest.TestCase):
                 inter_typedefs_pth.read_text(), json.dumps(jsonize(inter_typedefs), indent=2),
                 "Expected content from {} does not match the jsonized typedefs.".format(inter_typedefs_pth))
 
-            self.assertEqual(
-                inter_params_pth.read_text(), json.dumps(jsonize(inter_params), indent=2),
+            self.assertEqual(inter_params_pth.read_text(), json.dumps(jsonize(inter_params), indent=2),
                              "Expected content from {} does not match the jsonized params.".format(inter_params_pth))
 
-            self.assertEqual(
-                endpoints_pth.read_text(), json.dumps(jsonize(endpoints), indent=2),
-                "Expected content from {} does not match the jsonized endpoints.".format(endpoints_pth))
+            self.assertEqual(endpoints_pth.read_text(), json.dumps(jsonize(endpoints), indent=2),
+                             "Expected content from {} does not match the jsonized endpoints.".format(endpoints_pth))
 
 
 if __name__ == '__main__':
