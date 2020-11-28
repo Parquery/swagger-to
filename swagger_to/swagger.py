@@ -7,8 +7,8 @@ from typing import List, Optional, MutableMapping, Any, Tuple, Union, cast  # py
 
 import jsonschema
 import yaml
-from yaml.composer import Composer
-from yaml.constructor import Constructor
+import yaml.resolver
+import yaml.constructor
 
 import swagger_to.swaggerjsonschema
 
@@ -373,39 +373,23 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     # Adapted from https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
     # and https://stackoverflow.com/questions/13319067/parsing-yaml-return-with-line-number
 
-    object_pairs_hook = collections.OrderedDict
-
-    class OrderedLoader(yaml.SafeLoader):
-        def compose_node(self, parent, index):
-            # the line number where the previous token has ended (plus empty lines)
-            node = Composer.compose_node(self, parent, index)
-            node.__lineno__ = self.line + 1
-            return node
+    class Loader(yaml.SafeLoader):
+        pass
 
     def construct_mapping(loader, node, deep=False):
         loader.flatten_mapping(node)
-        mapping = Constructor.construct_pairs(loader, node, deep=deep)
-
-        data = object_pairs_hook(mapping)
+        mapping = yaml.constructor.Constructor.construct_pairs(loader, node, deep=deep)
 
         # Enforce keys to be strings,
         # see https://stackoverflow.com/questions/50045617/yaml-load-force-dict-keys-to-strings
 
-        assert isinstance(data, collections.OrderedDict)
-        old_keys = list(map(str, data.keys()))
-        data = collections.OrderedDict([(str(k), v) for k, v in data.items()])
-        new_keys = list(map(str, data.keys()))
+        data = collections.OrderedDict([(str(k), v) for k, v in mapping])
 
-        # This assertion is necessary to ensure that Python 3.5 does not scramble the order.
-        assert old_keys == new_keys, \
-            "The order of the keys in the object (in {} at {}) changed. Old: {!r}, new: {!r}".format(
-                stream.name, node.__lineno__, old_keys, new_keys)
+        return RawDict(adict=data, source=stream.name, lineno=node.start_mark.line)
 
-        return RawDict(adict=data, source=stream.name, lineno=node.__lineno__)
+    Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
 
-    OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
-
-    raw_dict = cast(RawDict, yaml.load(stream, OrderedLoader))
+    raw_dict = cast(RawDict, yaml.load(stream, Loader))
 
     ##
     # Validate the raw dict against the JSON schema

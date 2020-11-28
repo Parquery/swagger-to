@@ -6,7 +6,7 @@
       "identifier": "Product",
       "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
     },
-    "line": 237,
+    "line": 210,
     "properties": {
       "product_id": {
         "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
@@ -21,7 +21,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 218,
+          "line": 213,
           "pattern": "",
           "type": "string"
         }
@@ -39,7 +39,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 221,
+          "line": 218,
           "pattern": "",
           "type": "string"
         }
@@ -57,7 +57,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 224,
+          "line": 221,
           "pattern": "",
           "type": "string"
         }
@@ -75,7 +75,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 228,
+          "line": 224,
           "pattern": "",
           "type": "integer"
         }
@@ -93,7 +93,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 231,
+          "line": 228,
           "pattern": "",
           "type": "string"
         }
@@ -114,7 +114,7 @@
       "identifier": "ProductList",
       "text": "{\n  \"title\": \"ProductList\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Product\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product_id\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n        },\n        \"desc\": {\n          \"type\": \"string\",\n          \"description\": \"Description of product.\"\n        },\n        \"display_name\": {\n          \"type\": \"string\",\n          \"description\": \"Display name of product.\"\n        },\n        \"capacity\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\",\n          \"description\": \"Capacity of product. For example, 4 people.\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"description\": \"Image URL representing the product.\"\n        }\n      },\n      \"required\": [\n        \"product_id\",\n        \"desc\",\n        \"display_name\",\n        \"capacity\",\n        \"image\"\n      ]\n    }\n  },\n  \"type\": \"object\",\n  \"properties\": {\n    \"products\": {\n      \"description\": \"Contains the list of products\",\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/Product\"\n      }\n    }\n  },\n  \"required\": [\n    \"products\"\n  ]\n}"
     },
-    "line": 247,
+    "line": 237,
     "properties": {
       "products": {
         "description": "Contains the list of products",
@@ -131,7 +131,7 @@
               "identifier": "Product",
               "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
             },
-            "line": 237,
+            "line": 210,
             "properties": {
               "product_id": {
                 "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
@@ -146,7 +146,7 @@
                     "identifier": "",
                     "text": ""
                   },
-                  "line": 218,
+                  "line": 213,
                   "pattern": "",
                   "type": "string"
                 }
@@ -164,7 +164,7 @@
                     "identifier": "",
                     "text": ""
                   },
-                  "line": 221,
+                  "line": 218,
                   "pattern": "",
                   "type": "string"
                 }
@@ -182,7 +182,7 @@
                     "identifier": "",
                     "text": ""
                   },
-                  "line": 224,
+                  "line": 221,
                   "pattern": "",
                   "type": "string"
                 }
@@ -200,7 +200,7 @@
                     "identifier": "",
                     "text": ""
                   },
-                  "line": 228,
+                  "line": 224,
                   "pattern": "",
                   "type": "integer"
                 }
@@ -218,7 +218,7 @@
                     "identifier": "",
                     "text": ""
                   },
-                  "line": 231,
+                  "line": 228,
                   "pattern": "",
                   "type": "string"
                 }
@@ -251,7 +251,7 @@
       "identifier": "ProductMap",
       "text": "{\n  \"title\": \"ProductMap\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Product\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product_id\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n        },\n        \"desc\": {\n          \"type\": \"string\",\n          \"description\": \"Description of product.\"\n        },\n        \"display_name\": {\n          \"type\": \"string\",\n          \"description\": \"Display name of product.\"\n        },\n        \"capacity\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\",\n          \"description\": \"Capacity of product. For example, 4 people.\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"description\": \"Image URL representing the product.\"\n        }\n      },\n      \"required\": [\n        \"product_id\",\n        \"desc\",\n        \"display_name\",\n        \"capacity\",\n        \"image\"\n      ]\n    }\n  },\n  \"type\": \"object\",\n  \"additionalProperties\": {\n    \"$ref\": \"#/definitions/Product\"\n  }\n}"
     },
-    "line": 251,
+    "line": 247,
     "values": {
       "description": "",
       "identifier": "Product",
@@ -259,7 +259,7 @@
         "identifier": "Product",
         "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
       },
-      "line": 237,
+      "line": 210,
       "properties": {
         "product_id": {
           "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
@@ -274,7 +274,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 218,
+            "line": 213,
             "pattern": "",
             "type": "string"
           }
@@ -292,7 +292,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 221,
+            "line": 218,
             "pattern": "",
             "type": "string"
           }
@@ -310,7 +310,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 224,
+            "line": 221,
             "pattern": "",
             "type": "string"
           }
@@ -328,7 +328,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 228,
+            "line": 224,
             "pattern": "",
             "type": "integer"
           }
@@ -346,7 +346,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 231,
+            "line": 228,
             "pattern": "",
             "type": "string"
           }
@@ -368,7 +368,7 @@
       "identifier": "PriceEstimate",
       "text": "{\n  \"title\": \"PriceEstimate\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude. For example,\\nuberX in San Francisco will have a different product_id than uberX in Los Angeles\"\n    },\n    \"currency_code\": {\n      \"type\": \"string\",\n      \"description\": \"[ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"estimate\": {\n      \"type\": \"string\",\n      \"description\": \"Formatted string of estimate in local currency of the start location.\\nEstimate could be a range, a single number (flat rate) or \\\"Metered\\\" for TAXI.\"\n    },\n    \"low_estimate\": {\n      \"type\": \"number\",\n      \"format\": \"double\",\n      \"description\": \"Lower bound of the estimated price.\"\n    },\n    \"high_estimate\": {\n      \"type\": \"number\",\n      \"format\": \"double\",\n      \"description\": \"Upper bound of the estimated price.\"\n    },\n    \"surge_multiplier\": {\n      \"type\": \"number\",\n      \"format\": \"double\",\n      \"description\": \"Expected surge multiplier. Surge is active if surge_multiplier is greater than 1.\\nPrice estimate already factors in the surge multiplier.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"currency_code\",\n    \"display_name\",\n    \"estimate\"\n  ]\n}"
     },
-    "line": 289,
+    "line": 251,
     "properties": {
       "product_id": {
         "description": "Unique identifier representing a specific product for a given latitude & longitude. For example,\nuberX in San Francisco will have a different product_id than uberX in Los Angeles",
@@ -383,7 +383,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 259,
+          "line": 254,
           "pattern": "",
           "type": "string"
         }
@@ -401,7 +401,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 262,
+          "line": 259,
           "pattern": "",
           "type": "string"
         }
@@ -419,7 +419,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 265,
+          "line": 262,
           "pattern": "",
           "type": "string"
         }
@@ -437,7 +437,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 270,
+          "line": 265,
           "pattern": "",
           "type": "string"
         }
@@ -455,7 +455,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 274,
+          "line": 270,
           "pattern": "",
           "type": "number"
         }
@@ -473,7 +473,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 278,
+          "line": 274,
           "pattern": "",
           "type": "number"
         }
@@ -491,7 +491,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 284,
+          "line": 278,
           "pattern": "",
           "type": "number"
         }
@@ -514,7 +514,7 @@
         "identifier": "Product",
         "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
       },
-      "line": 237,
+      "line": 210,
       "properties": {
         "product_id": {
           "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
@@ -529,7 +529,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 218,
+            "line": 213,
             "pattern": "",
             "type": "string"
           }
@@ -547,7 +547,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 221,
+            "line": 218,
             "pattern": "",
             "type": "string"
           }
@@ -565,7 +565,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 224,
+            "line": 221,
             "pattern": "",
             "type": "string"
           }
@@ -583,7 +583,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 228,
+            "line": 224,
             "pattern": "",
             "type": "integer"
           }
@@ -601,7 +601,7 @@
               "identifier": "",
               "text": ""
             },
-            "line": 231,
+            "line": 228,
             "pattern": "",
             "type": "string"
           }
@@ -619,7 +619,7 @@
       "identifier": "PriceEstimateArray",
       "text": "{\n  \"title\": \"PriceEstimateArray\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Product\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product_id\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n        },\n        \"desc\": {\n          \"type\": \"string\",\n          \"description\": \"Description of product.\"\n        },\n        \"display_name\": {\n          \"type\": \"string\",\n          \"description\": \"Display name of product.\"\n        },\n        \"capacity\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\",\n          \"description\": \"Capacity of product. For example, 4 people.\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"description\": \"Image URL representing the product.\"\n        }\n      },\n      \"required\": [\n        \"product_id\",\n        \"desc\",\n        \"display_name\",\n        \"capacity\",\n        \"image\"\n      ]\n    }\n  },\n  \"type\": \"array\",\n  \"items\": {\n    \"$ref\": \"#/definitions/Product\"\n  }\n}"
     },
-    "line": 293
+    "line": 289
   },
   "Profile": {
     "description": "",
@@ -628,7 +628,7 @@
       "identifier": "Profile",
       "text": "{\n  \"title\": \"Profile\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"first_name\": {\n      \"type\": \"string\",\n      \"description\": \"First name of the Uber user.\"\n    },\n    \"last_name\": {\n      \"type\": \"string\",\n      \"description\": \"Last name of the Uber user.\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"description\": \"Email address of the Uber user\"\n    },\n    \"picture\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL of the Uber user.\"\n    },\n    \"promo_code\": {\n      \"type\": \"string\",\n      \"description\": \"Promo code of the Uber user.\"\n    }\n  },\n  \"required\": [\n    \"last_name\",\n    \"email\",\n    \"picture\"\n  ]\n}"
     },
-    "line": 315,
+    "line": 293,
     "properties": {
       "first_name": {
         "description": "First name of the Uber user.",
@@ -643,7 +643,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 299,
+          "line": 296,
           "pattern": "",
           "type": "string"
         }
@@ -661,7 +661,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 302,
+          "line": 299,
           "pattern": "",
           "type": "string"
         }
@@ -679,7 +679,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 305,
+          "line": 302,
           "pattern": "",
           "type": "string"
         }
@@ -697,7 +697,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 308,
+          "line": 305,
           "pattern": "",
           "type": "string"
         }
@@ -715,7 +715,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 311,
+          "line": 308,
           "pattern": "",
           "type": "string"
         }
@@ -734,7 +734,7 @@
       "identifier": "Activity",
       "text": "{\n  \"title\": \"Activity\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"uuid\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier for the activity\"\n    }\n  },\n  \"required\": [\n    \"uuid\"\n  ]\n}"
     },
-    "line": 323,
+    "line": 315,
     "properties": {
       "uuid": {
         "description": "Unique identifier for the activity",
@@ -749,7 +749,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 321,
+          "line": 318,
           "pattern": "",
           "type": "string"
         }
@@ -766,7 +766,7 @@
       "identifier": "Activities",
       "text": "{\n  \"title\": \"Activities\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Activity\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"uuid\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier for the activity\"\n        }\n      },\n      \"required\": [\n        \"uuid\"\n      ]\n    }\n  },\n  \"type\": \"object\",\n  \"properties\": {\n    \"offset\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Position in pagination.\"\n    },\n    \"limit\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Number of items to retrieve (100 max).\"\n    },\n    \"count\": {\n      \"type\": \"integer\",\n      \"format\": \"int64\",\n      \"description\": \"Total number of items available.\"\n    },\n    \"history\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/Activity\"\n      }\n    }\n  },\n  \"required\": [\n    \"offset\",\n    \"limit\",\n    \"count\",\n    \"history\"\n  ]\n}"
     },
-    "line": 346,
+    "line": 323,
     "properties": {
       "offset": {
         "description": "Position in pagination.",
@@ -781,7 +781,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 330,
+          "line": 326,
           "pattern": "",
           "type": "integer"
         }
@@ -799,7 +799,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 334,
+          "line": 330,
           "pattern": "",
           "type": "integer"
         }
@@ -817,7 +817,7 @@
             "identifier": "",
             "text": ""
           },
-          "line": 338,
+          "line": 334,
           "pattern": "",
           "type": "integer"
         }
@@ -837,7 +837,7 @@
               "identifier": "Activity",
               "text": "{\n  \"title\": \"Activity\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"uuid\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier for the activity\"\n    }\n  },\n  \"required\": [\n    \"uuid\"\n  ]\n}"
             },
-            "line": 323,
+            "line": 315,
             "properties": {
               "uuid": {
                 "description": "Unique identifier for the activity",
@@ -852,7 +852,7 @@
                     "identifier": "",
                     "text": ""
                   },
-                  "line": 321,
+                  "line": 318,
                   "pattern": "",
                   "type": "string"
                 }
