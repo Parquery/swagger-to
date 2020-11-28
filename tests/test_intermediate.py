@@ -79,12 +79,10 @@ class TestIntermediate(unittest.TestCase):
                 "Expected content from {} does not match the jsonized typedefs.".format(inter_typedefs_pth))
 
             inter_params_pth = case_dir / "intermediate_params.json"
-            inter_params_pth.write_text(json.dumps(jsonize(inter_params), indent=2))
             self.assertEqual(inter_params_pth.read_text(), json.dumps(jsonize(inter_params), indent=2),
                              "Expected content from {} does not match the jsonized params.".format(inter_params_pth))
 
             inter_endpoints_pth = case_dir / "endpoints.json"
-            inter_endpoints_pth.write_text(json.dumps(jsonize(endpoints), indent=2))
             self.assertEqual(
                 inter_endpoints_pth.read_text(), json.dumps(jsonize(endpoints), indent=2),
                 "Expected content from {} does not match the jsonized endpoints.".format(inter_endpoints_pth))
