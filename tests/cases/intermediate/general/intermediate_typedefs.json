@@ -1,0 +1,880 @@
+{
+  "Product": {
+    "description": "",
+    "identifier": "Product",
+    "json_schema": {
+      "identifier": "Product",
+      "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
+    },
+    "line": 237,
+    "properties": {
+      "product_id": {
+        "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
+        "line": 0,
+        "name": "product_id",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 218,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "desc": {
+        "description": "Description of product.",
+        "line": 0,
+        "name": "desc",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 221,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "display_name": {
+        "description": "Display name of product.",
+        "line": 0,
+        "name": "display_name",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 224,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "capacity": {
+        "description": "Capacity of product. For example, 4 people.",
+        "line": 0,
+        "name": "capacity",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 228,
+          "pattern": "",
+          "type": "integer"
+        }
+      },
+      "image": {
+        "description": "Image URL representing the product.",
+        "line": 0,
+        "name": "image",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 231,
+          "pattern": "",
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "product_id",
+      "desc",
+      "display_name",
+      "capacity",
+      "image"
+    ]
+  },
+  "ProductList": {
+    "description": "",
+    "identifier": "ProductList",
+    "json_schema": {
+      "identifier": "ProductList",
+      "text": "{\n  \"title\": \"ProductList\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Product\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product_id\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n        },\n        \"desc\": {\n          \"type\": \"string\",\n          \"description\": \"Description of product.\"\n        },\n        \"display_name\": {\n          \"type\": \"string\",\n          \"description\": \"Display name of product.\"\n        },\n        \"capacity\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\",\n          \"description\": \"Capacity of product. For example, 4 people.\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"description\": \"Image URL representing the product.\"\n        }\n      },\n      \"required\": [\n        \"product_id\",\n        \"desc\",\n        \"display_name\",\n        \"capacity\",\n        \"image\"\n      ]\n    }\n  },\n  \"type\": \"object\",\n  \"properties\": {\n    \"products\": {\n      \"description\": \"Contains the list of products\",\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/Product\"\n      }\n    }\n  },\n  \"required\": [\n    \"products\"\n  ]\n}"
+    },
+    "line": 247,
+    "properties": {
+      "products": {
+        "description": "Contains the list of products",
+        "line": 0,
+        "name": "products",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "identifier": "",
+          "items": {
+            "description": "",
+            "identifier": "Product",
+            "json_schema": {
+              "identifier": "Product",
+              "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
+            },
+            "line": 237,
+            "properties": {
+              "product_id": {
+                "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
+                "line": 0,
+                "name": "product_id",
+                "required": true,
+                "typedef": {
+                  "description": "",
+                  "format": "",
+                  "identifier": "",
+                  "json_schema": {
+                    "identifier": "",
+                    "text": ""
+                  },
+                  "line": 218,
+                  "pattern": "",
+                  "type": "string"
+                }
+              },
+              "desc": {
+                "description": "Description of product.",
+                "line": 0,
+                "name": "desc",
+                "required": true,
+                "typedef": {
+                  "description": "",
+                  "format": "",
+                  "identifier": "",
+                  "json_schema": {
+                    "identifier": "",
+                    "text": ""
+                  },
+                  "line": 221,
+                  "pattern": "",
+                  "type": "string"
+                }
+              },
+              "display_name": {
+                "description": "Display name of product.",
+                "line": 0,
+                "name": "display_name",
+                "required": true,
+                "typedef": {
+                  "description": "",
+                  "format": "",
+                  "identifier": "",
+                  "json_schema": {
+                    "identifier": "",
+                    "text": ""
+                  },
+                  "line": 224,
+                  "pattern": "",
+                  "type": "string"
+                }
+              },
+              "capacity": {
+                "description": "Capacity of product. For example, 4 people.",
+                "line": 0,
+                "name": "capacity",
+                "required": true,
+                "typedef": {
+                  "description": "",
+                  "format": "int32",
+                  "identifier": "",
+                  "json_schema": {
+                    "identifier": "",
+                    "text": ""
+                  },
+                  "line": 228,
+                  "pattern": "",
+                  "type": "integer"
+                }
+              },
+              "image": {
+                "description": "Image URL representing the product.",
+                "line": 0,
+                "name": "image",
+                "required": true,
+                "typedef": {
+                  "description": "",
+                  "format": "",
+                  "identifier": "",
+                  "json_schema": {
+                    "identifier": "",
+                    "text": ""
+                  },
+                  "line": 231,
+                  "pattern": "",
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "product_id",
+              "desc",
+              "display_name",
+              "capacity",
+              "image"
+            ]
+          },
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 0
+        }
+      }
+    },
+    "required": [
+      "products"
+    ]
+  },
+  "ProductMap": {
+    "description": "",
+    "identifier": "ProductMap",
+    "json_schema": {
+      "identifier": "ProductMap",
+      "text": "{\n  \"title\": \"ProductMap\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Product\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product_id\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n        },\n        \"desc\": {\n          \"type\": \"string\",\n          \"description\": \"Description of product.\"\n        },\n        \"display_name\": {\n          \"type\": \"string\",\n          \"description\": \"Display name of product.\"\n        },\n        \"capacity\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\",\n          \"description\": \"Capacity of product. For example, 4 people.\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"description\": \"Image URL representing the product.\"\n        }\n      },\n      \"required\": [\n        \"product_id\",\n        \"desc\",\n        \"display_name\",\n        \"capacity\",\n        \"image\"\n      ]\n    }\n  },\n  \"type\": \"object\",\n  \"additionalProperties\": {\n    \"$ref\": \"#/definitions/Product\"\n  }\n}"
+    },
+    "line": 251,
+    "values": {
+      "description": "",
+      "identifier": "Product",
+      "json_schema": {
+        "identifier": "Product",
+        "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
+      },
+      "line": 237,
+      "properties": {
+        "product_id": {
+          "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
+          "line": 0,
+          "name": "product_id",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 218,
+            "pattern": "",
+            "type": "string"
+          }
+        },
+        "desc": {
+          "description": "Description of product.",
+          "line": 0,
+          "name": "desc",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 221,
+            "pattern": "",
+            "type": "string"
+          }
+        },
+        "display_name": {
+          "description": "Display name of product.",
+          "line": 0,
+          "name": "display_name",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 224,
+            "pattern": "",
+            "type": "string"
+          }
+        },
+        "capacity": {
+          "description": "Capacity of product. For example, 4 people.",
+          "line": 0,
+          "name": "capacity",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "int32",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 228,
+            "pattern": "",
+            "type": "integer"
+          }
+        },
+        "image": {
+          "description": "Image URL representing the product.",
+          "line": 0,
+          "name": "image",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 231,
+            "pattern": "",
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "product_id",
+        "desc",
+        "display_name",
+        "capacity",
+        "image"
+      ]
+    }
+  },
+  "PriceEstimate": {
+    "description": "",
+    "identifier": "PriceEstimate",
+    "json_schema": {
+      "identifier": "PriceEstimate",
+      "text": "{\n  \"title\": \"PriceEstimate\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude. For example,\\nuberX in San Francisco will have a different product_id than uberX in Los Angeles\"\n    },\n    \"currency_code\": {\n      \"type\": \"string\",\n      \"description\": \"[ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"estimate\": {\n      \"type\": \"string\",\n      \"description\": \"Formatted string of estimate in local currency of the start location.\\nEstimate could be a range, a single number (flat rate) or \\\"Metered\\\" for TAXI.\"\n    },\n    \"low_estimate\": {\n      \"type\": \"number\",\n      \"format\": \"double\",\n      \"description\": \"Lower bound of the estimated price.\"\n    },\n    \"high_estimate\": {\n      \"type\": \"number\",\n      \"format\": \"double\",\n      \"description\": \"Upper bound of the estimated price.\"\n    },\n    \"surge_multiplier\": {\n      \"type\": \"number\",\n      \"format\": \"double\",\n      \"description\": \"Expected surge multiplier. Surge is active if surge_multiplier is greater than 1.\\nPrice estimate already factors in the surge multiplier.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"currency_code\",\n    \"display_name\",\n    \"estimate\"\n  ]\n}"
+    },
+    "line": 289,
+    "properties": {
+      "product_id": {
+        "description": "Unique identifier representing a specific product for a given latitude & longitude. For example,\nuberX in San Francisco will have a different product_id than uberX in Los Angeles",
+        "line": 0,
+        "name": "product_id",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 259,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "currency_code": {
+        "description": "[ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code.",
+        "line": 0,
+        "name": "currency_code",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 262,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "display_name": {
+        "description": "Display name of product.",
+        "line": 0,
+        "name": "display_name",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 265,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "estimate": {
+        "description": "Formatted string of estimate in local currency of the start location.\nEstimate could be a range, a single number (flat rate) or \"Metered\" for TAXI.",
+        "line": 0,
+        "name": "estimate",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 270,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "low_estimate": {
+        "description": "Lower bound of the estimated price.",
+        "line": 0,
+        "name": "low_estimate",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "double",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 274,
+          "pattern": "",
+          "type": "number"
+        }
+      },
+      "high_estimate": {
+        "description": "Upper bound of the estimated price.",
+        "line": 0,
+        "name": "high_estimate",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "double",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 278,
+          "pattern": "",
+          "type": "number"
+        }
+      },
+      "surge_multiplier": {
+        "description": "Expected surge multiplier. Surge is active if surge_multiplier is greater than 1.\nPrice estimate already factors in the surge multiplier.",
+        "line": 0,
+        "name": "surge_multiplier",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "double",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 284,
+          "pattern": "",
+          "type": "number"
+        }
+      }
+    },
+    "required": [
+      "product_id",
+      "currency_code",
+      "display_name",
+      "estimate"
+    ]
+  },
+  "PriceEstimateArray": {
+    "description": "",
+    "identifier": "PriceEstimateArray",
+    "items": {
+      "description": "",
+      "identifier": "Product",
+      "json_schema": {
+        "identifier": "Product",
+        "text": "{\n  \"title\": \"Product\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"product_id\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n    },\n    \"desc\": {\n      \"type\": \"string\",\n      \"description\": \"Description of product.\"\n    },\n    \"display_name\": {\n      \"type\": \"string\",\n      \"description\": \"Display name of product.\"\n    },\n    \"capacity\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Capacity of product. For example, 4 people.\"\n    },\n    \"image\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL representing the product.\"\n    }\n  },\n  \"required\": [\n    \"product_id\",\n    \"desc\",\n    \"display_name\",\n    \"capacity\",\n    \"image\"\n  ]\n}"
+      },
+      "line": 237,
+      "properties": {
+        "product_id": {
+          "description": "Unique identifier representing a specific product for a given latitude & longitude.\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
+          "line": 0,
+          "name": "product_id",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 218,
+            "pattern": "",
+            "type": "string"
+          }
+        },
+        "desc": {
+          "description": "Description of product.",
+          "line": 0,
+          "name": "desc",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 221,
+            "pattern": "",
+            "type": "string"
+          }
+        },
+        "display_name": {
+          "description": "Display name of product.",
+          "line": 0,
+          "name": "display_name",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 224,
+            "pattern": "",
+            "type": "string"
+          }
+        },
+        "capacity": {
+          "description": "Capacity of product. For example, 4 people.",
+          "line": 0,
+          "name": "capacity",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "int32",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 228,
+            "pattern": "",
+            "type": "integer"
+          }
+        },
+        "image": {
+          "description": "Image URL representing the product.",
+          "line": 0,
+          "name": "image",
+          "required": true,
+          "typedef": {
+            "description": "",
+            "format": "",
+            "identifier": "",
+            "json_schema": {
+              "identifier": "",
+              "text": ""
+            },
+            "line": 231,
+            "pattern": "",
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "product_id",
+        "desc",
+        "display_name",
+        "capacity",
+        "image"
+      ]
+    },
+    "json_schema": {
+      "identifier": "PriceEstimateArray",
+      "text": "{\n  \"title\": \"PriceEstimateArray\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Product\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"product_id\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier representing a specific product for a given latitude & longitude.\\nFor example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.\"\n        },\n        \"desc\": {\n          \"type\": \"string\",\n          \"description\": \"Description of product.\"\n        },\n        \"display_name\": {\n          \"type\": \"string\",\n          \"description\": \"Display name of product.\"\n        },\n        \"capacity\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\",\n          \"description\": \"Capacity of product. For example, 4 people.\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"description\": \"Image URL representing the product.\"\n        }\n      },\n      \"required\": [\n        \"product_id\",\n        \"desc\",\n        \"display_name\",\n        \"capacity\",\n        \"image\"\n      ]\n    }\n  },\n  \"type\": \"array\",\n  \"items\": {\n    \"$ref\": \"#/definitions/Product\"\n  }\n}"
+    },
+    "line": 293
+  },
+  "Profile": {
+    "description": "",
+    "identifier": "Profile",
+    "json_schema": {
+      "identifier": "Profile",
+      "text": "{\n  \"title\": \"Profile\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"first_name\": {\n      \"type\": \"string\",\n      \"description\": \"First name of the Uber user.\"\n    },\n    \"last_name\": {\n      \"type\": \"string\",\n      \"description\": \"Last name of the Uber user.\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"description\": \"Email address of the Uber user\"\n    },\n    \"picture\": {\n      \"type\": \"string\",\n      \"description\": \"Image URL of the Uber user.\"\n    },\n    \"promo_code\": {\n      \"type\": \"string\",\n      \"description\": \"Promo code of the Uber user.\"\n    }\n  },\n  \"required\": [\n    \"last_name\",\n    \"email\",\n    \"picture\"\n  ]\n}"
+    },
+    "line": 315,
+    "properties": {
+      "first_name": {
+        "description": "First name of the Uber user.",
+        "line": 0,
+        "name": "first_name",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 299,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "last_name": {
+        "description": "Last name of the Uber user.",
+        "line": 0,
+        "name": "last_name",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 302,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "email": {
+        "description": "Email address of the Uber user",
+        "line": 0,
+        "name": "email",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 305,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "picture": {
+        "description": "Image URL of the Uber user.",
+        "line": 0,
+        "name": "picture",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 308,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "promo_code": {
+        "description": "Promo code of the Uber user.",
+        "line": 0,
+        "name": "promo_code",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 311,
+          "pattern": "",
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "last_name",
+      "email",
+      "picture"
+    ]
+  },
+  "Activity": {
+    "description": "",
+    "identifier": "Activity",
+    "json_schema": {
+      "identifier": "Activity",
+      "text": "{\n  \"title\": \"Activity\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"uuid\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier for the activity\"\n    }\n  },\n  \"required\": [\n    \"uuid\"\n  ]\n}"
+    },
+    "line": 323,
+    "properties": {
+      "uuid": {
+        "description": "Unique identifier for the activity",
+        "line": 0,
+        "name": "uuid",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 321,
+          "pattern": "",
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "uuid"
+    ]
+  },
+  "Activities": {
+    "description": "",
+    "identifier": "Activities",
+    "json_schema": {
+      "identifier": "Activities",
+      "text": "{\n  \"title\": \"Activities\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Activity\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"uuid\": {\n          \"type\": \"string\",\n          \"description\": \"Unique identifier for the activity\"\n        }\n      },\n      \"required\": [\n        \"uuid\"\n      ]\n    }\n  },\n  \"type\": \"object\",\n  \"properties\": {\n    \"offset\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Position in pagination.\"\n    },\n    \"limit\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\",\n      \"description\": \"Number of items to retrieve (100 max).\"\n    },\n    \"count\": {\n      \"type\": \"integer\",\n      \"format\": \"int64\",\n      \"description\": \"Total number of items available.\"\n    },\n    \"history\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/Activity\"\n      }\n    }\n  },\n  \"required\": [\n    \"offset\",\n    \"limit\",\n    \"count\",\n    \"history\"\n  ]\n}"
+    },
+    "line": 346,
+    "properties": {
+      "offset": {
+        "description": "Position in pagination.",
+        "line": 0,
+        "name": "offset",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 330,
+          "pattern": "",
+          "type": "integer"
+        }
+      },
+      "limit": {
+        "description": "Number of items to retrieve (100 max).",
+        "line": 0,
+        "name": "limit",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 334,
+          "pattern": "",
+          "type": "integer"
+        }
+      },
+      "count": {
+        "description": "Total number of items available.",
+        "line": 0,
+        "name": "count",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "int64",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 338,
+          "pattern": "",
+          "type": "integer"
+        }
+      },
+      "history": {
+        "description": "",
+        "line": 0,
+        "name": "history",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "identifier": "",
+          "items": {
+            "description": "",
+            "identifier": "Activity",
+            "json_schema": {
+              "identifier": "Activity",
+              "text": "{\n  \"title\": \"Activity\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"uuid\": {\n      \"type\": \"string\",\n      \"description\": \"Unique identifier for the activity\"\n    }\n  },\n  \"required\": [\n    \"uuid\"\n  ]\n}"
+            },
+            "line": 323,
+            "properties": {
+              "uuid": {
+                "description": "Unique identifier for the activity",
+                "line": 0,
+                "name": "uuid",
+                "required": true,
+                "typedef": {
+                  "description": "",
+                  "format": "",
+                  "identifier": "",
+                  "json_schema": {
+                    "identifier": "",
+                    "text": ""
+                  },
+                  "line": 321,
+                  "pattern": "",
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "uuid"
+            ]
+          },
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 0
+        }
+      }
+    },
+    "required": [
+      "offset",
+      "limit",
+      "count",
+      "history"
+    ]
+  }
+}

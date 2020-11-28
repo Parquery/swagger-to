@@ -13,7 +13,7 @@ import swagger_to.swagger
 
 
 class TestParsing(unittest.TestCase):
-    def test_that_common_parameters_are_correctly_parsed(self):
+    def test_that_it_does_not_break(self):
         tests_dir = pathlib.Path(os.path.realpath(__file__)).parent
 
         cases_dir = tests_dir / "cases" / "parsing"
