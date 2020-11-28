@@ -160,7 +160,7 @@ def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
     elif definition.typedef.type == 'array':
         typedef = Arraydef()
 
-    elif definition.typedef.type == 'object':
+    elif definition.typedef.type == 'object' or len(definition.typedef.properties) > 0:
         if definition.typedef.additional_properties is not None:
             typedef = Mapdef()
 
@@ -168,8 +168,9 @@ def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
             typedef = Objectdef()
             typedef.required = definition.typedef.required
     else:
-        raise ValueError("Unexpected type of a typedef in the definition {!r}: {!r}".format(
-            definition.identifier, definition.typedef.type))
+        raise ValueError(("Could not determine the intermediate type "
+                          "for a Swagger type definition {!r} (here given as JSON):\n{}").format(
+                              definition.identifier, json.dumps(definition.typedef.raw_dict, indent=2)))
 
     typedef.identifier = definition.identifier
     typedef.line = definition.typedef.__lineno__
