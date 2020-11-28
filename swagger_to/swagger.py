@@ -370,6 +370,8 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
     :param stream: YAML representation of the Swagger spec satisfying file interface
     :return: (parsed Swagger specification, parsing errors if any)
     """
+    pass  # needed for pydocstyle
+
     # Adapted from https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
     # and https://stackoverflow.com/questions/13319067/parsing-yaml-return-with-line-number
 

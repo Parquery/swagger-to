@@ -59,8 +59,9 @@ class TestStyleCheck(unittest.TestCase):
             cmpl_lines.sort()
 
             got = "\n".join(cmpl_lines) + '\n'
-            expected = (case_dir / "errors.txt").read_text()
-            self.assertEqual(expected, got)
+            expected_pth = case_dir / "errors.txt"
+            expected = expected_pth.read_text()
+            self.assertEqual(expected, got, "Mismatch from the expected content in {}".format(expected_pth))
 
 
 class TestDescription(unittest.TestCase):
