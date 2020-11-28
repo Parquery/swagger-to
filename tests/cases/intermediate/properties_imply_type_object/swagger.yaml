@@ -1,0 +1,27 @@
+# This spec originates from the issue #105.
+basePath: /
+consumes:
+- application/json
+info:
+  description: An API
+  title: An API
+  version: '1.0'
+definitions:
+  MyType:
+    properties:
+      object_id:
+        type: integer
+        format: int32
+paths:
+  /:
+    get:
+      operationId: get_foo
+      responses:
+        '200':
+          description: Success
+produces:
+- application/json
+swagger: '2.0'
+tags:
+- description: description
+  name: foo

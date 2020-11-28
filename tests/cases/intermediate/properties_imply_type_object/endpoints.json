@@ -1,0 +1,20 @@
+[
+  {
+    "consumes": [],
+    "description": "",
+    "line": 17,
+    "method": "get",
+    "operation_id": "get_foo",
+    "parameters": [],
+    "path": "/",
+    "produces": [],
+    "responses": {
+      "200": {
+        "code": "200",
+        "description": "Success",
+        "line": 20,
+        "typedef": null
+      }
+    }
+  }
+]

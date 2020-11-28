@@ -1,0 +1,32 @@
+{
+  "MyType": {
+    "description": "",
+    "identifier": "MyType",
+    "json_schema": {
+      "identifier": "MyType",
+      "text": "{\n  \"title\": \"MyType\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"properties\": {\n    \"object_id\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\"\n    }\n  }\n}"
+    },
+    "line": 10,
+    "properties": {
+      "object_id": {
+        "description": "",
+        "line": 0,
+        "name": "object_id",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 12,
+          "pattern": "",
+          "type": "integer"
+        }
+      }
+    },
+    "required": []
+  }
+}
