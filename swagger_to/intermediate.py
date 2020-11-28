@@ -11,7 +11,7 @@ do not figure as strings.
 
 import collections
 import json
-from typing import List, MutableMapping, Union, Any, Optional  # pylint: disable=unused-import
+from typing import List, MutableMapping, Union, Any, Optional, Mapping  # pylint: disable=unused-import
 
 import icontract
 
