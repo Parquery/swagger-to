@@ -5,6 +5,7 @@ from typing import Optional, MutableMapping, List, Dict, TextIO, Any  # pylint: 
 
 import collections
 
+import icontract
 import swagger_to
 import swagger_to.intermediate
 
@@ -592,7 +593,7 @@ def _write_request(request: Request, fid: TextIO) -> None:
             return_type_decoder = _argument_decoder_expression(typedef=resp.typedef)
 
     # function signature and arguments
-    function_name = '{}Request'.format(swagger_to.camel_case(identifier=request.operation_id))
+    function_name = '{}Request'.format(_request_function_name(request.operation_id))
     types = ["String", "Maybe Time.Time", "Bool"] + types
     names = ["prefix", "maybeTimeout", "withCredentials"] + names
     types_str = ' -> '.join(types)
@@ -833,7 +834,7 @@ def _write_header(fid: TextIO, typedefs: MutableMapping[str, Typedef], requests:
         to_expose.append('encode{}'.format(typedef.identifier))
 
     for request in requests:
-        to_expose.append('{}Request'.format(swagger_to.camel_case(identifier=request.operation_id)))
+        to_expose.append('{}Request'.format(_request_function_name(request.operation_id)))
 
     to_expose.sort()
     joinstr = '\n' + INDENT * 2 + ', '
@@ -1063,3 +1064,45 @@ def write_client_elm(typedefs: MutableMapping[str, Typedef], requests: List[Requ
                 break
 
     _write_footer(fid=fid)
+
+
+@icontract.require(lambda operation_id: operation_id != '')
+def _request_function_name(operation_id: str) -> str:
+    """
+    Generate the name of the function which will send the request based on the operation ID.
+
+    :param operation_id: ID of the operation from the Swagger spec
+    :return: Valid Elm identifier
+
+    >>> _request_function_name('CamelCase')
+    'camelCase'
+
+    >>> _request_function_name('snake_case')
+    'snakeCase'
+
+    >>> _request_function_name('Snake_case')
+    'snakeCase'
+
+    >>> _request_function_name('Dash-Case')
+    'dashCase'
+
+    >>> _request_function_name('dash-case')
+    'dashCase'
+
+    >>> _request_function_name('_snake_case')
+    '_snakeCase'
+
+    >>> _request_function_name('snake_case_')
+    'snakeCase_'
+
+    >>> _request_function_name('__')
+    '__'
+ 
+    >>> _request_function_name('test.me')
+    'testMe'
+
+    >>> _request_function_name('test.me.some.more')
+    'testMeSomeMore'
+    """
+    identifier = operation_id.replace('.', '_')
+    return swagger_to.camel_case(identifier)

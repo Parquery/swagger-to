@@ -1,0 +1,30 @@
+# This is a valid schema, but it broke swagger-to.
+# Please see the issue: https://github.com/Parquery/swagger-to/issues/68
+basePath: /api/v1
+consumes:
+- application/json
+info:
+  description: An API
+  title: An API
+  version: '1.0'
+paths:
+  /foo/{foo_id}:
+    get:
+      operationId: get.foo
+      responses:
+        '200':
+          description: Success
+      tags:
+      - foo
+    parameters:
+    - in: path
+      description: The foo id
+      name: foo_id
+      required: true
+      type: string
+produces:
+- application/json
+swagger: '2.0'
+tags:
+- description: description
+  name: foo
