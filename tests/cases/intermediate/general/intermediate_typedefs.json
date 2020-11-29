@@ -15,7 +15,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -33,7 +33,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -51,7 +51,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -87,7 +87,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -140,7 +140,7 @@
                 "required": true,
                 "typedef": {
                   "description": "",
-                  "format": "",
+                  "format": null,
                   "identifier": "",
                   "json_schema": {
                     "identifier": "",
@@ -158,7 +158,7 @@
                 "required": true,
                 "typedef": {
                   "description": "",
-                  "format": "",
+                  "format": null,
                   "identifier": "",
                   "json_schema": {
                     "identifier": "",
@@ -176,7 +176,7 @@
                 "required": true,
                 "typedef": {
                   "description": "",
-                  "format": "",
+                  "format": null,
                   "identifier": "",
                   "json_schema": {
                     "identifier": "",
@@ -212,7 +212,7 @@
                 "required": true,
                 "typedef": {
                   "description": "",
-                  "format": "",
+                  "format": null,
                   "identifier": "",
                   "json_schema": {
                     "identifier": "",
@@ -268,7 +268,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -286,7 +286,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -304,7 +304,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -340,7 +340,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -377,7 +377,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -395,7 +395,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -413,7 +413,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -431,7 +431,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -523,7 +523,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -541,7 +541,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -559,7 +559,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -595,7 +595,7 @@
           "required": true,
           "typedef": {
             "description": "",
-            "format": "",
+            "format": null,
             "identifier": "",
             "json_schema": {
               "identifier": "",
@@ -637,7 +637,7 @@
         "required": false,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -655,7 +655,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -673,7 +673,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -691,7 +691,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -709,7 +709,7 @@
         "required": false,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -743,7 +743,7 @@
         "required": true,
         "typedef": {
           "description": "",
-          "format": "",
+          "format": null,
           "identifier": "",
           "json_schema": {
             "identifier": "",
@@ -846,7 +846,7 @@
                 "required": true,
                 "typedef": {
                   "description": "",
-                  "format": "",
+                  "format": null,
                   "identifier": "",
                   "json_schema": {
                     "identifier": "",

@@ -134,7 +134,7 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
             else:
                 typedef.type = 'string'
         elif intermediate_typedef.type == 'number':
-            if intermediate_typedef.format == '':
+            if intermediate_typedef.format is None:
                 typedef.type = 'float64'
             elif intermediate_typedef.format == 'float':
                 typedef.type = 'float32'
@@ -145,7 +145,7 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
                                                                                intermediate_typedef.type))
 
         elif intermediate_typedef.type == 'integer':
-            if intermediate_typedef.format == '':
+            if intermediate_typedef.format is None:
                 typedef.type = 'int'
             elif intermediate_typedef.format == 'int32':
                 typedef.type = 'int32'

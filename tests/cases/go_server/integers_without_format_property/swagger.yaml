@@ -1,0 +1,27 @@
+basePath: /
+consumes:
+- application/json
+info:
+  description: An API
+  title: An API
+  version: '1.0'
+definitions:
+  MyType:
+    properties:
+      prop:
+        type: integer
+paths:
+  /:
+    get:
+      operationId: get_foo
+      responses:
+        '200':
+          description: Success
+      tags:
+      - foo
+produces:
+- application/json
+swagger: '2.0'
+tags:
+- description: description
+  name: foo
