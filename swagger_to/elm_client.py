@@ -1097,7 +1097,7 @@ def _request_function_name(operation_id: str) -> str:
 
     >>> _request_function_name('__')
     '__'
- 
+
     >>> _request_function_name('test.me')
     'testMe'
 
