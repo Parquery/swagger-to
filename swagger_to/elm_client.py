@@ -154,7 +154,7 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
         if intermediate_typedef.type == 'boolean':
             typedef = Booldef()
         elif intermediate_typedef.type == "integer":
-            if intermediate_typedef.format in ["", "int32", "int64"]:
+            if intermediate_typedef.format is None or intermediate_typedef.format in ["int32", "int64"]:
                 typedef = Intdef()
             else:
                 raise NotImplementedError("Unhandled format of a swagger intermediate type 'integer': {}".format(

@@ -37,7 +37,7 @@ class Typedef:
         self.ref = ''
         self.description = ''
         self.type = ''
-        self.format = ''
+        self.format = None  # type: Optional[str]
         self.pattern = ''
         self.properties = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
         self.required = []  # type: List[str]
@@ -169,7 +169,7 @@ def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
     typedef.ref = raw_dict.get('$ref', '')
     typedef.description = raw_dict.get('description', '').strip()
     typedef.type = raw_dict.get('type', '')
-    typedef.format = raw_dict.get('format', '')
+    typedef.format = raw_dict.get('format', None)
     typedef.pattern = raw_dict.get('pattern', '')
     typedef.__lineno__ = raw_dict.lineno
 
@@ -203,11 +203,11 @@ def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
         typedef.items = items_typedef
 
     if typedef.type == 'number':
-        if typedef.format not in ['float', 'double']:
+        if typedef.format is not None and typedef.format not in ['float', 'double']:
             errors.append("Unexpected format for type 'number': {!r}".format(typedef.format))
 
     elif typedef.type == 'integer':
-        if typedef.format not in ['int32', 'int64']:
+        if typedef.format is not None and typedef.format not in ['int32', 'int64']:
             errors.append("Unexpected format for type 'integer': {!r}".format(typedef.format))
 
     typedef.raw_dict = raw_dict

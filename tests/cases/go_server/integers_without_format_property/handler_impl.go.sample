@@ -1,0 +1,18 @@
+package foo
+
+import (
+	"net/http"
+	"log"
+)
+
+// HandlerImpl implements the Handler.
+type HandlerImpl struct {
+	LogErr *log.Logger
+	LogOut *log.Logger}
+
+// GetFoo implements Handler.GetFoo.
+func (h *HandlerImpl) GetFoo(w http.ResponseWriter,
+	r *http.Request) {
+	http.Error(w, "Not implemented: GetFoo", http.StatusInternalServerError)
+	h.LogErr.Printf("Not implemented: GetFoo")
+}

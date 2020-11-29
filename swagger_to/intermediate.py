@@ -83,7 +83,7 @@ class Primitivedef(Typedef):
         super().__init__()
 
         self.type = ''
-        self.format = ''
+        self.format = None  # type: Optional[str]
         self.pattern = ''
 
 
