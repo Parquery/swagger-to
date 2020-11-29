@@ -1,0 +1,36 @@
+basePath: /
+consumes:
+- application/json
+info:
+  description: An API
+  title: An API
+  version: '1.0'
+definitions:
+  MyType:
+    properties:
+      my_integer:
+        type: integer
+        format: int32
+    type: object
+  SubType:
+    allOf:
+      - $ref: "#/definitions/MyType"
+      - type: object
+        properties:
+          sub_property:
+            type: integer
+            format: int32
+    type: object
+paths:
+  /:
+    get:
+      operationId: get_foo
+      responses:
+        '200':
+          description: Success
+produces:
+- application/json
+swagger: '2.0'
+tags:
+- description: description
+  name: foo

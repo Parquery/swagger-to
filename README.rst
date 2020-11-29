@@ -56,6 +56,12 @@ Here is a non-comprehensive list:
 
 * **validation of responses**. Responses from the server are not validated due to the complexity and the run-time overhead.
 
+* **type hierarchy**. We simply stack all the properties from ``allOf`` together without introducing any type hierarchy.
+  First, this is due to Go and Elm which do not embrace type hierarchies. For example, you could use structural typing
+  in Go, but then every piece of data would have to be a pointer with an interface which is clumsy.
+  Second, it is due to expediency, since stacking properties in the intermediate representation layer means we do not have
+  to care about them in upper, language-specific layers.
+
 Related Projects
 ================
 We list here some of the related projects and comment why they did not satisfy our requirements.
