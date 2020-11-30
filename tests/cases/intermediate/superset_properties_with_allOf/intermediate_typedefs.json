@@ -1,0 +1,80 @@
+{
+  "MyType": {
+    "description": "",
+    "identifier": "MyType",
+    "json_schema": {
+      "identifier": "MyType",
+      "text": "{\n  \"title\": \"MyType\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"properties\": {\n    \"my_integer\": {\n      \"type\": \"integer\",\n      \"format\": \"int32\"\n    }\n  },\n  \"type\": \"object\"\n}"
+    },
+    "line": 9,
+    "properties": {
+      "my_integer": {
+        "description": "",
+        "line": 0,
+        "name": "my_integer",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 11,
+          "pattern": "",
+          "type": "integer"
+        }
+      }
+    },
+    "required": []
+  },
+  "SubType": {
+    "description": "",
+    "identifier": "SubType",
+    "json_schema": {
+      "identifier": "SubType",
+      "text": "{\n  \"title\": \"SubType\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"MyType\": {\n      \"properties\": {\n        \"my_integer\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\"\n        }\n      },\n      \"type\": \"object\"\n    }\n  },\n  \"allOf\": [\n    {\n      \"$ref\": \"#/definitions/MyType\"\n    },\n    {\n      \"type\": \"object\",\n      \"properties\": {\n        \"sub_property\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\"\n        }\n      }\n    }\n  ],\n  \"type\": \"object\"\n}"
+    },
+    "line": 15,
+    "properties": {
+      "my_integer": {
+        "description": "",
+        "line": 0,
+        "name": "my_integer",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 11,
+          "pattern": "",
+          "type": "integer"
+        }
+      },
+      "sub_property": {
+        "description": "",
+        "line": 20,
+        "name": "sub_property",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": "int32",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 20,
+          "pattern": "",
+          "type": "integer"
+        }
+      }
+    },
+    "required": []
+  }
+}

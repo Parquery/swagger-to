@@ -43,6 +43,7 @@ class Typedef:
         self.required = []  # type: List[str]
         self.items = None  # type: Optional[Typedef]
         self.additional_properties = None  # type: Optional[Typedef]
+        self.all_of = None  # type: Optional[List[Typedef]]
         self.__lineno__ = 0
 
         # original specification dictionary, if available; not deep-copied, do not modify
@@ -201,6 +202,21 @@ def _parse_typedef(raw_dict: RawDict) -> Tuple[Typedef, List[str]]:
 
         errors.extend(['in items: {}'.format(error) for error in items_errors])
         typedef.items = items_typedef
+
+    if 'allOf' in raw_dict:
+        all_of_list = raw_dict['allOf']
+        assert isinstance(all_of_list, list), \
+            "Unexpected non-list allOf: {!r}; is there a problem with Swagger JSON schema?".format(all_of_list)
+
+        super_typedefs = []  # type: List[Typedef]
+        for i, super_typedef_raw in enumerate(all_of_list):
+            super_typedef, super_typedef_errors = _parse_typedef(raw_dict=super_typedef_raw)
+            if super_typedef_errors:
+                errors.extend("In super definition {} of allOf: {}".format(i, err) for err in super_typedef_errors)
+            else:
+                super_typedefs.append(super_typedef)
+
+        typedef.all_of = super_typedefs
 
     if typedef.type == 'number':
         if typedef.format is not None and typedef.format not in ['float', 'double']:

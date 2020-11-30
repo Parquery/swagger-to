@@ -178,6 +178,10 @@ def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
     typedefs[typedef.identifier] = typedef
 
 
+@icontract.require(
+    lambda definition, typedefs: definition.identifier in typedefs,
+    "The definition must be previously allocated.",
+    error=ValueError)
 def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: MutableMapping[str, Typedef]) -> None:
     """
     Resolve substructures (such as property typedefs, item typedefs etc.) of a pre-allocated definition typedef.
@@ -186,9 +190,6 @@ def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: 
     :param typedefs: named intermediate representations of type definitions
     :return:
     """
-    if definition.identifier not in typedefs:
-        raise ValueError("The definition has not been previously allocated: {!r}".format(definition.identifier))
-
     typedef = typedefs[definition.identifier]
 
     if isinstance(typedef, Primitivedef):
@@ -208,6 +209,20 @@ def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: 
             original_typedef=definition.typedef.additional_properties, typedefs=typedefs)
 
     elif isinstance(typedef, Objectdef):
+        properties = collections.OrderedDict()  # type: MutableMapping[str, Propertydef]
+
+        # Handle first allOf, if available
+        if definition.typedef.all_of is not None and len(definition.typedef.all_of) > 0:
+            for original_superdef in definition.typedef.all_of:
+                inter_typedef = _anonymous_or_get_typedef(original_typedef=original_superdef, typedefs=typedefs)
+                if not isinstance(inter_typedef, Objectdef):
+                    raise ValueError(
+                        "Unexpected super definition in allOf which is not of type object on line {}: {!r}".format(
+                            original_superdef.__lineno__, original_superdef.raw_dict))
+
+                properties.update(inter_typedef.properties)
+
+        # Then set the local properties, overriding any of the allOf on the way
         for prop_name, prop_typedef in definition.typedef.properties.items():
             propdef = Propertydef()
             propdef.name = prop_name
@@ -215,7 +230,9 @@ def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: 
             propdef.description = prop_typedef.description
             propdef.required = propdef.name in typedef.required
 
-            typedef.properties[prop_name] = propdef
+            properties[prop_name] = propdef
+
+        typedef.properties = properties
     else:
         raise ValueError("Unexpected type of the definition {!r}: {}".format(typedef.identifier, type(typedef)))
 
@@ -266,13 +283,13 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
             typedef = Objectdef()
             typedef.required = original_typedef.required
 
-            for prop_name, prop_typedef in typedef.properties.items():
+            for prop_name, original_prop_typedef in original_typedef.properties.items():
                 propdef = Propertydef()
-                propdef.typedef = _anonymous_or_get_typedef(original_typedef=prop_typedef.typedef, typedefs=typedefs)
-                propdef.description = prop_typedef.description
+                propdef.typedef = _anonymous_or_get_typedef(original_typedef=original_prop_typedef, typedefs=typedefs)
+                propdef.description = original_prop_typedef.description
                 propdef.name = prop_name
-                propdef.required = propdef.name in typedef.required
-                propdef.line = propdef.typedef.line
+                propdef.required = propdef.name in original_typedef.required
+                propdef.line = original_prop_typedef.__lineno__
 
                 typedef.properties[prop_name] = propdef
 
@@ -344,6 +361,10 @@ def _collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
     if typedef.additional_properties is not None:
         referenced_definitions.extend(
             _collect_referenced_definitions(typedef=typedef.additional_properties, definitions=definitions))
+
+    if typedef.all_of is not None:
+        for superdef in typedef.all_of:
+            referenced_definitions.extend(_collect_referenced_definitions(typedef=superdef, definitions=definitions))
 
     return referenced_definitions
 
