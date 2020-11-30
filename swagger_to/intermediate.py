@@ -160,7 +160,8 @@ def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
     elif definition.typedef.type == 'array':
         typedef = Arraydef()
 
-    elif definition.typedef.type == 'object' or len(definition.typedef.properties) > 0:
+    elif definition.typedef.type == 'object' or len(definition.typedef.properties) > 0 or \
+            definition.typedef.all_of is not None:
         if definition.typedef.additional_properties is not None:
             typedef = Mapdef()
 
@@ -271,17 +272,31 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
 
         typedef.items = _anonymous_or_get_typedef(original_typedef=original_typedef.items, typedefs=typedefs)
 
-    elif original_typedef.type == 'object':
+    elif original_typedef.type == 'object' or len(original_typedef.properties) > 0:
         if original_typedef.additional_properties is not None:
             typedef = Mapdef()
-
             typedef.values = _anonymous_or_get_typedef(
                 original_typedef=original_typedef.additional_properties, typedefs=typedefs)
-        elif len(original_typedef.properties) < 1:
+
+        elif original_typedef.all_of is None and len(original_typedef.properties) == 0:
             typedef = AnyValuedef()
+
         else:
             typedef = Objectdef()
             typedef.required = original_typedef.required
+
+            properties = collections.OrderedDict()  # type: MutableMapping[str, Propertydef]
+
+            # Handle first allOf, if available
+            if original_typedef.all_of is not None and len(original_typedef.all_of) > 0:
+                for original_superdef in original_typedef.all_of:
+                    inter_typedef = _anonymous_or_get_typedef(original_typedef=original_superdef, typedefs=typedefs)
+                    if not isinstance(inter_typedef, Objectdef):
+                        raise ValueError(
+                            "Unexpected super definition in allOf which is not of type object on line {}: {!r}".format(
+                                original_superdef.__lineno__, original_superdef.raw_dict))
+
+                    properties.update(inter_typedef.properties)
 
             for prop_name, original_prop_typedef in original_typedef.properties.items():
                 propdef = Propertydef()
@@ -291,7 +306,9 @@ def _anonymous_or_get_typedef(original_typedef: swagger_to.swagger.Typedef,
                 propdef.required = propdef.name in original_typedef.required
                 propdef.line = original_prop_typedef.__lineno__
 
-                typedef.properties[prop_name] = propdef
+                properties[prop_name] = propdef
+
+            typedef.properties = properties
 
     elif original_typedef.type == '':
         typedef = AnyValuedef()
