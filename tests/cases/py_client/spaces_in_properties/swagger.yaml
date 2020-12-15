@@ -1,0 +1,32 @@
+basePath: /
+consumes:
+- application/json
+info:
+  description: An API
+  title: An API
+  version: '1.0'
+definitions:
+  "Some Definition":
+    properties:
+      "some property":
+        type: integer
+paths:
+  /do-something:
+    post:
+      operationId: "do something"
+      parameters:
+        - name: "some parameter"
+          in: body
+          description: some test parameter
+          required: true
+          schema:
+            $ref: '#/definitions/Some Definition'
+      responses:
+        '200':
+          description: Success
+      produces:
+      - application/json
+swagger: '2.0'
+tags:
+  - description: Test API
+    name: API
