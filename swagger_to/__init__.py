@@ -8,31 +8,55 @@ import icontract
 
 # pylint: disable=missing-docstring
 
+LOCAL_DEFINITION_REF_RE = re.compile(r'^#/definitions/(?P<name>[a-zA-Z0-9_.\- ]+)$')
 NAME_RE = re.compile(r'^[a-zA-Z0-9_.\- ]+$')
 
 
+@icontract.require(
+    lambda ref: LOCAL_DEFINITION_REF_RE.match(ref),
+    'swagger-to can handle only definitions local to the spec file. '
+    'Please create an issue if you need to handle a different kind of '
+    'definition reference: https://github.com/Parquery/swagger-to/issues/new',
+    error=ValueError,
+    enabled=True)
 @icontract.ensure(lambda result: NAME_RE.match(result))
 def parse_definition_ref(ref: str) -> str:
-    """Parse a reference to a definition and return the definition name."""
-    prefix = '#/definitions/'
-    if not ref.startswith(prefix):
-        raise ValueError("Expected a ref with prefix {!r}, but got: {!r}".format(prefix, ref))
+    """
+    Parse a reference to a definition and return the definition name.
 
-    return ref[len(prefix):]
+    >>> parse_definition_ref('#/definitions/Some-Type')
+    'Some-Type'
+    """
+    mtch = LOCAL_DEFINITION_REF_RE.match(ref)
+    assert mtch is not None
+    return mtch.group('name')
 
 
+LOCAL_PARAMETER_REF_RE = re.compile(r'^#/parameters/(?P<name>[a-zA-Z0-9_.\- ]+)$')
+
+
+@icontract.require(
+    lambda ref: LOCAL_PARAMETER_REF_RE.match(ref),
+    'swagger-to can handle only parameters local to the spec file. '
+    'Please create an issue if you need to handle a different kind of '
+    'parameter reference: https://github.com/Parquery/swagger-to/issues/new',
+    error=ValueError,
+    enabled=True)
 @icontract.ensure(lambda result: NAME_RE.match(result))
 def parse_parameter_ref(ref: str) -> str:
-    """Parse a reference to a parameter and return the parameter name."""
-    prefix = '#/parameters/'
-    if not ref.startswith(prefix):
-        raise ValueError("Expected a ref with prefix {!r}, but got: {!r}".format(prefix, ref))
+    """
+    Parse a reference to a parameter and return the parameter name.
 
-    return ref[len(prefix):]
+    >>> parse_parameter_ref('#/parameters/some-parameter')
+    'some-parameter'
+    """
+    mtch = LOCAL_PARAMETER_REF_RE.match(ref)
+    assert mtch is not None
+    return mtch.group('name')
 
 
 # Abbreviations to be treated specially in snake_case and camelCase conversions
-SPECIALS = ['URLs', 'IDs', 'URL', 'ID', 'HTTP', 'HTTPS']
+SPECIALS = ['URLs', 'IDs', 'URL', 'ID', 'HTTP', 'HTTPS', 'JSONLD', 'JSON']
 
 
 def camel_case_split(identifier: str) -> List[str]:
@@ -44,6 +68,9 @@ def camel_case_split(identifier: str) -> List[str]:
 
     >>> camel_case_split(identifier='CamelURLs')
     ['Camel', 'URLs']
+
+    >>> camel_case_split(identifier='JSONLDObject')
+    ['JSONLD', 'Object']
     """
     if identifier == '':
         raise ValueError("Unexpected empty identifier")
