@@ -8,10 +8,10 @@ import icontract
 
 # pylint: disable=missing-docstring
 
-VARIABLE_RE = re.compile(r'^[a-zA-Z0-9_]+$')
+NAME_RE = re.compile(r'^[a-zA-Z0-9_.\- ]+$')
 
 
-@icontract.ensure(lambda result: VARIABLE_RE.match(result))
+@icontract.ensure(lambda result: NAME_RE.match(result))
 def parse_definition_ref(ref: str) -> str:
     """Parse a reference to a definition and return the definition name."""
     prefix = '#/definitions/'
@@ -21,7 +21,7 @@ def parse_definition_ref(ref: str) -> str:
     return ref[len(prefix):]
 
 
-@icontract.ensure(lambda result: VARIABLE_RE.match(result))
+@icontract.ensure(lambda result: NAME_RE.match(result))
 def parse_parameter_ref(ref: str) -> str:
     """Parse a reference to a parameter and return the parameter name."""
     prefix = '#/parameters/'

@@ -5,6 +5,7 @@
 # pylint: disable=too-many-statements,too-many-lines
 
 import collections
+import re
 from typing import MutableMapping, Union, List, Optional, Dict  # pylint: disable=unused-import
 
 import icontract
@@ -507,12 +508,140 @@ def _raise(message: str) -> None:
     raise Exception(message)
 
 
+_NON_IDENTIFIER_RE = re.compile(r'[^a-zA-Z0-9_]')
+
+
+@icontract.require(lambda name: name != '')
+def _function_name(name: str) -> str:
+    """
+    Generate the name of the function which will send the request based on the operation ID.
+
+    :param name: ID of the operation from the Swagger spec
+    :return: pep-8 conform name
+
+    >>> _function_name('TestMe')
+    'test_me'
+
+    >>> _function_name('test_me')
+    'test_me'
+
+    >>> _function_name('Test_me')
+    'test_me'
+
+    >>> _function_name('test-me')
+    'test_me'
+
+    >>> _function_name('TestMe_to_json')
+    'test_me_to_json'
+
+    >>> _function_name('Some Definition' + '_to_jsonable')
+    'some_definition_to_jsonable'
+    """
+    return swagger_to.snake_case(_NON_IDENTIFIER_RE.sub("_", name))
+
+
+@icontract.require(lambda name: name != '')
+def _class_name(name: str) -> str:
+    """
+    Generate the Python name of the class corresponding to the Swagger definition.
+
+    :param name: name of the type definition
+    :return: pep-8 conform name
+
+    >>> _class_name('TestMe')
+    'TestMe'
+
+    >>> _class_name('test_me')
+    'TestMe'
+
+    >>> _class_name('Test_me')
+    'TestMe'
+
+    >>> _class_name('test-me')
+    'TestMe'
+    """
+    return swagger_to.capital_camel_case(_NON_IDENTIFIER_RE.sub("_", name))
+
+
+@icontract.require(lambda name: name != '')
+def _property_name(name: str) -> str:
+    """
+    Generate the Python name of the property corresponding to the Swagger definition.
+
+    :param name: name of the type property
+    :return: pep-8 conform name
+
+    >>> _property_name('TestMe')
+    'test_me'
+
+    >>> _property_name('test_me')
+    'test_me'
+
+    >>> _property_name('Test_me')
+    'test_me'
+
+    >>> _property_name('test-me')
+    'test_me'
+    """
+    return swagger_to.snake_case(_NON_IDENTIFIER_RE.sub("_", name))
+
+
+@icontract.require(lambda name: name != '')
+def _arg_name(name: str) -> str:
+    """
+    Generate the Python name of the argument corresponding to a Swagger definition.
+
+    :param name: name of the type property
+    :return: pep-8 conform name
+
+    >>> _arg_name('TestMe')
+    'test_me'
+
+    >>> _arg_name('test_me')
+    'test_me'
+
+    >>> _arg_name('Test_me')
+    'test_me'
+
+    >>> _arg_name('test-me')
+    'test_me'
+    """
+    return swagger_to.snake_case(_NON_IDENTIFIER_RE.sub("_", name))
+
+
+@icontract.require(lambda name: name != '')
+def _var_name(name: str) -> str:
+    """
+    Generate the Python name of the variable corresponding to a Swagger definition.
+
+    :param name: name of the type property
+    :return: pep-8 conform name
+
+    >>> _var_name('TestMe')
+    'test_me'
+
+    >>> _var_name('test_me')
+    'test_me'
+
+    >>> _var_name('Test_me')
+    'test_me'
+
+    >>> _var_name('test-me')
+    'test_me'
+    """
+    return swagger_to.snake_case(_NON_IDENTIFIER_RE.sub("_", name))
+
+
 # Jinja2 environment
 _ENV = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=jinja2.BaseLoader())
 _ENV.filters.update({
     'comment': _comment,
     'docstring': _docstring,
-    'snake_case': swagger_to.snake_case,
+    'function_name': _function_name,
+    'class_name': _class_name,
+    'property_name': _property_name,
+    'arg_name': _arg_name,
+    'var_name': _var_name,
     'raise': _raise,
     'repr': lambda value: repr(value),
     'upper_first': swagger_to.upper_first
@@ -585,7 +714,7 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
             raise NotImplementedError(('Translating an anonymous class to a type expression '
                                        'is not supported: {}').format(path))
 
-        return typedef.identifier
+        return _class_name(typedef.identifier)
     else:
         raise NotImplementedError('Translating the typedef to a type expression is not supported: {!r}: {}'.format(
             type(typedef), path))
@@ -595,24 +724,24 @@ _CLASS_DEF_WO_ATTRIBUTES = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
 {% if classdef.attributes %}{{ raise('Expected a classdef without attributes, but got some.') }}{% endif %}
-class {{ classdef.identifier }}:
+class {{ classdef.identifier|class_name }}:
     {% if classdef.description %}
     {{ classdef.description|upper_first|docstring|indent }}
 
     {% endif %}
     def to_jsonable(self) -> MutableMapping[str, Any]:
         """
-        Dispatches the conversion to {{ classdef.identifier|snake_case }}_to_jsonable.
+        Dispatches the conversion to {{ (classdef.identifier+"_to_jsonable")|function_name }}.
 
         :return: a JSON-able representation
         """
-        return {{ classdef.identifier|snake_case }}_to_jsonable(self)''')
+        return {{ (classdef.identifier+"_to_jsonable")|function_name }}(self)''')
 
 _CLASS_DEF_WITH_ATTRIBUTES_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
-{% if not classdef.attributes %}{{ raise('Expected a classdefinition with attributes, but got none.') }}{% endif %}
-class {{ classdef.identifier }}:
+{% if not classdef.attributes %}{{ raise('Expected a class definition with attributes, but got none.') }}{% endif %}
+class {{ classdef.identifier|class_name }}:
     {% if classdef.description %}
     {{ classdef.description|upper_first|docstring|indent }}
 
@@ -621,9 +750,9 @@ class {{ classdef.identifier }}:
             self,
     {% for attr in classdef.attributes.values() %}
     {% if not attr.required %}
-            {{ attr.name }}: Optional[{{ attribute_type[attr] }}] = None{{ ') -> None:' if loop.last else ',' }}
+            {{ attr.name|arg_name }}: Optional[{{ attribute_type[attr] }}] = None{{ ') -> None:' if loop.last else ',' }}
     {% else %}
-            {{ attr.name }}: {{ attribute_type[attr] }}{{ ') -> None:' if loop.last else ',' }}
+            {{ attr.name|arg_name }}: {{ attribute_type[attr] }}{{ ') -> None:' if loop.last else ',' }}
     {% endif %}{# /if not attr.required #}
     {% endfor %}{# /for attr #}
         """Initializes with the given values."""
@@ -633,16 +762,16 @@ class {{ classdef.identifier }}:
         {% if attr.description %}
         {{ attr.description|comment|indent|indent }}
         {% endif %}
-        self.{{ attr.name }} = {{ attr.name }}
+        self.{{ attr.name|property_name }} = {{ attr.name|arg_name }}
         {% endfor %}
 
     def to_jsonable(self) -> MutableMapping[str, Any]:
         """
-        Dispatches the conversion to {{ classdef.identifier|snake_case }}_to_jsonable.
+        Dispatches the conversion to {{ (classdef.identifier+"_to_jsonable")|function_name }}.
 
         :return: JSON-able representation
         """
-        return {{ classdef.identifier|snake_case }}_to_jsonable(self)''')
+        return {{ (classdef.identifier+"_to_jsonable")|function_name }}(self)''')
 
 
 @icontract.require(lambda classdef: classdef.identifier != '', 'Anonymous classes not allowed', enabled=True)
@@ -694,7 +823,7 @@ def _default_value(typedef: Typedef) -> str:
     elif isinstance(typedef, Anydef):
         return 'None'
     elif isinstance(typedef, Classdef):
-        return 'new_{}()'.format(swagger_to.snake_case(identifier=typedef.identifier))
+        return _function_name('new_{}()'.format(typedef.identifier))
     else:
         raise NotImplementedError('Translating the typedef to a default value is not supported: {}'.format(typedef))
 
@@ -702,14 +831,14 @@ def _default_value(typedef: Typedef) -> str:
 _FACTORY_METHOD_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
-def new_{{ classdef.identifier|snake_case }}() -> {{ classdef.identifier }}:
-    """Generates an instance of {{ classdef.identifier }} with default values."""
+def {{ ("new_"+classdef.identifier)|function_name }}() -> {{ classdef.identifier|class_name }}:
+    """Generates an instance of {{ classdef.identifier|class_name }} with default values."""
     {% if not required_attributes %}
-    return {{ classdef.identifier }}()
+    return {{ classdef.identifier|class_name }}()
     {% else %}
-    return {{ classdef.identifier }}(
+    return {{ classdef.identifier|class_name }}(
         {% for attr in required_attributes %}
-        {{ attr.name }}={{ default_value[attr] }}{{ ')' if loop.last else ',' }}
+        {{ attr.name|arg_name }}={{ default_value[attr] }}{{ ')' if loop.last else ',' }}
         {% endfor %}
     {% endif %}{# /if not required_attrbiutes #}
 ''')
@@ -791,8 +920,8 @@ def from_obj(obj: Any, expected: List[type], path: str = '') -> Any:
         return adict
     {% for classdef in classdefs %}
 
-    if exp == {{ classdef.identifier }}:
-        return {{ classdef.identifier|snake_case }}_from_obj(obj, path=path)
+    if exp == {{ classdef.identifier|class_name }}:
+        return {{ (classdef.identifier+"_from_obj")|function_name }}(obj, path=path)
     {% endfor %}
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))''')
@@ -838,7 +967,7 @@ def _expected_type_expression(typedef: Typedef) -> str:
 
         return 'dict, {}'.format(_expected_type_expression(typedef=typedef.values))
     elif isinstance(typedef, Classdef):
-        return typedef.identifier
+        return _class_name(typedef.identifier)
     else:
         raise NotImplementedError('Translating the typedef to an expected type is not supported: {}'.format(typedef))
 
@@ -846,19 +975,19 @@ def _expected_type_expression(typedef: Typedef) -> str:
 _CLASS_FROM_OBJ_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
-def {{ classdef.identifier|snake_case }}_from_obj(obj: Any, path: str = "") -> {{ classdef.identifier }}:
+def {{ (classdef.identifier+"_from_obj")|function_name }}(obj: Any, path: str = "") -> {{ classdef.identifier|class_name }}:
     """
-    Generates an instance of {{ classdef.identifier }} from a dictionary object.
+    Generates an instance of {{ classdef.identifier|class_name }} from a dictionary object.
 
-    :param obj: a JSON-ed dictionary object representing an instance of {{ classdef.identifier }}
+    :param obj: a JSON-ed dictionary object representing an instance of {{ classdef.identifier|class_name }}
     :param path: path to the object used for debugging
-    :return: parsed instance of {{ classdef.identifier }}
+    :return: parsed instance of {{ classdef.identifier|class_name }}
     """
     if not isinstance(obj, dict):
         raise ValueError('Expected a dict at path {}, but got: {}'.format(path, type(obj)))
 
     {% if not classdef.attributes %}
-    return {{ classdef.identifier }}()
+    return {{ classdef.identifier|class_name }}()
     {% else %}
     for key in obj:
         if not isinstance(key, str):
@@ -868,32 +997,32 @@ def {{ classdef.identifier|snake_case }}_from_obj(obj: Any, path: str = "") -> {
 
     {% if attr.required %}
     {% if attr in expected_type_expression %}
-    {{ attr.name }}_from_obj = from_obj(
+    {{ (attr.name+"_from_obj")|var_name }} = from_obj(
         obj[{{ attr.name|repr }}],
         expected=[{{ expected_type_expression[attr] }}],
         path=path + {{ '.%s'|format(attr.name)|repr }})  # type: {{ type_expression[attr] }}
     {% else %}{# if attr in expected_type_expression #}
-    {{ attr.name }}_from_obj = obj[{{ attr.name|repr }}]
+    {{ (attr.name+"_from_obj")|var_name }} = obj[{{ attr.name|repr }}]
     {% endif %}{# /if attr in expected_type_expression #}
     {% else %}{# if attr.required #}
     {% if attr in expected_type_expression %}
-    obj_{{ attr.name }} = obj.get({{ attr.name|repr }}, None)
-    if obj_{{ attr.name }} is not None:
-        {{ attr.name }}_from_obj = from_obj(
-            obj_{{ attr.name }},
+    {{ ("obj_"+attr.name)|var_name }} = obj.get({{ attr.name|repr }}, None)
+    if {{ ("obj_"+attr.name)|var_name }} is not None:
+        {{ (attr.name+"_from_obj")|var_name }} = from_obj(
+            {{ ("obj_"+attr.name)|var_name }},
             expected=[{{ expected_type_expression[attr] }}],
             path=path + {{ '.%s'|format(attr.name)|repr }})  # type: Optional[{{ type_expression[attr] }}]
     else:
-        {{ attr.name }}_from_obj = None
+        {{ (attr.name+"_from_obj")|var_name }} = None
     {% else %}{# if attr in expected_type_expression #}
-    {{ attr.name }}_from_obj = obj.get({{ attr.name|repr }}, None)
+    {{ (attr.name+"_from_obj")|var_name }} = obj.get({{ attr.name|repr }}, None)
     {% endif %}{# /if attr in expected_type_expression #}
     {% endif %}{# /if attr.required #}
     {% endfor %}{# /for attr in classdef.attributes.values() #}
 
-    return {{ classdef.identifier }}(
+    return {{ classdef.identifier|class_name }}(
     {% for attr in classdef.attributes.values() %}
-        {{ attr.name }}={{ attr.name }}_from_obj{{ ')' if loop.last else ',' }}
+        {{ attr.name|arg_name }}={{ (attr.name+"_from_obj")|var_name }}{{ ')' if loop.last else ',' }}
     {% endfor %}{# /for attr in classdef.attributes.values() #}
     {% endif %}{# /if not classdef.attributes #}''')
 
@@ -985,9 +1114,9 @@ def to_jsonable(obj: Any, expected: List[type], path: str = "") -> Any:
         return adict
     {% for classdef in classdefs %}
 
-    if exp == {{ classdef.identifier }}:
-        assert isinstance(obj, {{ classdef.identifier }})
-        return {{ classdef.identifier|snake_case }}_to_jsonable(obj, path=path)
+    if exp == {{ classdef.identifier|class_name }}:
+        assert isinstance(obj, {{ classdef.identifier|class_name }})
+        return {{ (classdef.identifier+"_to_jsonable")|function_name }}(obj, path=path)
     {% endfor %}{# /for classdef in classdefs #}
 
     raise ValueError("Unexpected `expected` type: {}".format(exp))''')
@@ -1007,14 +1136,14 @@ def _generate_to_jsonable(classdefs: List[Classdef]) -> str:
 _CLASS_TO_JSONABLE_TPL = _from_string_with_informative_exceptions(
     env=_ENV,
     text='''\
-def {{ classdef.identifier|snake_case }}_to_jsonable(
-        {{ classdef.identifier|snake_case }}: {{ classdef.identifier }},
+def {{ (classdef.identifier + "_to_jsonable")|function_name }}(
+        {{ classdef.identifier|arg_name }}: {{ classdef.identifier|class_name }},
         path: str = "") -> MutableMapping[str, Any]:
     """
-    Generates a JSON-able mapping from an instance of {{ classdef.identifier }}.
+    Generates a JSON-able mapping from an instance of {{ classdef.identifier|class_name }}.
 
-    :param {{ classdef.identifier|snake_case }}: instance of {{ classdef.identifier }} to be JSON-ized
-    :param path: path to the {{ classdef.identifier|snake_case }} used for debugging
+    :param {{ classdef.identifier|arg_name }}: instance of {{ classdef.identifier|class_name }} to be JSON-ized
+    :param path: path to the {{ classdef.identifier|arg_name }} used for debugging
     :return: a JSON-able representation
     """
     {% if not classdef.attributes %}
@@ -1025,16 +1154,16 @@ def {{ classdef.identifier|snake_case }}_to_jsonable(
 
     {% set assignment %}
 {% if is_primitive[attr] %}
-res[{{ attr.name|repr }}] = {{ classdef.identifier|snake_case }}.{{ attr.name }}
+res[{{ attr.name|repr }}] = {{ classdef.identifier|arg_name }}.{{ attr.name|property_name }}
 {% else %}
 res[{{ attr.name|repr }}] = to_jsonable(
-    {{ classdef.identifier|snake_case }}.{{ attr.name }},
+    {{ classdef.identifier|arg_name }}.{{ attr.name|property_name }},
     expected=[{{ expected_type_expression[attr] }}],
     path={{ '{}.%s'|format(attr.name)|repr }}.format(path))
 {% endif %}{# /if is_primitive[attr] #}
     {% endset %}{# /set assignment #}
     {% if not attr.required %}
-    if {{ classdef.identifier|snake_case }}.{{ attr.name }} is not None:
+    if {{ classdef.identifier|arg_name }}.{{ attr.name|property_name }} is not None:
         {{ assignment|trim|indent }}
     {% else %}
     {{ assignment|trim|indent }}
@@ -1081,13 +1210,13 @@ Send a {{ request.method }} request to {{ request.path }}.
 
 {% for param in request.parameters %}
 {% if not param.description %}
-:param {{ param.identifier }}:
+:param {{ param.identifier|arg_name }}:
 {% else %}
 {% if '\\n' in param.description %}
-:param {{ param.identifier }}:
+:param {{ param.identifier|arg_name }}:
     {{ param.description|indent }}
 {% else %}
-:param {{ param.identifier }}: {{ param.description }}
+:param {{ param.identifier|arg_name }}: {{ param.description }}
 {% endif %}{# /if '\\n' in param.description #}
 {% endif %}{# /if not param.description #}
 {% endfor %}{# /for request.parameters #}
@@ -1117,9 +1246,9 @@ def {{ function_name }}(
         self,
         {% for param in request.parameters %}
         {% if not param.required %}
-        {{ param.identifier }}: Optional[{{ type_expression[param] }}] = None{{ suffix if loop.last else ',' }}
+        {{ param.identifier|arg_name }}: Optional[{{ type_expression[param] }}] = None{{ suffix if loop.last else ',' }}
         {% else %}
-        {{ param.identifier }}: {{ type_expression[param] }}{{ suffix if loop.last else ',' }}
+        {{ param.identifier|arg_name }}: {{ type_expression[param] }}{{ suffix if loop.last else ',' }}
         {% endif %}
         {% endfor %}{# /for param in request.parameters #}
 {% endif %}{# /if not request.parameters #}
@@ -1145,20 +1274,20 @@ def {{ function_name }}(
 
             {% set set_header_item %}
                 {% if is_str[param] %}
-headers[{{ param.name|repr }}] = {{ param.identifier }}
+headers[{{ param.name|repr }}] = {{ param.identifier|arg_name }}
                 {% elif is_primitive[param] %}
-headers[{{ param.name|repr }}] = json.dumps({{ param.identifier }})
+headers[{{ param.name|repr }}] = json.dumps({{ param.identifier|arg_name }})
                 {% else %}
 headers[{{ param.name|repr }}] = json.dumps(
     to_jsonable(
-        {{ param.identifier }},
+        {{ param.identifier|arg_name }},
         expected=[{{ expected_type_expression[param] }}]))
                 {% endif %}{# /if is_primitive[param] #}
             {% endset %}
             {% if param.required %}
     {{ set_header_item|trim|indent }}
             {% else %}
-    if {{ param.identifier }} is not None:
+    if {{ param.identifier|arg_name }} is not None:
         {{ set_header_item|trim|indent|indent }}
             {% endif %}{# /if param.required #}
         {% endfor %}{# /for param in request.header_parameters #}
@@ -1170,13 +1299,13 @@ headers[{{ param.name|repr }}] = json.dumps(
 
             {% set set_params_item %}
                 {% if is_str[param] %}
-params[{{ param.name|repr }}] = {{ param.identifier }}
+params[{{ param.name|repr }}] = {{ param.identifier|arg_name }}
                 {% elif is_primitive[param] %}
-params[{{ param.name|repr }}] = json.dumps({{ param.identifier }})
+params[{{ param.name|repr }}] = json.dumps({{ param.identifier|arg_name }})
                 {% else %}
 params[{{ param.name|repr }}] = json.dumps(
     to_jsonable(
-        {{ param.identifier }},
+        {{ param.identifier|arg_name }},
         expected=[{{ expected_type_expression[param] }}]))
                 {% endif %}{# /if is_primitive[param] #}
             {% endset %}
@@ -1192,10 +1321,10 @@ params[{{ param.name|repr }}] = json.dumps(
 
     {% set set_body %}
         {% if is_primitive[request.body_parameter] %}
-data = {{ request.body_parameter.identifier }}
+data = {{ request.body_parameter.identifier|arg_name }}
         {% else %}
 data = to_jsonable(
-    {{ request.body_parameter.identifier }},
+    {{ request.body_parameter.identifier|arg_name }},
     expected=[{{ expected_type_expression[request.body_parameter] }}])
         {% endif %}{# /is_primitive[request.body_parameter] #}
     {% endset %}
@@ -1203,7 +1332,7 @@ data = to_jsonable(
     {{ set_body|indent }}
     {% else %}
     data = None  # type: Optional[Any]
-    if {{ request.body_parameter.identifier }} != None:
+    if {{ request.body_parameter.identifier|arg_name }} != None:
         {{ set_body|trim|indent|indent }}
     {% endif %}{# /if request.body_parameter.required #}
     {% endif %}{# /if request.body_parameter #}
@@ -1214,20 +1343,20 @@ data = to_jsonable(
 
         {% set set_data_item %}
             {% if is_str[param] %}
-data[{{ param.name|repr }}] = {{ param.identifier }}
+data[{{ param.name|repr }}] = {{ param.identifier|arg_name }}
             {% elif is_primitive[param] %}
-data[{{ param.name|repr }}] = json.dumps({{ param.identifier }})
+data[{{ param.name|repr }}] = json.dumps({{ param.identifier|arg_name }})
             {% else %}
 data[{{ param.name|repr }}] = json.dumps(
     to_jsonable(
-        {{ param.identifier}},
+        {{ param.identifier|arg_name }},
         expected=[{{ expected_type_expression[param] }}]))
             {% endif %}{# /if is_primitive[param] #}
         {% endset %}
         {% if param.required %}
     {{ set_data_item|trim|indent|indent }}
         {% else %}
-    if {{ param.identifier }} is not None:
+    if {{ param.identifier|arg_name }} is not None:
         {{ set_data_item|trim|indent|indent }}
         {% endif %}{# /if param.required #}
     {% endfor %}{# /for param in request.formdata_parameters #}
@@ -1238,10 +1367,10 @@ data[{{ param.name|repr }}] = json.dumps(
         {% for param in request.file_parameters %}
 
             {% if param.required %}
-    files[{{ param.name|repr }}] = {{ param.identifier }}
+    files[{{ param.name|repr }}] = {{ param.identifier|arg_name }}
             {% else %}
-    if {{ param.identifier }} is not None:
-        files[{{ param.name|repr }}] = {{ param.identifier }}
+    if {{ param.identifier|arg_name }} is not None:
+        files[{{ param.name|repr }}] = {{ param.identifier|arg_name }}
             {% endif %}{# /if param.required #}
         {% endfor %}{# /for param in request.file_parameters #}
     {% endif %}{# /if request.file_parameters #}
@@ -1303,32 +1432,6 @@ class _Token:
         """
         self.text = text
         self.parameter = parameter
-
-
-@icontract.require(lambda operation_id: operation_id != '')
-def _request_function_name(operation_id: str) -> str:
-    """
-    Generate the name of the function which will send the request based on the operation ID.
-
-    :param operation_id: ID of the operation from the Swagger spec
-    :return: pep-8 conform name
-
-    >>> _request_function_name('TestMe')
-    'test_me'
-
-    >>> _request_function_name('test_me')
-    'test_me'
-
-    >>> _request_function_name('Test_me')
-    'test_me'
-
-    >>> _request_function_name('test-me')
-    'test_me'
-
-    >>> _request_function_name('test-me')
-    'test_me'
-    """
-    return swagger_to.snake_case(operation_id)
 
 
 @icontract.require(
@@ -1428,7 +1531,7 @@ def _generate_request_function(request: Request) -> str:
 
     return _REQUEST_FUNCTION_TPL.render(
         request=request,
-        function_name=swagger_to.snake_case(request.operation_id),
+        function_name=_function_name(request.operation_id),
         return_type=return_type,
         resp=resp,
         request_docstring=request_docstring,
@@ -1569,7 +1672,7 @@ def generate_client_py(service_name: str, typedefs: MutableMapping[str, Typedef]
 
     observed_request_function_names = dict()  # type: Dict[str, Request]
     for request in requests:
-        function_name = _request_function_name(operation_id=request.operation_id)
+        function_name = _function_name(name=request.operation_id)
         if function_name in observed_request_function_names:
             raise KeyError(
                 'The function names for the requests with the operation IDs {!r} and {!r} are identical: {!r}'.format(
