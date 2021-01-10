@@ -31,7 +31,7 @@ class RemoteCaller:
 
     def get_foo(
             self,
-            foo_id: str) -> bytes:
+            foo_id: str) -> MutableMapping[str, Any]:
         """
         Send a get request to /api/v1/foo/{foo_id}.
 
@@ -51,7 +51,7 @@ class RemoteCaller:
 
         with contextlib.closing(resp):
             resp.raise_for_status()
-            return resp.content
+            return resp.json()
 
 
 # Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

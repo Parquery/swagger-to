@@ -1,0 +1,46 @@
+[
+  {
+    "consumes": [
+      "application/another-input"
+    ],
+    "description": "",
+    "line": 12,
+    "method": "get",
+    "operation_id": "test_me",
+    "parameters": [],
+    "path": "/",
+    "produces": [
+      "application/another-output"
+    ],
+    "responses": {
+      "200": {
+        "code": "200",
+        "description": "Success",
+        "line": 19,
+        "typedef": null
+      }
+    }
+  },
+  {
+    "consumes": [
+      "application/some-input"
+    ],
+    "description": "",
+    "line": 21,
+    "method": "post",
+    "operation_id": "another_test_me",
+    "parameters": [],
+    "path": "/",
+    "produces": [
+      "application/some-output"
+    ],
+    "responses": {
+      "200": {
+        "code": "200",
+        "description": "Success",
+        "line": 24,
+        "typedef": null
+      }
+    }
+  }
+]

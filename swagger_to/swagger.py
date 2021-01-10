@@ -116,8 +116,8 @@ class Method:
         self.parameters = []  # type: List[Parameter]
         self.responses = collections.OrderedDict()  # type: MutableMapping[str, Response]
         self.path = None  # type: Optional[Path]
-        self.produces = []  # type: List[str]
-        self.consumes = []  # type: List[str]
+        self.produces = None  # type: Optional[List[str]]
+        self.consumes = None  # type: Optional[List[str]]
         self.x_swagger_to_skip = False
         self.__lineno__ = 0
 
@@ -155,6 +155,11 @@ class Swagger:
         self.paths = collections.OrderedDict()  # type: MutableMapping[str, Path]
         self.definitions = collections.OrderedDict()  # type: MutableMapping[str, Definition]
         self.parameters = collections.OrderedDict()  # type: MutableMapping[str, Parameter]
+
+        # These are global produces and consumes which are, if specified, propagated to
+        # endpoints.
+        self.produces = None  # type: Optional[List[str]]
+        self.consumes = None  # type: Optional[List[str]]
 
         self.raw_dict = None  # type: Optional[RawDict]
 
@@ -315,8 +320,8 @@ def _parse_method(raw_dict: RawDict) -> Tuple[Method, List[str]]:
     mth.description = raw_dict.get('description', '').strip()
     mth.x_swagger_to_skip = raw_dict.get('x-swagger-to-skip', False)
 
-    mth.produces = raw_dict.get('produces', [])
-    mth.consumes = raw_dict.get('consumes', [])
+    mth.produces = raw_dict.get('produces', None)
+    mth.consumes = raw_dict.get('consumes', None)
     mth.__lineno__ = raw_dict.lineno
 
     for i, param_dict in enumerate(raw_dict.get('parameters', [])):
@@ -451,6 +456,9 @@ def parse_yaml(stream: Any) -> Tuple[Swagger, List[str]]:
         errors.append('missing tag "name" in the swagger specification')
 
     swagger.base_path = raw_dict.get('basePath', '')
+
+    swagger.produces = raw_dict.get('produces', None)
+    swagger.consumes = raw_dict.get('consumes', None)
 
     for path_id, path_dict in raw_dict.get('paths', RawDict()).items():
         path, path_errors = _parse_path(raw_dict=path_dict)

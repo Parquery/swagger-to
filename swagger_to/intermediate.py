@@ -11,7 +11,8 @@ do not figure as strings.
 
 import collections
 import json
-from typing import List, MutableMapping, Union, Any, Optional, Mapping  # pylint: disable=unused-import
+from typing import List, MutableMapping, Union, Any, Optional, \
+    Mapping  # pylint: disable=unused-import
 
 import icontract
 
@@ -581,8 +582,8 @@ def _to_response(swagger_response: swagger_to.swagger.Response, typedefs: Mutabl
     return resp
 
 
-def _to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str, Typedef],
-                 params: MutableMapping[str, Parameter]) -> Endpoint:
+def _to_endpoint(swagger: swagger_to.swagger.Swagger, method: swagger_to.swagger.Method,
+                 typedefs: MutableMapping[str, Typedef], params: MutableMapping[str, Parameter]) -> Endpoint:
     """
     Translate the endpoint from the original Swagger spec to an intermediate representation.
 
@@ -608,8 +609,25 @@ def _to_endpoint(method: swagger_to.swagger.Method, typedefs: MutableMapping[str
     endpt.method = method.identifier
     endpt.operation_id = method.operation_id
     endpt.description = method.description
-    endpt.consumes = method.consumes
-    endpt.produces = method.produces
+
+    # Propagate the global consumes, if specified
+    if method.consumes is None and swagger.consumes is None:
+        endpt.consumes = []
+    elif method.consumes is not None:
+        endpt.consumes = method.consumes
+    else:
+        assert swagger.consumes is not None
+        endpt.consumes = swagger.consumes
+
+    # Propagate the global produces, if specified
+    if method.produces is None and swagger.produces is None:
+        endpt.produces = []
+    elif method.produces is not None:
+        endpt.produces = method.produces
+    else:
+        assert swagger.produces is not None
+        endpt.produces = swagger.produces
+
     endpt.line = method.__lineno__
 
     # We need to join method parameters with the path's common parameters.
@@ -659,7 +677,7 @@ def to_endpoints(swagger: swagger_to.swagger.Swagger, typedefs: MutableMapping[s
     for path in swagger.paths.values():
         for method in path.methods:
             if not method.x_swagger_to_skip:
-                endpoint = _to_endpoint(method=method, typedefs=typedefs, params=params)
+                endpoint = _to_endpoint(swagger=swagger, method=method, typedefs=typedefs, params=params)
                 endpoints.append(endpoint)
 
     return endpoints
