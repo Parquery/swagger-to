@@ -1,0 +1,29 @@
+basePath: /
+consumes:
+- application/some-input
+produces:
+- application/some-output
+info:
+  description: Test
+  title: Test
+  version: '1.0'
+paths:
+  /:
+    get:
+      produces:
+      - application/another-output
+      consumes:
+      - application/another-input
+      operationId: test_me
+      responses:
+        '200':
+          description: Success
+    post:
+      operationId: another_test_me
+      responses:
+        '200':
+          description: Success
+swagger: '2.0'
+tags:
+  - description: Test API
+    name: foo

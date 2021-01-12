@@ -1,13 +1,17 @@
 [
   {
-    "consumes": [],
+    "consumes": [
+      "application/json"
+    ],
     "description": "",
     "line": 26,
     "method": "get",
     "operation_id": "get_foo",
     "parameters": [],
     "path": "/",
-    "produces": [],
+    "produces": [
+      "application/json"
+    ],
     "responses": {
       "200": {
         "code": "200",

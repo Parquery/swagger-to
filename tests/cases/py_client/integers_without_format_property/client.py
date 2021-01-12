@@ -221,7 +221,7 @@ class RemoteCaller:
             self.session = requests.Session()
             self.session.auth = self.auth
 
-    def get_foo(self) -> bytes:
+    def get_foo(self) -> MutableMapping[str, Any]:
         """
         Send a get request to /.
 
@@ -233,7 +233,7 @@ class RemoteCaller:
 
         with contextlib.closing(resp):
             resp.raise_for_status()
-            return resp.content
+            return resp.json()
 
 
 # Automatically generated file by swagger_to. DO NOT EDIT OR APPEND ANYTHING!

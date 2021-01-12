@@ -52,7 +52,8 @@ class TestPyClient(unittest.TestCase):
             expected_pth = case_dir / "client.py"
             expected = expected_pth.read_text()
 
-            self.assertEqual(expected, text)
+            self.assertEqual(expected, text, ("The expected code from {} does not match the generated code "
+                                              "for the Swagger spec {}.").format(expected_pth, swagger_path))
 
 
 class TestDocstring(unittest.TestCase):

@@ -1,22 +1,18 @@
 [
   {
-    "consumes": [
-      "application/json"
-    ],
+    "consumes": [],
     "description": "",
-    "line": 26,
+    "line": 12,
     "method": "get",
-    "operation_id": "get_foo",
+    "operation_id": "test_me",
     "parameters": [],
     "path": "/",
-    "produces": [
-      "application/json"
-    ],
+    "produces": [],
     "responses": {
       "200": {
         "code": "200",
         "description": "Success",
-        "line": 29,
+        "line": 17,
         "typedef": null
       }
     }

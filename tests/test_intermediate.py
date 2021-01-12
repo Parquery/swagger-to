@@ -60,8 +60,8 @@ class TestIntermediate(unittest.TestCase):
 
         cases_dir = tests_dir / "cases" / "intermediate"
 
-        for case_dir in sorted(cases_dir.iterdir()):
-            swagger_path = case_dir / "swagger.yaml"
+        for swagger_path in sorted(cases_dir.glob("**/swagger.yaml")):
+            case_dir = swagger_path.parent
 
             swagger, errs = swagger_to.swagger.parse_yaml_file(path=swagger_path)
             if errs:

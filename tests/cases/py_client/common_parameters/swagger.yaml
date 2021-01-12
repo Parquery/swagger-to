@@ -3,6 +3,8 @@
 basePath: /api/v1
 consumes:
 - application/json
+produces:
+- application/json
 info:
   description: An API
   title: An API
@@ -22,8 +24,6 @@ paths:
       name: foo_id
       required: true
       type: string
-produces:
-- application/json
 swagger: '2.0'
 tags:
 - description: description
