@@ -1,6 +1,20 @@
+4.1.0
+=====
+* Propagated ``produces`` and ``consumes`` (#123)
+* Fixed handling of spaces in names in py client (#122)
+* Made ``allOf`` imply the type "object" (#119)
+* Handled ``allOf`` (#116)
+* Made format optional (#115)
+* Escaped operation IDs for valid Elm identifiers (#113)
+* Assumed type ``object`` if properties (#112)
+* Fixed line number while parsing Swagger spec (#110)
+* Support common parameters in a path (#103)
+* Added JSON schema validation before parsing (#102)
+* Fixed ``bin`` scripts not executing under Unix (#101)
+
 4.0.1
 =====
-* made py_client use `get` for optionals so that None values are treated as
+* made py_client use ``get`` for optionals so that None values are treated as
   unspecified
 * made py_client accept custom requests.Session object
 * fixed py_client for operation IDs with dashes
