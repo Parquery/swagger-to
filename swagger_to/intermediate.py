@@ -151,7 +151,7 @@ def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
     :param typedefs: named intermediate representations of type definitions
     :return:
     """
-    typedef = None  # type: Union[None, Primitivedef, Arraydef, Mapdef, Objectdef]
+    typedef = None  # type: Union[None, Primitivedef, Arraydef, Mapdef, Objectdef, AnyValuedef]
     if definition.typedef.type in PRIMITIVE_SWAGGER_TYPES:
         typedef = Primitivedef()
         typedef.type = definition.typedef.type
@@ -169,6 +169,8 @@ def _preallocate_named_typedefs(definition: swagger_to.swagger.Definition,
         else:
             typedef = Objectdef()
             typedef.required = definition.typedef.required
+    elif definition.typedef.type == '':
+        typedef = AnyValuedef()
     else:
         raise ValueError(("Could not determine the intermediate type "
                           "for a Swagger type definition {!r} (here given as JSON):\n{}").format(
@@ -195,6 +197,9 @@ def _resolve_substructures(definition: swagger_to.swagger.Definition, typedefs: 
     typedef = typedefs[definition.identifier]
 
     if isinstance(typedef, Primitivedef):
+        pass
+
+    elif isinstance(typedef, AnyValuedef):
         pass
 
     elif isinstance(typedef, Arraydef):

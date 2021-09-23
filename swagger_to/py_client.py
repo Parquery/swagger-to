@@ -959,15 +959,19 @@ def _expected_type_expression(typedef: Typedef) -> str:
     elif isinstance(typedef, Listdef):
         if typedef.items is None:
             raise ValueError('Unexpected None items in typedef: {!r}'.format(typedef.identifier))
-
+        if isinstance(typedef.items, Anydef):
+            return 'list, Any'
         return 'list, {}'.format(_expected_type_expression(typedef=typedef.items))
     elif isinstance(typedef, Dictdef):
         if typedef.values is None:
             raise ValueError('Unexpected None values in typedef: {!r}'.format(typedef.identifier))
-
+        if isinstance(typedef.values, Anydef):
+            return 'dict, Any'
         return 'dict, {}'.format(_expected_type_expression(typedef=typedef.values))
     elif isinstance(typedef, Classdef):
         return _class_name(typedef.identifier)
+    elif isinstance(typedef, Anydef):
+        return 'Any'
     else:
         raise NotImplementedError('Translating the typedef to an expected type is not supported: {}'.format(typedef))
 

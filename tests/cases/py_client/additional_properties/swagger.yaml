@@ -1,0 +1,109 @@
+swagger: '2.0'
+info:
+  title: Dummy Test API
+  description: Test code generation.
+  version: 1.0.0
+consumes:
+  - application/json
+produces:
+  - application/json
+schemes:
+  - https
+basePath: /
+tags:
+  - name: test
+paths:
+  /foo:
+    post:
+      operationId: get_foo
+      tags:
+        - test
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/AnyTypeValuesArray'
+      responses:
+        200:
+          description: response
+          schema:
+            $ref: '#/definitions/AnyTypeValuesArray'
+        default:
+          description: Unexpected error
+  /bar:
+    post:
+      operationId: get_bar
+      tags:
+        - test
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/AnyTypeValuesMapping'
+      responses:
+        200:
+          description: response
+          schema:
+            $ref: '#/definitions/AnyTypeValuesMapping'
+        default:
+          description: Unexpected error
+  /baz:
+    post:
+      operationId: get_baz
+      tags:
+        - test
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/AnyTypeValuesContainerInProperty'
+      responses:
+        200:
+          description: response
+          schema:
+            $ref: '#/definitions/AnyTypeValuesContainerInProperty'
+        default:
+          description: Unexpected error
+  /qux:
+    post:
+      operationId: get_qux
+      tags:
+        - test
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/AnyTypeValue'
+      responses:
+        200:
+          description: response
+          schema:
+            $ref: '#/definitions/AnyTypeValue'
+        default:
+          description: Unexpected error
+definitions:
+  AnyTypeValue:
+    description: any type value
+  AnyTypeValuesArray:
+    type: array
+    items:
+      $ref: '#/definitions/AnyTypeValue'
+  AnyTypeValuesMapping:
+    type: object
+    additionalProperties:
+      $ref: '#/definitions/AnyTypeValue'
+  AnyTypeValuesContainerInProperty:
+    type: object
+    required:
+      - array
+      - mapping
+    properties:
+      array:
+        $ref: '#/definitions/AnyTypeValuesArray'
+      mapping:
+        $ref: '#/definitions/AnyTypeValuesMapping'
+          
