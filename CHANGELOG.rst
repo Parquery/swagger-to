@@ -1,3 +1,8 @@
+4.1.1
+=====
+* Supported ``Any`` type value (i.e. empty type) (#126)
+* Removed support for Python 3.5 (#127)
+
 4.1.0
 =====
 * Propagated ``produces`` and ``consumes`` (#123)
