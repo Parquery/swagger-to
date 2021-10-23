@@ -293,7 +293,7 @@ def product_to_jsonable(
 class ProductList:
     def __init__(
             self,
-            products: List[Product]) -> None:
+            products: List['Product']) -> None:
         """Initializes with the given values."""
         # Contains the list of products
         self.products = products
@@ -332,7 +332,7 @@ def product_list_from_obj(obj: Any, path: str = "") -> ProductList:
     products_from_obj = from_obj(
         obj['products'],
         expected=[list, Product],
-        path=path + '.products')  # type: List[Product]
+        path=path + '.products')  # type: List['Product']
 
     return ProductList(
         products=products_from_obj)
@@ -712,7 +712,7 @@ class Activities:
             offset: int,
             limit: int,
             count: int,
-            history: List[Activity]) -> None:
+            history: List['Activity']) -> None:
         """Initializes with the given values."""
         # Position in pagination.
         self.offset = offset
@@ -777,7 +777,7 @@ def activities_from_obj(obj: Any, path: str = "") -> Activities:
     history_from_obj = from_obj(
         obj['history'],
         expected=[list, Activity],
-        path=path + '.history')  # type: List[Activity]
+        path=path + '.history')  # type: List['Activity']
 
     return Activities(
         offset=offset_from_obj,
@@ -831,7 +831,7 @@ class RemoteCaller:
     def products(
             self,
             latitude: float,
-            longitude: float) -> Dict[str, Product]:
+            longitude: float) -> Dict[str, 'Product']:
         """
         The Products endpoint returns information about the Uber products offered at a given location.
 
@@ -866,7 +866,7 @@ class RemoteCaller:
             start_longitude: float,
             end_latitude: float,
             end_longitude: float,
-            max_lines: Optional[int] = None) -> List[Product]:
+            max_lines: Optional[int] = None) -> List['Product']:
         """
         The Price Estimates endpoint returns an estimated price range for each product offered at a given
         location. The price estimate is provided as a formatted string with the full price range and the localized
@@ -913,7 +913,7 @@ class RemoteCaller:
             start_latitude: float,
             start_longitude: float,
             customer_uuid: Optional[str] = None,
-            product_id: Optional[str] = None) -> Dict[str, Product]:
+            product_id: Optional[str] = None) -> Dict[str, 'Product']:
         """
         The Time Estimates endpoint returns ETAs for all products.
 
@@ -952,7 +952,7 @@ class RemoteCaller:
 
     def update_me(
             self,
-            update_user: Profile) -> Profile:
+            update_user: 'Profile') -> 'Profile':
         """
         Update an User Profile.
 
@@ -1020,7 +1020,7 @@ class RemoteCaller:
     def history(
             self,
             offset: Optional[int] = None,
-            limit: Optional[int] = None) -> Activities:
+            limit: Optional[int] = None) -> 'Activities':
         """
         The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will
         include pickup locations and times, dropoff locations and times, the distance of past requests, and

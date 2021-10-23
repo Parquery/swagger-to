@@ -295,7 +295,7 @@ class RemoteCaller:
 
     def get_baz(
             self,
-            body: AnyTypeValuesContainerInProperty) -> AnyTypeValuesContainerInProperty:
+            body: 'AnyTypeValuesContainerInProperty') -> 'AnyTypeValuesContainerInProperty':
         """
         Send a post request to /baz.
 
