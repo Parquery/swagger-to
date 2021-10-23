@@ -1,0 +1,58 @@
+{
+  "Node": {
+    "description": "",
+    "identifier": "Node",
+    "json_schema": {
+      "identifier": "Node",
+      "text": "{\n  \"title\": \"Node\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Node\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"children\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"$ref\": \"#/definitions/Node\"\n          }\n        },\n        \"name\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  },\n  \"type\": \"object\",\n  \"properties\": {\n    \"children\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/Node\"\n      }\n    },\n    \"name\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+    },
+    "line": 9,
+    "properties": {
+      "children": {
+        "description": "",
+        "line": 0,
+        "name": "children",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "identifier": "",
+          "items": "reference to a typedef with identifier Node",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 0
+        }
+      },
+      "name": {
+        "description": "",
+        "line": 0,
+        "name": "name",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": null,
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 16,
+          "pattern": "",
+          "type": "string"
+        }
+      }
+    },
+    "required": []
+  },
+  "NodeList": {
+    "description": "",
+    "identifier": "NodeList",
+    "items": "reference to a typedef with identifier Node",
+    "json_schema": {
+      "identifier": "NodeList",
+      "text": "{\n  \"title\": \"NodeList\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"definitions\": {\n    \"Node\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"children\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"$ref\": \"#/definitions/Node\"\n          }\n        },\n        \"name\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  },\n  \"type\": \"array\",\n  \"items\": {\n    \"$ref\": \"#/definitions/Node\"\n  }\n}"
+    },
+    "line": 18
+  }
+}
