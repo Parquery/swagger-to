@@ -288,17 +288,22 @@ def _to_response(intermediate_response: swagger_to.intermediate.Response,
     return resp
 
 
+# yapf: disable
 @icontract.ensure(
     lambda result:
-    sorted(result.parameters, key=id) == sorted((
+    sorted(result.parameters, key=id) ==
+    sorted((
         param
-        for param in ([result.body_parameter] if result.body_parameter else []) +
-                     result.query_parameters +
-                     result.header_parameters +
-                     result.path_parameters +
-                     result.formdata_parameters +
-                     result.file_parameters), key=id),
+        for param in (
+             [result.body_parameter] if result.body_parameter else []) +
+             result.query_parameters +
+             result.header_parameters +
+             result.path_parameters +
+             result.formdata_parameters +
+             result.file_parameters),
+        key=id),
     enabled=icontract.SLOW)
+# yapf: enable
 @icontract.ensure(lambda result: all(isinstance(param.typedef, Filedef) for param in result.file_parameters))
 def _to_request(endpoint: swagger_to.intermediate.Endpoint, typedefs: MutableMapping[str, Typedef]) -> Request:
     """
@@ -509,9 +514,11 @@ def _raise(message: str) -> None:
 
 
 _NON_IDENTIFIER_RE = re.compile(r'[^a-zA-Z0-9_]')
+IDENTIFIER_RE = re.compile('[a-zA-Z_][a-zA-Z0-9_]*')
 
 
 @icontract.require(lambda name: name != '')
+@icontract.ensure(lambda result: IDENTIFIER_RE.fullmatch(result))
 def _function_name(name: str) -> str:
     """
     Generate the name of the function which will send the request based on the operation ID.
@@ -541,6 +548,7 @@ def _function_name(name: str) -> str:
 
 
 @icontract.require(lambda name: name != '')
+@icontract.ensure(lambda result: IDENTIFIER_RE.fullmatch(result))
 def _class_name(name: str) -> str:
     """
     Generate the Python name of the class corresponding to the Swagger definition.
@@ -564,6 +572,7 @@ def _class_name(name: str) -> str:
 
 
 @icontract.require(lambda name: name != '')
+@icontract.ensure(lambda result: IDENTIFIER_RE.fullmatch(result))
 def _property_name(name: str) -> str:
     """
     Generate the Python name of the property corresponding to the Swagger definition.
@@ -587,6 +596,7 @@ def _property_name(name: str) -> str:
 
 
 @icontract.require(lambda name: name != '')
+@icontract.ensure(lambda result: IDENTIFIER_RE.fullmatch(result))
 def _arg_name(name: str) -> str:
     """
     Generate the Python name of the argument corresponding to a Swagger definition.
@@ -610,6 +620,7 @@ def _arg_name(name: str) -> str:
 
 
 @icontract.require(lambda name: name != '')
+@icontract.ensure(lambda result: IDENTIFIER_RE.fullmatch(result))
 def _var_name(name: str) -> str:
     """
     Generate the Python name of the variable corresponding to a Swagger definition.
@@ -714,7 +725,7 @@ def _type_expression(typedef: Typedef, path: Optional[str] = None) -> str:
             raise NotImplementedError(('Translating an anonymous class to a type expression '
                                        'is not supported: {}').format(path))
 
-        return _class_name(typedef.identifier)
+        return "'{}'".format(_class_name(typedef.identifier))
     else:
         raise NotImplementedError('Translating the typedef to a type expression is not supported: {!r}: {}'.format(
             type(typedef), path))

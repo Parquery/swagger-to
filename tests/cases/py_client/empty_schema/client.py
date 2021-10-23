@@ -278,7 +278,7 @@ class RemoteCaller:
 
     def test_endpoint(
             self,
-            required_empty_parameter: EmptyParameter) -> WithEmptyProperties:
+            required_empty_parameter: 'EmptyParameter') -> 'WithEmptyProperties':
         """
         Test empty schema
 

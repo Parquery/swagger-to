@@ -223,7 +223,7 @@ class RemoteCaller:
 
     def do_something(
             self,
-            some_parameter: SomeDefinition) -> MutableMapping[str, Any]:
+            some_parameter: 'SomeDefinition') -> MutableMapping[str, Any]:
         """
         Send a post request to /do-something.
 

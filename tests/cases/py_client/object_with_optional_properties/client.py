@@ -242,7 +242,7 @@ class RemoteCaller:
 
     def test_me(
             self,
-            test_object: Optional[TestObject] = None) -> TestObject:
+            test_object: Optional['TestObject'] = None) -> 'TestObject':
         """
         Is a test endpoint.
 
