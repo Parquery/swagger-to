@@ -1,0 +1,41 @@
+basePath: /
+consumes:
+- application/json
+info:
+  description: An API
+  title: An API
+  version: '1.0'
+definitions:
+  Node:
+    type: object
+    properties:
+      children:
+        type: array
+        items:
+          $ref: "#/definitions/Node"
+      name:
+        type: string
+  NodeList:
+    type: array
+    items:
+      $ref: "#/definitions/Node"
+paths:
+  /nodes:
+    get:
+      operationId: nodes
+      description: Retrieve all the nodes.
+      produces:
+        - application/json
+      responses:
+        200:
+          description: An array of nodes
+          schema:
+            $ref: '#/definitions/NodeList'
+        default:
+          description: Unexpected error
+produces:
+- application/json
+swagger: '2.0'
+tags:
+- description: description
+  name: foo

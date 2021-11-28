@@ -6,7 +6,7 @@
 
 import collections
 import re
-from typing import MutableMapping, Union, List, Optional, Dict  # pylint: disable=unused-import
+from typing import MutableMapping, Union, List, Optional, Dict, Mapping  # pylint: disable=unused-import
 
 import icontract
 import jinja2
@@ -167,7 +167,7 @@ class Request:
 
 
 def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Typedef,
-                              typedefs: MutableMapping[str, Typedef]) -> Typedef:
+                              typedefs: Mapping[str, Typedef]) -> Typedef:
     """
     Get the Python representation of the type definition from the table of Python type definitions by its identifier.
 
@@ -184,15 +184,77 @@ def _anonymous_or_get_typedef(intermediate_typedef: swagger_to.intermediate.Type
 
         return typedefs[intermediate_typedef.identifier]
 
-    return _to_typedef(intermediate_typedef=intermediate_typedef)
+    typedef = _create_initial_typedef(intermediate_typedef=intermediate_typedef)
+    _translate_to_typedef_in_place(intermediate_typedef=intermediate_typedef, typedef=typedef, typedefs=typedefs)
+
+    return typedef
 
 
-def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+def _properties_to_attributes(intermediate_typedef: swagger_to.intermediate.Objectdef, classdef: Classdef,
+                              typedefs: Mapping[str, Typedef]) -> MutableMapping[str, Attribute]:
+    """
+    Translate the intermediate properties to class attributes of the given ``classdef``.
+
+    :param intermediate_typedef: intermediate representation of the object definition
+    :param classdef: class definition for which we construct the attributes
+    :param typedefs: type definitions (or their placeholders, if the mapping is in process of construction)
+    """
+    attributes = collections.OrderedDict()  # type: MutableMapping[str, Attribute]
+
+    for intermediate_prop in intermediate_typedef.properties.values():
+        attr = Attribute()
+        attr.description = intermediate_prop.description
+        attr.name = intermediate_prop.name
+        attr.typedef = _anonymous_or_get_typedef(intermediate_typedef=intermediate_prop.typedef, typedefs=typedefs)
+        attr.required = intermediate_prop.required
+        attr.classdef = classdef
+
+        attributes[attr.name] = attr
+
+    attributes = collections.OrderedDict(sorted(list(attributes.items()), key=lambda kv: not kv[1].required))
+
+    return attributes
+
+
+def _translate_to_typedef_in_place(intermediate_typedef: swagger_to.intermediate.Typedef, typedef: Typedef,
+                                   typedefs: Mapping[str, Typedef]) -> None:
     """
     Translate the type definition in intermediate representation to Python.
 
     :param intermediate_typedef: type definition in intermediate representation
+    :param typedefs: type definitions (or their placeholders if typedefs are in process of construction)
     :return: type definition in Python representation
+    """
+    if isinstance(intermediate_typedef, swagger_to.intermediate.Primitivedef):
+        return
+
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
+        assert isinstance(typedef, Listdef)
+        typedef.items = _anonymous_or_get_typedef(intermediate_typedef=intermediate_typedef.items, typedefs=typedefs)
+
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
+        assert isinstance(typedef, Dictdef)
+        typedef.values = _anonymous_or_get_typedef(intermediate_typedef=intermediate_typedef.values, typedefs=typedefs)
+
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.AnyValuedef):
+        return
+
+    elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
+        assert typedef is not None and isinstance(typedef, Classdef)
+        typedef.attributes = _properties_to_attributes(
+            intermediate_typedef=intermediate_typedef, classdef=typedef, typedefs=typedefs)
+    else:
+        raise NotImplementedError('Converting intermediate typedef to Python is not supported: {!r}'.format(
+            type(intermediate_typedef)))
+
+    assert typedef is not None
+
+
+def _create_initial_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typedef:
+    """
+    Create a placeholder so that a mapping for identifiable typedefs can be pre-populated.
+
+    This is necessary to avoid looping endlessly through cycles.
     """
     typedef = None  # type: Optional[Typedef]
 
@@ -216,11 +278,9 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Arraydef):
         typedef = Listdef()
-        typedef.items = _to_typedef(intermediate_typedef=intermediate_typedef.items)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Mapdef):
         typedef = Dictdef()
-        typedef.values = _to_typedef(intermediate_typedef=intermediate_typedef.values)
 
     elif isinstance(intermediate_typedef, swagger_to.intermediate.AnyValuedef):
         typedef = Anydef()
@@ -228,26 +288,14 @@ def _to_typedef(intermediate_typedef: swagger_to.intermediate.Typedef) -> Typede
     elif isinstance(intermediate_typedef, swagger_to.intermediate.Objectdef):
         typedef = Classdef()
 
-        for intermediate_prop in intermediate_typedef.properties.values():
-            attr = Attribute()
-            attr.description = intermediate_prop.description
-            attr.name = intermediate_prop.name
-            attr.typedef = _to_typedef(intermediate_typedef=intermediate_prop.typedef)
-            attr.required = intermediate_prop.required
-            attr.classdef = typedef
-
-            typedef.attributes[attr.name] = attr
-
-        typedef.attributes = collections.OrderedDict(
-            sorted(list(typedef.attributes.items()), key=lambda kv: not kv[1].required))
     else:
         raise NotImplementedError('Converting intermediate typedef to Python is not supported: {!r}'.format(
             type(intermediate_typedef)))
 
+    assert typedef is not None
+
     typedef.description = intermediate_typedef.description
     typedef.identifier = intermediate_typedef.identifier
-
-    assert typedef is not None
 
     return typedef
 
@@ -262,11 +310,14 @@ def to_typedefs(
     """
     typedefs = collections.OrderedDict()  # type: MutableMapping[str, Typedef]
 
+    # Pre-populate object definitions with placeholders to avoid looping endlessly through cycles;
+    # See: https://github.com/Parquery/swagger-to/issues/129
     for intermediate_typedef in intermediate_typedefs.values():
-        assert intermediate_typedef is not None
+        typedefs[intermediate_typedef.identifier] = _create_initial_typedef(intermediate_typedef=intermediate_typedef)
 
-        typedef = _to_typedef(intermediate_typedef=intermediate_typedef)
-        typedefs[typedef.identifier] = typedef
+    for typedef in typedefs.values():
+        intermediate_typedef = intermediate_typedefs[typedef.identifier]
+        _translate_to_typedef_in_place(intermediate_typedef=intermediate_typedef, typedef=typedef, typedefs=typedefs)
 
     return typedefs
 
@@ -1612,7 +1663,7 @@ def _wrap_response(resp: requests.Response) -> HTTPResponse:
     Wrap HTTPResponse object.
     """
 
-    # urllib3.HTTPResponse has compatible interface of standard http lib. 
+    # urllib3.HTTPResponse has compatible interface of standard http lib.
     # (see docs for urllib3.HTTPResponse)
     return cast(HTTPResponse, _WrappedResponse(resp))
 {% endif %}{# /if file_responses #}

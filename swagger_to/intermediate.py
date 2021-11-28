@@ -12,7 +12,7 @@ do not figure as strings.
 import collections
 import json
 from typing import List, MutableMapping, Union, Any, Optional, \
-    Mapping  # pylint: disable=unused-import
+    Mapping, Set  # pylint: disable=unused-import
 
 import icontract
 
@@ -357,7 +357,21 @@ def to_typedefs(swagger: swagger_to.swagger.Swagger) -> MutableMapping[str, Type
     return typedefs
 
 
-@icontract.ensure(lambda definitions, result: all(name in definitions for name in result), enabled=icontract.SLOW)
+# yapf: disable
+@icontract.ensure(
+    lambda definitions, result:
+    all(
+        name in definitions
+        for name in result
+    ),
+    enabled=icontract.SLOW
+)
+@icontract.ensure(
+    lambda result: len(set(result)) == len(result),
+    "No duplicates in the result" ,
+    enabled=icontract.SLOW
+)
+# yapf: enable
 def _collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
                                     definitions: MutableMapping[str, swagger_to.swagger.Definition]) -> List[str]:
     """
@@ -367,29 +381,45 @@ def _collect_referenced_definitions(typedef: swagger_to.swagger.Typedef,
     :param definitions: table of type definitions in intermediate representation
     :return: referenced type definitions given as a list of their identifiers
     """
-    if typedef.ref != '':
-        definition_name = swagger_to.parse_definition_ref(typedef.ref)
-        definition = definitions[definition_name]
+    result = []  # type: List[str]
 
-        return [definition_name] + _collect_referenced_definitions(typedef=definition.typedef, definitions=definitions)
+    stack = [typedef]  # type: List[swagger_to.swagger.Typedef]
 
-    referenced_definitions = []  # type: List[str]
+    # This set is necessary to prevent endless recursion. The set contains the names of the referenced definitions
+    # which have been already included in the result.
+    # See: https://github.com/Parquery/swagger-to/issues/129
+    visited_definitions = set()  # type: Set[str]
 
-    for prop in typedef.properties.values():
-        referenced_definitions.extend(_collect_referenced_definitions(typedef=prop, definitions=definitions))
+    while len(stack) > 0:
+        another_typedef = stack.pop()
 
-    if typedef.items is not None:
-        referenced_definitions.extend(_collect_referenced_definitions(typedef=typedef.items, definitions=definitions))
+        if another_typedef.ref != '':
+            definition_name = swagger_to.parse_definition_ref(another_typedef.ref)
 
-    if typedef.additional_properties is not None:
-        referenced_definitions.extend(
-            _collect_referenced_definitions(typedef=typedef.additional_properties, definitions=definitions))
+            # We need this check to avoid endless recursion.
+            # See: https://github.com/Parquery/swagger-to/issues/129
+            if definition_name not in visited_definitions:
+                definition = definitions[definition_name]
+                result.append(definition_name)
 
-    if typedef.all_of is not None:
-        for superdef in typedef.all_of:
-            referenced_definitions.extend(_collect_referenced_definitions(typedef=superdef, definitions=definitions))
+                stack.append(definition.typedef)
+                visited_definitions.add(definition_name)
 
-    return referenced_definitions
+        else:
+            for prop in another_typedef.properties.values():
+                stack.append(prop)
+
+            if another_typedef.items is not None:
+                stack.append(another_typedef.items)
+
+            if another_typedef.additional_properties is not None:
+                stack.append(another_typedef.additional_properties)
+
+            if another_typedef.all_of is not None:
+                for superdef in another_typedef.all_of:
+                    stack.append(superdef)
+
+    return result
 
 
 def _recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> MutableMapping[str, Any]:

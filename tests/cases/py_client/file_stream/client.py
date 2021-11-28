@@ -45,7 +45,7 @@ def _wrap_response(resp: requests.Response) -> HTTPResponse:
     Wrap HTTPResponse object.
     """
 
-    # urllib3.HTTPResponse has compatible interface of standard http lib. 
+    # urllib3.HTTPResponse has compatible interface of standard http lib.
     # (see docs for urllib3.HTTPResponse)
     return cast(HTTPResponse, _WrappedResponse(resp))
 

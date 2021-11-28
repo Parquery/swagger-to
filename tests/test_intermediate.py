@@ -9,40 +9,47 @@ import json
 import os
 import pathlib
 import unittest
-from typing import Any
+from typing import Any, MutableMapping
 
 import swagger_to.go_server
 import swagger_to.intermediate
 import swagger_to.swagger
 
 
-def jsonize(what: Any) -> Any:
+def jsonize_with_references(what: Any) -> Any:
     """
-    Convert a part of a type definition to a JSON-able structure.
+    Convert a part of the intermediate representation to a JSON-able structure.
 
     This is almost certainly not the same representation as the original type definition in the Swagger spec.
+
+    The identifiable typedefs (*i.e.*, the typedefs with an identifier) will be jsonized as human-readable string
+    references to avoid endless loops through cycles.
     """
     if isinstance(what, (swagger_to.intermediate.JsonSchema, swagger_to.intermediate.Typedef,
                          swagger_to.intermediate.Response, swagger_to.intermediate.Endpoint)):
-        return collections.OrderedDict((k, jsonize(what.__dict__[k])) for k in sorted(what.__dict__.keys()))
+        if (isinstance(what, swagger_to.intermediate.Typedef) and what.identifier != ''):
+            return 'reference to a typedef with identifier {}'.format(what.identifier)
+
+        jsonable = collections.OrderedDict(
+            (k, jsonize_with_references(what.__dict__[k])) for k in sorted(what.__dict__.keys()))  # type: Any
+
+        return jsonable
 
     elif isinstance(
             what,
         (swagger_to.intermediate.Propertydef, swagger_to.intermediate.Parameter, swagger_to.intermediate.Response)):
-        jsonable = collections.OrderedDict((k, jsonize(what.__dict__[k])) for k in sorted(what.__dict__.keys()))
-
-        # We reference typedefs by identifier to make the output a bit more succinct.
-        # In case of properties, this is even mandatory in order to avoid cycles.
-        if what.typedef is not None and what.typedef.identifier != '':
-            jsonable['typedef'] = 'reference to a typedef with identifier {}'.format(what.typedef.identifier)
+        jsonable = collections.OrderedDict(
+            (k, jsonize_with_references(what.__dict__[k])) for k in sorted(what.__dict__.keys()))
 
         return jsonable
 
     elif isinstance(what, collections.OrderedDict):
-        return collections.OrderedDict((k, jsonize(v)) for k, v in what.items())
+        jsonable = collections.OrderedDict((k, jsonize_with_references(v)) for k, v in what.items())
+        return jsonable
 
     elif isinstance(what, list):
-        return [jsonize(v) for v in what]
+        jsonable = [jsonize_with_references(v) for v in what]
+        return jsonable
 
     elif isinstance(what, (int, bool, str)):
         return what
@@ -52,6 +59,26 @@ def jsonize(what: Any) -> Any:
 
     else:
         raise NotImplementedError("Unhandled ``what``: {!r}".format(what))
+
+
+def jsonize_typedefs(typedefs: MutableMapping[str, swagger_to.intermediate.Typedef]) -> Any:
+    """
+    Convert the type definitions to a JSON-able structure.
+
+    This is almost certainly not the same representation as the original type definition in the Swagger spec.
+
+    The references to identifiable typedefs (*i.e.*, the typedefs with an identifier) will be jsonized as
+    human-readable strings to avoid endless loops through cycles.
+    """
+    result = collections.OrderedDict()  # type: MutableMapping[str, Any]
+
+    for name, typedef in typedefs.items():
+        jsonable = collections.OrderedDict(
+            (k, jsonize_with_references(typedef.__dict__[k])) for k in sorted(typedef.__dict__.keys()))  # type: Any
+
+        result[name] = jsonable
+
+    return result
 
 
 class TestIntermediate(unittest.TestCase):
@@ -77,19 +104,23 @@ class TestIntermediate(unittest.TestCase):
             inter_params_pth = case_dir / "intermediate_params.json"
             endpoints_pth = case_dir / "endpoints.json"
 
+            expected_typedefs_as_json_str = json.dumps(jsonize_typedefs(inter_typedefs), indent=2)
+            expected_params_as_json_str = json.dumps(jsonize_with_references(inter_params), indent=2)
+            expected_endpoints_as_json_str = json.dumps(jsonize_with_references(endpoints), indent=2)
+
             # Leave this snippet here to facilitate updating the tests in the future
-            # inter_typedefs_pth.write_text(json.dumps(jsonize(inter_typedefs), indent=2))
-            # inter_params_pth.write_text(json.dumps(jsonize(inter_params), indent=2))
-            # endpoints_pth.write_text(json.dumps(jsonize(endpoints), indent=2))
+            # inter_typedefs_pth.write_text(expected_typedefs_as_json_str)
+            # inter_params_pth.write_text(expected_params_as_json_str)
+            # endpoints_pth.write_text(expected_endpoints_as_json_str)
 
             self.assertEqual(
-                inter_typedefs_pth.read_text(), json.dumps(jsonize(inter_typedefs), indent=2),
+                inter_typedefs_pth.read_text(), expected_typedefs_as_json_str,
                 "Expected content from {} does not match the jsonized typedefs.".format(inter_typedefs_pth))
 
-            self.assertEqual(inter_params_pth.read_text(), json.dumps(jsonize(inter_params), indent=2),
+            self.assertEqual(inter_params_pth.read_text(), expected_params_as_json_str,
                              "Expected content from {} does not match the jsonized params.".format(inter_params_pth))
 
-            self.assertEqual(endpoints_pth.read_text(), json.dumps(jsonize(endpoints), indent=2),
+            self.assertEqual(endpoints_pth.read_text(), expected_endpoints_as_json_str,
                              "Expected content from {} does not match the jsonized endpoints.".format(endpoints_pth))
 
 

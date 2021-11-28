@@ -1,0 +1,30 @@
+[
+  {
+    "consumes": [
+      "application/json"
+    ],
+    "description": "Retrieve all the nodes.",
+    "line": 24,
+    "method": "get",
+    "operation_id": "nodes",
+    "parameters": [],
+    "path": "/nodes",
+    "produces": [
+      "application/json"
+    ],
+    "responses": {
+      "200": {
+        "code": "200",
+        "description": "An array of nodes",
+        "line": 30,
+        "typedef": "reference to a typedef with identifier NodeList"
+      },
+      "default": {
+        "code": "default",
+        "description": "Unexpected error",
+        "line": 34,
+        "typedef": null
+      }
+    }
+  }
+]
