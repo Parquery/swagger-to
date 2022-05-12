@@ -29,6 +29,8 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     license="License :: OSI Approved :: MIT License",
     keywords='swagger code generation python elm go typescript server client angular',
@@ -36,8 +38,8 @@ setup(
     install_requires=['pyyaml>=3.12', 'jinja2>=3', 'icontract>=2.0.1,<3', 'jsonschema>=3,<4'],
     extras_require={
         'dev': [
-            'mypy==0.782',
-            'pylint==2.5.3',
+            'mypy==0.950',
+            'pylint==2.13.8',
             'yapf==0.20.2',
             'pydocstyle>=3.0.0,<4',
             'requests_mock>=1.8.0',

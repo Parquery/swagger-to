@@ -40,7 +40,7 @@ def main() -> int:
 
     with contextlib.ExitStack() as exit_stack:
         if output_dir is None:
-            tmp_dir = tempfile.TemporaryDirectory()
+            tmp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
             exit_stack.push(tmp_dir)
             output_dir = pathlib.Path(tmp_dir.name)
 
