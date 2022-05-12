@@ -99,7 +99,7 @@ def check(path: pathlib.Path, py_dir: pathlib.Path, overwrite: bool) -> Union[No
             filename=str(path), style_config=str(style_config), print_diff=True)
 
         if changed:
-            report.append("Failed to yapf {}:\n{}".format(path, formatted))
+            report.append(f"Failed to yapf {path}:\n{formatted}")
     else:
         yapf.yapflib.yapf_api.FormatFile(filename=str(path), style_config=str(style_config), in_place=True)
 
@@ -107,36 +107,35 @@ def check(path: pathlib.Path, py_dir: pathlib.Path, overwrite: bool) -> Union[No
     env = os.environ.copy()
     env['PYTHONPATH'] = ":".join([py_dir.as_posix(), env.get("PYTHONPATH", "")])
 
-    proc = subprocess.Popen(
+    with subprocess.Popen(
         ['mypy', str(path), '--ignore-missing-imports'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=env,
-        universal_newlines=True)
-    stdout, stderr = proc.communicate()
-    if proc.returncode != 0:
-        report.append("Failed to mypy {}:\nOutput:\n{}\n\nError:\n{}".format(path, stdout, stderr))
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            universal_newlines=True) as proc:
+        stdout, stderr = proc.communicate()
+        if proc.returncode != 0:
+            report.append(f"Failed to mypy {path}:\nOutput:\n{stdout}\n\nError:\n{stderr}")
 
     # pylint
-    proc = subprocess.Popen(
+    with subprocess.Popen(
         ['pylint', str(path), '--rcfile={}'.format(py_dir / 'pylint.rc')],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True)
-
-    stdout, stderr = proc.communicate()
-    if proc.returncode != 0:
-        report.append("Failed to pylint {}:\nOutput:\n{}\n\nError:\n{}".format(path, stdout, stderr))
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True) as proc:
+        stdout, stderr = proc.communicate()
+        if proc.returncode != 0:
+            report.append(f"Failed to pylint {path}:\nOutput:\n{stdout}\n\nError:\n{stderr}")
 
     # pydocstyle
     rel_pth = path.relative_to(py_dir)
 
     if rel_pth.parent.name != 'tests':
-        proc = subprocess.Popen(
-            ['pydocstyle', str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        stdout, stderr = proc.communicate()
-        if proc.returncode != 0:
-            report.append("Failed to pydocstyle {}:\nOutput:\n{}\n\nError:\n{}".format(path, stdout, stderr))
+        with subprocess.Popen(
+            ['pydocstyle', str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) as proc:
+            stdout, stderr = proc.communicate()
+            if proc.returncode != 0:
+                report.append("Failed to pydocstyle {}:\nOutput:\n{}\n\nError:\n{}".format(path, stdout, stderr))
 
     if len(report) > 0:
         return "\n".join(report)
@@ -186,7 +185,7 @@ def main() -> int:
             if hasher.hash_differs(path=pth):
                 pending_pths.append(pth)
 
-    print("There are {} file(s) that need to be individually checked...".format(len(pending_pths)))
+    print(f"There are {len(pending_pths)} file(s) that need to be individually checked...")
 
     success = True
 
@@ -199,10 +198,10 @@ def main() -> int:
         for future, pth in futures_paths:
             report = future.result()
             if report is None:
-                print("Passed all checks: {}".format(pth))
+                print(f"Passed all checks: {pth}")
                 hasher.update_hash(path=pth)
             else:
-                print("One or more checks failed for {}:\n{}".format(pth, report))
+                print(f"One or more checks failed for {pth}:\n{report}")
                 success = False
 
     print("Running unit tests...")

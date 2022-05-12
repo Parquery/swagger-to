@@ -498,5 +498,5 @@ def parse_yaml_file(path: Union[str, pathlib.Path]) -> Tuple[Swagger, List[str]]
     :param path: path to the .yaml file
     :return: (parsed Swagger specification, parsing errors if any)
     """
-    with open(str(path), 'rt') as fid:
+    with open(str(path), 'rt', encoding='utf-8') as fid:
         return parse_yaml(stream=fid)
