@@ -1,9 +1,13 @@
-4.1.2
+5.0.0
 =====
 * Added support for Python 3.9 and 3.10 (#136)
 * Upgraded to jinja2 >=3 (#137)
 * Fixed endless loops due to recursive definitions (#131)
 * Added quotes to type annotations in py client (#130)
+
+Breaking change
+---------------
+* We had to drop the support for Python 3.6 since jinja2 >= 3 does not support it anymore.
 
 4.1.1
 =====
