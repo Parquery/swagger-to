@@ -1,3 +1,10 @@
+4.1.2
+=====
+* Added support for Python 3.9 and 3.10 (#136)
+* Upgraded to jinja2 >=3 (#137)
+* Fixed endless loops due to recursive definitions (#131)
+* Added quotes to type annotations in py client (#130)
+
 4.1.1
 =====
 * Supported ``Any`` type value (i.e. empty type) (#126)
