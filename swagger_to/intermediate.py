@@ -432,12 +432,7 @@ def _recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> Mu
     new_schema_dict = collections.OrderedDict()  # type: MutableMapping[str, Any]
 
     for key, value in schema_dict.items():
-        if key.lower() == 'description':
-            if not isinstance(value, str):
-                raise ValueError("Expected the value in a schema to be a string, but got: {}".format(type(value)))
-
-            new_schema_dict[key] = value.strip()
-        elif isinstance(value, list):
+        if isinstance(value, list):
             lst = []  # type: List[Any]
             for item in value:
                 if isinstance(item, (dict, collections.OrderedDict)):
@@ -451,6 +446,11 @@ def _recursively_strip_descriptions(schema_dict: MutableMapping[str, Any]) -> Mu
             new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value)
         elif isinstance(value, swagger_to.swagger.RawDict):
             new_schema_dict[key] = _recursively_strip_descriptions(schema_dict=value)
+        elif key.lower() == 'description':
+            if not isinstance(value, str):
+                raise ValueError("Expected the value in a schema to be a string, but got: {}".format(type(value)))
+
+            new_schema_dict[key] = value.strip()
         else:
             new_schema_dict[key] = value
 
