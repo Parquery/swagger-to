@@ -1,0 +1,28 @@
+# This is invalid schema...
+# It confirms the validator fails at a "description" element that MUST be a string.
+# Test relates to: https://github.com/Parquery/swagger-to/issues/132
+swagger: '2.0'
+info:
+  description:
+    name: This is expected to fail!
+  version: '1.0'
+  title: An API
+basePath: /api/v1
+tags:
+- name: foo
+  description: description
+paths:
+  /foo:
+    get:
+      operationId: get_foo
+      responses:
+        '200':
+          description: Success
+      tags:
+      - foo
+    parameters:
+    - in: path
+      description: The foo id
+      name: foo_id
+      required: true
+      type: string

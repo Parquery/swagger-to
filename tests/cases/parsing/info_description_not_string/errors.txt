@@ -1,0 +1,11 @@
+"info"/"description":RawDict([('name', 'This is expected to fail!')]) is not of type 'string'
+
+Failed validating 'type' in schema['properties']['info']['properties']['description']:
+    {'description': 'A longer description of the API. Should be different '
+                    'from the title.  GitHub Flavored Markdown is allowed.',
+     'type': 'string'}
+
+On instance['info']['description']:
+    RawDict([('name', 'This is expected to fail!')])
+
+We used the JSON schema of OpenAPI 2 from: https://raw.githubusercontent.com/OAI/OpenAPI-Specification/88cd94419e117b154b67b834fa8e471bb98bd346/schemas/v2.0/schema.json

@@ -1,0 +1,44 @@
+[
+  {
+    "consumes": [],
+    "description": "",
+    "line": 14,
+    "method": "get",
+    "operation_id": "get_foo",
+    "parameters": [
+      {
+        "description": "The foo id",
+        "in_what": "path",
+        "json_schema": {
+          "identifier": "",
+          "text": ""
+        },
+        "line": 21,
+        "name": "foo_id",
+        "required": true,
+        "typedef": {
+          "description": "",
+          "format": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 0,
+          "pattern": "",
+          "type": "string"
+        }
+      }
+    ],
+    "path": "/api/v1/foo",
+    "produces": [],
+    "responses": {
+      "200": {
+        "code": "200",
+        "description": "Success",
+        "line": 17,
+        "typedef": null
+      }
+    }
+  }
+]
