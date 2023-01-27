@@ -1,3 +1,7 @@
+5.0.1
+=====
+* Checked that description is an Array/Object first (#141)
+
 5.0.0
 =====
 * Added support for Python 3.9 and 3.10 (#136)
