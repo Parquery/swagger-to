@@ -1,0 +1,40 @@
+# This is a valid schema, but the definition...->description object broke swagger-to.
+# Test relates to: https://github.com/Parquery/swagger-to/issues/132
+swagger: '2.0'
+info:
+  description: description
+  version: '1.0'
+  title: An API
+basePath: /api/v1
+tags:
+- name: foo
+  description: description
+paths:
+  /foo:
+    get:
+      operationId: get_foo
+      responses:
+        '200':
+          description: Success
+      tags:
+      - foo
+    parameters:
+    - in: path
+      description: The foo id
+      name: foo_id
+      required: true
+      type: string
+definitions:
+  foo:
+    type: object
+    properties:
+      id:
+        description: Identifier
+      name:
+        type: string
+        example: TestJob
+        description: Name of the test.
+      description:
+        type: string
+        example: TestJob
+        description: Test description.

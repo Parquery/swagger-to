@@ -1,0 +1,65 @@
+{
+  "foo": {
+    "description": "",
+    "identifier": "foo",
+    "json_schema": {
+      "identifier": "foo",
+      "text": "{\n  \"title\": \"foo\",\n  \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\n      \"description\": \"Identifier\"\n    },\n    \"name\": {\n      \"type\": \"string\",\n      \"example\": \"TestJob\",\n      \"description\": \"Name of the test.\"\n    },\n    \"description\": {\n      \"type\": \"string\",\n      \"example\": \"TestJob\",\n      \"description\": \"Test description.\"\n    }\n  }\n}"
+    },
+    "line": 28,
+    "properties": {
+      "id": {
+        "description": "Identifier",
+        "line": 0,
+        "name": "id",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 31
+        }
+      },
+      "name": {
+        "description": "Name of the test.",
+        "line": 0,
+        "name": "name",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": null,
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 33,
+          "pattern": "",
+          "type": "string"
+        }
+      },
+      "description": {
+        "description": "Test description.",
+        "line": 0,
+        "name": "description",
+        "required": false,
+        "typedef": {
+          "description": "",
+          "format": null,
+          "identifier": "",
+          "json_schema": {
+            "identifier": "",
+            "text": ""
+          },
+          "line": 37,
+          "pattern": "",
+          "type": "string"
+        }
+      }
+    },
+    "required": []
+  }
+}
