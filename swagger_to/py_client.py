@@ -1378,7 +1378,7 @@ params[{{ param.name|repr }}] = json.dumps(
             {% if param.required %}
     {{ set_params_item|trim|indent }}
             {% else %}
-    if {{ param.identifier }} is not None:
+    if {{ param.identifier|arg_name }} is not None:
         {{ set_params_item|trim|indent|indent }}
             {% endif %}{# /if param.required #}
         {% endfor %}{# /for param in request.query_parameters #}
