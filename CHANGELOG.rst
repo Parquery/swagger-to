@@ -1,3 +1,7 @@
+5.0.2
+=====
+* Fixed parameters with dots in py client (#145)
+
 5.0.1
 =====
 * Checked that description is an Array/Object first (#141)
